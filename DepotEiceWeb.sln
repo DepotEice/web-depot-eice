@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.DepotEice.BLL", "Web.DepotEice.BLL\Web.DepotEice.BLL.csproj", "{4DC1497C-C3EB-4859-ACEE-EDE600763AA6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.DepotEice.UIL", "Web.DepotEice.UIL\Web.DepotEice.UIL.csproj", "{F4A969F8-CFA8-4784-8068-F02605F126D8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4DC1497C-C3EB-4859-ACEE-EDE600763AA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DC1497C-C3EB-4859-ACEE-EDE600763AA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DC1497C-C3EB-4859-ACEE-EDE600763AA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DC1497C-C3EB-4859-ACEE-EDE600763AA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4A969F8-CFA8-4784-8068-F02605F126D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4A969F8-CFA8-4784-8068-F02605F126D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4A969F8-CFA8-4784-8068-F02605F126D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4A969F8-CFA8-4784-8068-F02605F126D8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {987460AB-3EAD-418B-AE34-76FC1586CB61}
+	EndGlobalSection
+EndGlobal

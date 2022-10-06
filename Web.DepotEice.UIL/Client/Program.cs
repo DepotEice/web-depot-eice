@@ -20,7 +20,7 @@ namespace Company.WebApplication1
                 .GetRequiredService<ILoggerFactory>()
                 .CreateLogger<Program>();
 
-            logger.LogInformation("{date} | Logged after the app is built in Program.cs.");
+            logger.LogInformation("{date} | Logged after the app is built in Program.cs.", DateTime.Now);
 
             await host.RunAsync();
         }

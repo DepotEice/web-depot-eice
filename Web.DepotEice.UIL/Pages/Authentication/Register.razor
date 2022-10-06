@@ -20,27 +20,33 @@
             <label for="confirm-email-input" class="form-label">Confirmer l'adresse email</label>
             <InputText type="email" id="confirm-email-input" class="form-control"
                 @bind-Value="registerModel.ConfirmEmail" />
+            <ValidationMessage For="@(() => registerModel.ConfirmEmail)" />
+
         </div>
 
         <div class="mb-3">
             <label for="password-input" class="form-label">Mot de passe</label>
             <InputText type="password" id="password-input" class="form-control" @bind-Value="registerModel.Password" />
+            <ValidationMessage For="@(() => registerModel.Password)" />
         </div>
 
         <div class="mb-3">
             <label for="confirm-password-input" class="form-label">Confirmer le mot de passe</label>
             <InputText type="password" id="confirm-password-input" class="form-control"
                 @bind-Value="registerModel.ConfirmPassword" />
+            <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
         </div>
 
         <div class="mb-3">
             <label for="firstname-input" class="form-label">Prénom</label>
             <InputText id="firstname-input" class="form-control" @bind-Value="registerModel.FirstName" />
+            <ValidationMessage For="@(() => registerModel.FirstName)" />
         </div>
 
         <div class="mb-3">
             <label for="lastname-input" class="form-label">Nom</label>
             <InputText id="lastname-input" class="form-control" @bind-Value="registerModel.LastName" />
+            <ValidationMessage For="@(() => registerModel.LastName)" />
         </div>
 
         <ValidationSummary />

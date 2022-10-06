@@ -13,6 +13,7 @@ namespace Web.DepotEice.UIL.Models.Forms
         [EmailAddress(ErrorMessage = "Le format de l'adresse email est incorrect!")]
         public string? Email { get; set; }
 
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Veuillez entrer la confirmation de l'adresse email !")]
         [Compare(nameof(Email), ErrorMessage = "Les adresses emails ne correspondent pas!")]
         public string? ConfirmEmail { get; set; }
 
@@ -21,6 +22,7 @@ namespace Web.DepotEice.UIL.Models.Forms
             ErrorMessage = "Le mot de passe doit faire entre 8 et 20 caractères et doit contenir au moins une minuscule, une majuscule, un nombre et un caractère spécial!")]
         public string? Password { get; set; }
 
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Veuillez entrer la confirmation du mot de passe !")]
         [Compare(nameof(Password))]
         public string? ConfirmPassword { get; set; }
 

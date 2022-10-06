@@ -49,9 +49,16 @@
             <ValidationMessage For="@(() => registerModel.LastName)" />
         </div>
 
+        <div class="mb-3">
+            <label for="birthdate-input" class="form-label">Date de naissance</label>
+            <InputDate id="birthdate-input" class="form-control" @bind-Value="registerModel.BirthDate" />
+            <ValidationMessage For="@(() => registerModel.BirthDate)" />
+        </div>
+
         <ValidationSummary />
 
-        <button type="submit" class="btn btn-primary" style="min-width: 150px" @onclick="@HandleValidSubmit">S'inscrire</button>
+        <button type="submit" class="btn btn-primary" style="min-width: 150px"
+            @onclick="@HandleValidSubmit">S'inscrire</button>
 
         <div class="row">
             <span>

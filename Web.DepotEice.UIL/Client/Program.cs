@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -13,7 +14,15 @@ namespace Company.WebApplication1
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-            await builder.Build().RunAsync();
+            var host = builder.Build();
+
+            var logger = host.Services
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger<Program>();
+
+            logger.LogInformation("{date} | Logged after the app is built in Program.cs.");
+
+            await host.RunAsync();
         }
     }
 }

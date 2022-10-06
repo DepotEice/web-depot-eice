@@ -1,11 +1,12 @@
 ﻿<nav class="navbar navbar-expand-lg bg-light">
   <div class="container-fluid">
     <a class="navbar-brand" href="#">EICE</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
+      aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNavDropdown">
-      <ul class="navbar-nav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="#">Home</a>
         </li>
@@ -26,10 +27,32 @@
           </ul>
         </li>
       </ul>
+
+      <div class="dropdown m-1">
+        <a class="dropbox-toggle text-dark" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static"
+          aria-expanded="false" style="text-decoration:none;">
+          <i class="bi bi-person" style="font-size: 1.5em;">
+          </i>
+          Profile
+        </a>
+
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start" aria-labelledby="profileDropdown">
+          <li>
+            <a class="dropdown-item text-dark" asp-page="/Account/Password">Profile</a>
+          </li>
+          <li>
+            <hr />
+          </li>
+          <li>
+            <a class="dropdown-item text-dark" asp-page="/Account/Logout">Se
+              déconnecter</a>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </nav>
 
 @code {
-  
+
 }

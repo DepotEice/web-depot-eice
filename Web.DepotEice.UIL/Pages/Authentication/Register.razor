@@ -1,7 +1,10 @@
 @page "/register"
 @page "/signup"
 
+@using Microsoft.Extensions.Logging;
 @using Web.DepotEice.UIL.Models.Forms;
+
+@inject ILogger<Register> Logger;
 
 <div class="container body-content">
     <EditForm class="mt-3" Model="@registerModel" OnInvalidSubmit="@HandleValidSubmit">
@@ -42,7 +45,7 @@
 
         <ValidationSummary />
 
-        <button type="submit" class="btn btn-primary" style="min-width: 150px">S'inscrire</button>
+        <button type="submit" class="btn btn-primary" style="min-width: 150px" @onclick="@HandleValidSubmit">S'inscrire</button>
 
         <div class="row">
             <span>
@@ -57,6 +60,6 @@
 
     private void HandleValidSubmit()
     {
-        // Things
+        Logger.LogInformation("{date} | Submit form clicked", DateTime.Now);
     }
 }

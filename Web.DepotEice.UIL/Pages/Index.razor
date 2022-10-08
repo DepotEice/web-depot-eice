@@ -11,6 +11,15 @@
 
 <div class="container body-content">
 
+    @{
+        /*
+        * TODO : Load 6 or 12 pinned articles :
+        * - If there is less than 6 : skip this part
+        * - If there is more than 6 and less than 12 : Keep 6
+        * - If there is more than 12 : ERROR (Add a limit on the number of articles you can pin
+        * */
+    }
+
     <div class="d-flex flex-wrap justify-content-evenly align-content-evenly mt-2 mb-2 main-articles" style="width: 100%; height: auto;">
 
         @{
@@ -20,9 +29,11 @@
                     <div class="card-body">
                         <h5 class="card-title">Card title</h5>
                         <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the
+                        <p class="card-text">
+                            Some quick example text to build on the card title and make up the bulk of the
                             card's
-                            content.</p>
+                            content.
+                        </p>
                         <a href="#" class="card-link">Card link</a>
                         <a href="#" class="card-link">Another link</a>
                     </div>
@@ -31,10 +42,38 @@
         }
     </div>
 
-    <div class="d-grid"></div>
+    @{
+        /*
+        * Adapt the display of the static informations :
+        * - Alternate the Circle shape left and right (The circle is the image) and the rectangle is the text
+        */
+    }
 
-    <SurveyPrompt Title="How is Blazor working for you?" />
+    <div class="row m-1">
+        <div class="col-6">
+            <div class="" style="background-color: blue; width: 100%; height: 20em">Circle</div>
+        </div>
+        <div class="col-6">
+            <div class="" style="background-color: lightgray; width: 100%; height: 20em"><p>lorem ipsum</p></div>
+        </div>
+    </div>
 
-    Some shit has been added
+    <div class="row m-1">
+        <div class="col-6">
+            <div class="" style="background-color: lightgray; width: 100%; height: 20em">lorem ipsum</div>
+        </div>
+        <div class="col-6">
+            <div class="" style="background-color: blue; width: 100%; height: 20em">Circle</div>
+        </div>
+    </div>
+
+    <div class="row m-1">
+        <div class="col-6">
+            <div class="" style="background-color: blue; width: 100%; height: 20em">Circle</div>
+        </div>
+        <div class="col-6">
+            <div class="" style="background-color: lightgray; width: 100%; height: 20em">Lorem ipsum</div>
+        </div>
+    </div>
 
 </div>

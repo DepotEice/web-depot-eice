@@ -32,7 +32,8 @@ namespace Web.DepotEice.UIL.Models.Forms
         [Required(AllowEmptyStrings = false, ErrorMessage = "Veuillez entrer votre nom de famille !")]
         public string? LastName { get; set; }
 
+        // TODO : Add max value (today)
         [Required(ErrorMessage = "Veuillez entrer la date de naissance !")]
-        public DateOnly BirthDate { get; set; }
+        public DateOnly BirthDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
     }
 }

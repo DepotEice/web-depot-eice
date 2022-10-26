@@ -10,6 +10,5 @@ namespace Web.DepotEice.BLL.Models
     {
         public string Email { get; set; }
         public string Password { get; set; }
-        public bool IsPersistant { get; set; }
     }
 }

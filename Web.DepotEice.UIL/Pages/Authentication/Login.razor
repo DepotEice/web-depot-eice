@@ -1,24 +1,72 @@
-@page "/login"
+@page "/login/{returnUrl?}"
 @page "/signin"
 
+@using AutoMapper
+@using Web.DepotEice.BLL.IServices
+@using Web.DepotEice.BLL.Models
+@using Web.DepotEice.UIL.Models.Forms
+
+@inject IAuthService AuthService;
+@inject IMapper Mapper;
+@inject NavigationManager NavigationManager;
+
 <div class="container body-content">
-    <div class="d-flex align-items-center justify-content-center mt-2" >
-        <form class="" style="width: 50%">
+    <div class="d-flex align-items-center justify-content-center mt-2">
+        <EditForm class="mt-3" Model="@_signInForm" OnValidSubmit="@OnValidationSubmit" style="width: 50%">
+            <DataAnnotationsValidator></DataAnnotationsValidator>
+
             <div class="mb-3">
                 <label for="email" class="form-label">Adresse Email</label>
-                <input type="email" class="form-control" id="email" aria-describedby="aide email">
+                <InputText type="email" class="form-control" id="email" aria-describedby="aide email"
+                           @bind-Value="_signInForm.Email" />
+                <ValidationMessage For="@(() => _signInForm.Email)" />
                 <div id="email-helper" class="form-text">We'll never share your email with anyone else.</div>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Mot de passe</label>
-                <input type="password" class="form-control" id="password-helper">
+                <InputText type="password" class="form-control" id="password-helper"
+                           @bind-Value="_signInForm.Password" />
+                <ValidationMessage For="@(() => _signInForm.Password)" />
             </div>
             <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="stay-connected">
+                <InputCheckbox type="checkbox" class="form-check-input" id="stay-connected"
+                               bind-Value="_signInForm.IsPersistant" />
                 <label class="form-check-label" for="stay-connected">Rester connecté</label>
             </div>
-            <button type="submit" class="btn btn-primary">Se connecter</button>
+            <span>@ReturnUrl</span>
+            <button type="submit" class="btn btn-primary" @onclick="OnValidationSubmit">Se connecter</button>
             <NavLink class="btn btn-primary" href="register">S'inscrire</NavLink>
-        </form>
+        </EditForm>
     </div>
 </div>
+
+@code {
+    [Parameter]
+    public string? ReturnUrl { get; set; }
+
+    private SignInForm _signInForm = new();
+    private string _validationMessage = string.Empty;
+
+    private async Task OnValidationSubmit()
+    {
+        SignInModel signInModel = Mapper.Map<SignInModel>(_signInForm);
+
+        string? token = await AuthService.SignInAsync(signInModel);
+
+        if (string.IsNullOrEmpty(token))
+        {
+            _validationMessage = "L'adresse email ou le mot de passe est incorrect";
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(ReturnUrl))
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                NavigationManager.ToAbsoluteUri(ReturnUrl);
+            }
+        }
+    }
+}

@@ -1,5 +1,5 @@
 @page "/login/{returnUrl?}"
-@page "/signin"
+@page "/signin/{returnUrl?}"
 
 @using Web.DepotEice.UIL.Models.Forms
 @using Web.DepotEice.UIL.Managers
@@ -7,7 +7,9 @@
 @inject NavigationManager NavigationManager;
 @inject UserManager UserManager;
 
-<div class="container body-content">
+<h2 class="text-center my-5">Se connecter</h2>
+
+<div class="container my-5 py-5 bg-light border border-1">
     <div class="d-flex align-items-center justify-content-center mt-2">
         <EditForm class="mt-3" Model="@_signInForm" OnValidSubmit="@OnValidationSubmit" style="width: 50%">
             <DataAnnotationsValidator></DataAnnotationsValidator>
@@ -16,18 +18,29 @@
                 <label for="email" class="form-label">Adresse Email</label>
                 <InputText type="email" class="form-control" id="email" aria-describedby="aide email"
                            @bind-Value="_signInForm.Email" />
-                <ValidationMessage For="@(() => _signInForm.Email)" />
-                <div id="email-helper" class="form-text">We'll never share your email with anyone else.</div>
+                <ValidationMessage class="text-danger" For="@(() => _signInForm.Email)" />
+                <div id="email-helper" class="form-text">
+                    Votre adresse email est privé et ne sera partagée avec personne. Pour plus d'informations,
+                    consultez notre <a href="#">politique de confidentialité</a>
+                </div>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Mot de passe</label>
                 <InputText type="password" class="form-control" id="password-helper"
                            @bind-Value="_signInForm.Password" />
-                <ValidationMessage For="@(() => _signInForm.Password)" />
+                <ValidationMessage class="text-danger" For="@(() => _signInForm.Password)" />
             </div>
-            <span>@_validationMessage</span>
-            <button type="submit" class="btn btn-primary" @onclick="OnValidationSubmit">Se connecter</button>
-            <NavLink class="btn btn-primary" href="register">S'inscrire</NavLink>
+            <div class="mb-3">
+                <span class="text-danger">@_validationMessage</span>
+            </div>
+            <div class="mb-3">
+                <button type="submit" class="btn btn-outline-primary mx-auto" @onclick="OnValidationSubmit">
+                    Se connecter
+                </button>
+            </div>
+            <div class="mb-3">
+                Si vous ne possédez pas de compte, inscrivez-vous <NavLink class="" href="register">ici</NavLink>
+            </div>
         </EditForm>
     </div>
 </div>
@@ -49,7 +62,7 @@
         }
         else
         {
-            NavigationManager.NavigateTo(ReturnUrl ?? "");
+            NavigationManager.NavigateTo(ReturnUrl ?? "", forceLoad: true);
         }
     }
 }

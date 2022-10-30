@@ -24,6 +24,7 @@ namespace Web.DepotEice.UIL.Managers
                 return !string.IsNullOrEmpty(result);
             }
         }
+
         public UserManager(ILogger<UserManager> logger, IMapper mapper, ILocalStorageService localStorageService,
             ISyncLocalStorageService syncLocalStorageService, IAuthService authService)
         {

@@ -25,12 +25,7 @@
                            @bind-Value="_signInForm.Password" />
                 <ValidationMessage For="@(() => _signInForm.Password)" />
             </div>
-            <div class="mb-3 form-check">
-                <InputCheckbox type="checkbox" class="form-check-input" id="stay-connected"
-                               bind-Value="_signInForm.IsPersistant" />
-                <label class="form-check-label" for="stay-connected">Rester connecté</label>
-            </div>
-            <span>@ReturnUrl</span>
+            <span>@_validationMessage</span>
             <button type="submit" class="btn btn-primary" @onclick="OnValidationSubmit">Se connecter</button>
             <NavLink class="btn btn-primary" href="register">S'inscrire</NavLink>
         </EditForm>

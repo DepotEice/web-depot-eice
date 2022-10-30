@@ -1,8 +1,11 @@
 using System.Data;
+using Blazored.LocalStorage;
+using Blazored.SessionStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Web.DepotEice.BLL.IServices;
 using Web.DepotEice.BLL.Services;
+using Web.DepotEice.UIL.Managers;
 
 namespace Company.WebApplication1
 {
@@ -16,10 +19,17 @@ namespace Company.WebApplication1
 
             builder.Services.AddLogging();
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            builder.Services.AddBlazoredSessionStorage();
+            builder.Services.AddBlazoredLocalStorage();
 
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+            builder.Services.AddScoped(sp => new HttpClient
+            {
+                BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+            });
 
             builder.Services.AddScoped<IAuthService, AuthService>();
+
+            builder.Services.AddScoped<UserManager>();
 
             var host = builder.Build();
 

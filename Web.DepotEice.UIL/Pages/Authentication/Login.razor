@@ -1,14 +1,11 @@
 @page "/login/{returnUrl?}"
 @page "/signin"
 
-@using AutoMapper
-@using Web.DepotEice.BLL.IServices
-@using Web.DepotEice.BLL.Models
 @using Web.DepotEice.UIL.Models.Forms
+@using Web.DepotEice.UIL.Managers
 
-@inject IAuthService AuthService;
-@inject IMapper Mapper;
 @inject NavigationManager NavigationManager;
+@inject UserManager UserManager;
 
 <div class="container body-content">
     <div class="d-flex align-items-center justify-content-center mt-2">
@@ -49,24 +46,15 @@
 
     private async Task OnValidationSubmit()
     {
-        SignInModel signInModel = Mapper.Map<SignInModel>(_signInForm);
+        bool result = await UserManager.SignInAsync(_signInForm);
 
-        string? token = await AuthService.SignInAsync(signInModel);
-
-        if (string.IsNullOrEmpty(token))
+        if (!result)
         {
             _validationMessage = "L'adresse email ou le mot de passe est incorrect";
         }
         else
         {
-            if (string.IsNullOrEmpty(ReturnUrl))
-            {
-                NavigationManager.NavigateTo("/");
-            }
-            else
-            {
-                NavigationManager.ToAbsoluteUri(ReturnUrl);
-            }
+            NavigationManager.NavigateTo(ReturnUrl ?? "");
         }
     }
 }

@@ -6,9 +6,11 @@
 
 @inject ILogger<Register> Logger;
 
-    <PageTitle>Inscription</PageTitle>
+<PageTitle>Inscription</PageTitle>
 
-<div class="container body-content">
+<h2 class="text-center my-5">S'inscrire</h2>
+
+<div class="container py-5 my-5 border border-1 bg-light">
     <EditForm class="mt-3" Model="@registerModel" OnInvalidSubmit="@HandleValidSubmit">
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
@@ -56,10 +58,12 @@
             <ValidationMessage For="@(() => registerModel.BirthDate)" />
         </div>
 
-        <button type="submit" class="btn btn-primary" style="min-width: 150px"
-                @onclick="@HandleValidSubmit">
-            S'inscrire
-        </button>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-outline-primary" style="min-width: 150px"
+                    @onclick="@HandleValidSubmit">
+                S'inscrire
+            </button>
+        </div>
 
         <div class="row">
             <span>

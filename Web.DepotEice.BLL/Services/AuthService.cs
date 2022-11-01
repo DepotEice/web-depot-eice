@@ -45,9 +45,15 @@ namespace Web.DepotEice.BLL.Services
             return token.Token;
         }
 
-        public Task<bool> SignOutAsync()
+        public async Task<bool> AskNewPassword(string email)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ArgumentNullException(nameof(email));
+            }
+
+            //HttpResponseMessage response = await _httpClient.PostAsJsonAsync()
+            return false;
         }
 
         public Task<string> SignUpAsync(SignUpModel signUpModel)

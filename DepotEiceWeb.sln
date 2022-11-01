@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.DepotEice.BLL", "Web.De
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.DepotEice.UIL", "Web.DepotEice.UIL\Web.DepotEice.UIL.csproj", "{F4A969F8-CFA8-4784-8068-F02605F126D8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.DepotEice.Helpers", "Web.DepotEice.Helpers\Web.DepotEice.Helpers.csproj", "{BE58FDA3-0286-45D7-8EF3-2E64CF10622F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.DepotEice.Helpers", "Web.DepotEice.Helpers\Web.DepotEice.Helpers.csproj", "{BE58FDA3-0286-45D7-8EF3-2E64CF10622F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

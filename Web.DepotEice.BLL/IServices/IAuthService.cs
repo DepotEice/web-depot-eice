@@ -10,7 +10,8 @@ namespace Web.DepotEice.BLL.IServices
     public interface IAuthService
     {
         Task<string> SignInAsync(SignInModel signInModel);
-        Task<string> SignUpAsync(SignUpModel signUpModel);
+        Task<bool> SignUpAsync(SignUpModel signUpModel);
         Task<bool> RequestNewPassword(string email);
+        Task<bool> Activate(string userId, string token);
     }
 }

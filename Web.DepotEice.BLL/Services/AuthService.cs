@@ -52,16 +52,50 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(email));
             }
 
-            HttpResponseMessage response = await _httpClient.GetAsync($"Auth/RequestNewPassword?email={email}");
+            HttpResponseMessage response =
+                await _httpClient.GetAsync($"Auth/RequestNewPassword?email={email}");
 
             response.EnsureSuccessStatusCode();
 
             return true;
         }
 
-        public Task<string> SignUpAsync(SignUpModel signUpModel)
+        public async Task<bool> SignUpAsync(SignUpModel signUpModel)
         {
-            throw new NotImplementedException();
+            if (signUpModel is null)
+            {
+                throw new ArgumentNullException(nameof(signUpModel));
+            }
+
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/SignUp", signUpModel);
+
+            // TODO : Change NoContent in API to OK()
+            if (response.StatusCode != System.Net.HttpStatusCode.NoContent)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public async Task<bool> Activate(string userId, string token)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            HttpResponseMessage response =
+                await _httpClient.PostAsync($"Auth/Activate?id={userId}&token={token}", null);
+
+            response.EnsureSuccessStatusCode();
+
+            return true;
         }
     }
 }

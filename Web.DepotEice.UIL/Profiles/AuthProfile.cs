@@ -9,7 +9,11 @@ namespace Web.DepotEice.UIL.Profiles
         public AuthProfile()
         {
             CreateMap<SignInForm, SignInModel>();
-            CreateMap<RegisterForm, SignUpModel>();
+            CreateMap<RegisterForm, SignUpModel>()
+                .ForMember(
+                    dest => dest.BirthDate,
+                    opt => opt.MapFrom(
+                        src => new DateTime(src.BirthDate.Year, src.BirthDate.Month, src.BirthDate.Day)));
         }
     }
 }

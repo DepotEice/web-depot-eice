@@ -115,9 +115,9 @@ namespace Web.DepotEice.UIL.Managers
             {
                 SignUpModel signUpModel = _mapper.Map<SignUpModel>(registerForm);
 
-                string result = await _authService.SignUpAsync(signUpModel);
+                bool result = await _authService.SignUpAsync(signUpModel);
 
-                return true;
+                return result;
             }
             catch (Exception e)
             {
@@ -134,6 +134,21 @@ namespace Web.DepotEice.UIL.Managers
             }
 
             return await _authService.RequestNewPassword(email);
+        }
+
+        public async Task<bool> Activate(string userId, string token)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            return await _authService.Activate(userId, token);
         }
     }
 }

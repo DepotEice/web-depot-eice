@@ -125,5 +125,15 @@ namespace Web.DepotEice.UIL.Managers
                 return false;
             }
         }
+
+        public async Task<bool> RequestNewPassword(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ArgumentNullException(nameof(email));
+            }
+
+            return await _authService.RequestNewPassword(email);
+        }
     }
 }

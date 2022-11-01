@@ -2,60 +2,62 @@
 @page "/signup"
 
 @using Microsoft.Extensions.Logging;
+@using Web.DepotEice.UIL.Managers
 @using Web.DepotEice.UIL.Models.Forms;
 
 @inject ILogger<Register> Logger;
+@inject UserManager UserManager;
 
 <PageTitle>Inscription</PageTitle>
 
 <h2 class="text-center my-5">S'inscrire</h2>
 
 <div class="container py-5 my-5 border border-1 bg-light">
-    <EditForm class="mt-3" Model="@registerModel" OnInvalidSubmit="@HandleValidSubmit">
+    <EditForm class="mt-3" Model="@_registerModel" OnInvalidSubmit="@HandleValidSubmit">
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
         <div class="mb-3">
             <label for="email-input" class="form-label">Adresse email</label>
-            <InputText type="email" id="email-input" class="form-control" @bind-Value="registerModel.Email" />
-            <ValidationMessage For="@(() => registerModel.Email)" />
+            <InputText type="email" id="email-input" class="form-control" @bind-Value="_registerModel.Email" />
+            <ValidationMessage For="@(() => _registerModel.Email)" />
         </div>
 
         <div class="mb-3">
             <label for="confirm-email-input" class="form-label">Confirmer l'adresse email</label>
             <InputText type="email" id="confirm-email-input" class="form-control"
-                       @bind-Value="registerModel.ConfirmEmail" />
-            <ValidationMessage For="@(() => registerModel.ConfirmEmail)" />
+                       @bind-Value="_registerModel.ConfirmEmail" />
+            <ValidationMessage For="@(() => _registerModel.ConfirmEmail)" />
         </div>
 
         <div class="mb-3">
             <label for="password-input" class="form-label">Mot de passe</label>
-            <InputText type="password" id="password-input" class="form-control" @bind-Value="registerModel.Password" />
-            <ValidationMessage For="@(() => registerModel.Password)" />
+            <InputText type="password" id="password-input" class="form-control" @bind-Value="_registerModel.Password" />
+            <ValidationMessage For="@(() => _registerModel.Password)" />
         </div>
 
         <div class="mb-3">
             <label for="confirm-password-input" class="form-label">Confirmer le mot de passe</label>
             <InputText type="password" id="confirm-password-input" class="form-control"
-                       @bind-Value="registerModel.ConfirmPassword" />
-            <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+                       @bind-Value="_registerModel.ConfirmPassword" />
+            <ValidationMessage For="@(() => _registerModel.ConfirmPassword)" />
         </div>
 
         <div class="mb-3">
             <label for="firstname-input" class="form-label">Prénom</label>
-            <InputText id="firstname-input" class="form-control" @bind-Value="registerModel.FirstName" />
-            <ValidationMessage For="@(() => registerModel.FirstName)" />
+            <InputText id="firstname-input" class="form-control" @bind-Value="_registerModel.FirstName" />
+            <ValidationMessage For="@(() => _registerModel.FirstName)" />
         </div>
 
         <div class="mb-3">
             <label for="lastname-input" class="form-label">Nom</label>
-            <InputText id="lastname-input" class="form-control" @bind-Value="registerModel.LastName" />
-            <ValidationMessage For="@(() => registerModel.LastName)" />
+            <InputText id="lastname-input" class="form-control" @bind-Value="_registerModel.LastName" />
+            <ValidationMessage For="@(() => _registerModel.LastName)" />
         </div>
 
         <div class="mb-3">
             <label for="birthdate-input" class="form-label">Date de naissance</label>
-            <InputDate id="birthdate-input" class="form-control" @bind-Value="registerModel.BirthDate" />
-            <ValidationMessage For="@(() => registerModel.BirthDate)" />
+            <InputDate id="birthdate-input" class="form-control" @bind-Value="_registerModel.BirthDate" />
+            <ValidationMessage For="@(() => _registerModel.BirthDate)" />
         </div>
 
         <div class="mb-3">
@@ -74,7 +76,7 @@
 </div>
 
 @code {
-    private RegisterForm registerModel = new();
+    private RegisterForm _registerModel = new();
 
     private void HandleValidSubmit()
     {

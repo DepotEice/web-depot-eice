@@ -11,5 +11,6 @@ namespace Web.DepotEice.BLL.IServices
     {
         Task<string> SignInAsync(SignInModel signInModel);
         Task<string> SignUpAsync(SignUpModel signUpModel);
+        Task<bool> RequestNewPassword(string email);
     }
 }

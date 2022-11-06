@@ -30,6 +30,7 @@ namespace Company.WebApplication1
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IUserTokenService, UserTokenService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IOpeningHoursService, OpeningHoursService>();
 
             builder.Services.AddScoped<UserManager>();
 

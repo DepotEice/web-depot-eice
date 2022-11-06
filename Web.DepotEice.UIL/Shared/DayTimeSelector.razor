@@ -1,0 +1,44 @@
+﻿@using Web.DepotEice.UIL.Models
+
+@inject ILogger<DayTimeSelector> Logger;
+
+<div id="" class="mx-2">
+    <h4>@DayTimeSelectorModel.DayOfWeek</h4>
+    <br />
+    <label>Sélectionner</label>
+    <InputCheckbox DisplayName="Sélectionner" @bind-Value="DayTimeSelectorModel.IsSelected" />
+    <br />
+    <label class="my-2">Début</label>
+    <RadzenDatePicker TValue="DateTime?" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
+                      ShowTimeOkButton="true"
+                      Change=@(args => OnChangeFrom(args, "Time-only DatePicker", "HH:mm")) Class="w-100"
+                      Value="DayTimeSelectorModel.From" Disabled="!DayTimeSelectorModel.IsSelected" />
+    <label class="my-2">Fin</label>
+    <RadzenDatePicker TValue="DateTime?" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
+                      ShowTimeOkButton="true"
+                      Change=@(args => OnChangeTo(args, "Time-only DatePicker", "HH:mm")) Class="w-100"
+                      Value="DayTimeSelectorModel.To" Disabled="!DayTimeSelectorModel.IsSelected" />
+</div>
+
+@code {
+    [Parameter]
+    public DayTimeSelectorModel DayTimeSelectorModel { get; set; } = new();
+
+    private void OnChangeFrom(DateTime? value, string name, string format)
+    {
+        if(value.HasValue)
+        {
+            DayTimeSelectorModel.From = value.Value;
+            Logger.LogInformation("{date} - TimePicker value changed \"{value}\"", value.Value);
+        }
+    }
+
+    private void OnChangeTo(DateTime? value, string name, string format)
+    {
+        if (value.HasValue)
+        {
+            DayTimeSelectorModel.To = value.Value;
+            Logger.LogInformation("{date} - TimePicker value changed \"{value}\"", value.Value);
+        }
+    }
+}

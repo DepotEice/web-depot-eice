@@ -13,5 +13,6 @@ namespace Web.DepotEice.BLL.IServices
         Task<IEnumerable<OpeningHoursModel>> GetWeekOpeningHoursAsync(DateTime dateTime);
         Task<IEnumerable<DateTime>> GetClosedDatesAsync();
         Task<OpeningHoursModel> CreateOpeningHoursAsync(OpeningHoursCreateModel openingHours);
+        Task<bool> DeleteOpeningHoursAsync(OpeningHoursModel openingHours);
     }
 }

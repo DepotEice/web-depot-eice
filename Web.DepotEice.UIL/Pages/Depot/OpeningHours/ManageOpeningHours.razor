@@ -1,4 +1,4 @@
-﻿@page "/depot/createOpeningHours"
+﻿@page "/depot/manageOpeningHours"
 
 @using Web.DepotEice.BLL.IServices
 @using Web.DepotEice.BLL.Models
@@ -6,7 +6,7 @@
 @using Web.DepotEice.UIL.Models.Forms
 @using Web.DepotEice.UIL.ViewModels
 
-@inject ILogger<CreateOpeningHours> Logger;
+@inject ILogger<ManageOpeningHours> Logger;
 @inject IOpeningHoursService OpeningHoursService;
 
 <h3 class="text-center my-5">Gérer les heures d'ouvertures</h3>
@@ -84,6 +84,86 @@
 @code {
     private CreateOpeningHoursViewModel viewModel = new();
 
+    protected override async Task OnInitializedAsync()
+    {
+        var openingHoursfromRepo = await OpeningHoursService.GetOpeningHoursAsync();
+
+        var firstDay = openingHoursfromRepo.First().OpenAt;
+        var lastDay = openingHoursfromRepo.Last().CloseAt;
+
+        viewModel.StartDate = new DateTime(firstDay.Year, firstDay.Month, firstDay.Day);
+        viewModel.EndDate = new DateTime(lastDay.Year, lastDay.Month, lastDay.Day);
+
+        var firstMonday = openingHoursfromRepo.FirstOrDefault(oh => oh.OpenAt.DayOfWeek.Equals(DayOfWeek.Monday));
+
+        foreach (var day in viewModel.DayTimeSelectors)
+        {
+            var val = openingHoursfromRepo.FirstOrDefault(oh => oh.OpenAt.DayOfWeek == (DayOfWeek)day.DayOfWeek);
+
+            if (val is null)
+            {
+                day.IsSelected = false;
+                day.From = new DateTime();
+                day.To = new DateTime();
+            }
+            else
+            {
+                day.IsSelected = true;
+                day.From = val.OpenAt;
+                day.To = val.CloseAt;
+            }
+        }
+
+        for (DateTime dti = firstDay; dti <= lastDay; dti = dti.AddDays(1))
+        {
+            bool exist = openingHoursfromRepo.Any(oh =>
+                oh.OpenAt.Year == dti.Year && oh.OpenAt.Month == dti.Month && oh.OpenAt.Day == dti.Day);
+
+            bool isSelected = viewModel.DayTimeSelectors.Any(dts =>
+                dts.IsSelected && (DayOfWeek)dts.DayOfWeek == dti.DayOfWeek);
+
+            if (!exist && isSelected && dti.DayOfWeek != DayOfWeek.Sunday)
+            {
+                DateTime closedFrom = dti;
+                DateTime closedTo = dti;
+
+                bool closureOver = false;
+
+                for (DateTime cdt = dti.AddDays(1); cdt < lastDay && !closureOver; cdt = cdt.AddDays(1))
+                {
+                    bool cdtExist = openingHoursfromRepo.Any(oh =>
+                        oh.OpenAt.Year == cdt.Year && oh.OpenAt.Month == cdt.Month && oh.OpenAt.Day == cdt.Day);
+
+                    if (cdtExist)
+                    {
+                        closureOver = true;
+                    }
+
+                    bool cdtIsSelected = viewModel.DayTimeSelectors.Any(dts =>
+                        dts.IsSelected && (DayOfWeek)dts.DayOfWeek == cdt.DayOfWeek);
+
+                    if (!cdtExist && cdtIsSelected)
+                    {
+                        closedTo = cdt;
+                    }
+                }
+
+                viewModel.ExceptionalCloses.Add(new ExceptionalCloseForm()
+                    {
+                        From = closedFrom,
+                        To = closedTo,
+                        Id = viewModel.ExceptionalCloses.Count == 0
+                            ? 0
+                            : viewModel.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
+                    });
+
+                Logger.LogInformation(viewModel.ExceptionalCloses.Count.ToString());
+
+                dti = new DateTime(closedTo.Year, closedTo.Month, closedTo.Day);
+            }
+        }
+    }
+
     private void AddExceptionalClose()
     {
         viewModel.ExceptionalCloses.Add(new ExceptionalCloseForm(viewModel.ExceptionalCloses.Count));
@@ -120,6 +200,38 @@
             Logger.LogInformation("{item}", item);
         }
 
+        var openingHoursFromRepo = await OpeningHoursService.GetOpeningHoursAsync();
+
+        try
+        {
+            if (viewModel.StartDate < DateTime.Now)
+            {
+                openingHoursFromRepo = openingHoursFromRepo.Where(oh => oh.OpenAt >= DateTime.Now);
+            }
+
+
+            foreach (var item in openingHoursFromRepo)
+            {
+                var result = await OpeningHoursService.DeleteOpeningHoursAsync(item);
+
+                if (result)
+                {
+                    Logger.LogInformation("{date} - Opening Hours with ID \"{id}\" successfully deleted",
+                        DateTime.Now, item.Id);
+                }
+                else
+                {
+                    Logger.LogError("{date} - Couldn't delete opening hours with ID \"{id}\"",
+                        DateTime.Now, item.Id);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("{date} - An exception was thrown when trying to delete an opening hours : {e}",
+                DateTime.Now, e.Message);
+        }
+
 
         for (DateTime dti = viewModel.StartDate; dti <= viewModel.EndDate; dti = dti.AddDays(1))
         {
@@ -133,19 +245,19 @@
                 openingHoursToCreate.Add(new OpeningHoursCreateModel()
                     {
                         OpenAt = new DateTime(
-                                    dti.Year,
-                                    dti.Month,
-                                    dti.Day,
-                                    daySelector.From.Hour,
-                                    daySelector.From.Minute,
-                                    0),
+                                            dti.Year,
+                                            dti.Month,
+                                            dti.Day,
+                                            daySelector.From.Hour,
+                                            daySelector.From.Minute,
+                                            0),
                         CloseAt = new DateTime(
-                                    dti.Year,
-                                    dti.Month,
-                                    dti.Day,
-                                    daySelector.To.Hour,
-                                    daySelector.To.Minute,
-                                    0)
+                                            dti.Year,
+                                            dti.Month,
+                                            dti.Day,
+                                            daySelector.To.Hour,
+                                            daySelector.To.Minute,
+                                            0)
                     });
             }
         }

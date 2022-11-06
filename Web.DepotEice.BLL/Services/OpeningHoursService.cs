@@ -106,5 +106,19 @@ namespace Web.DepotEice.BLL.Services
 
             return createdOpeningHours;
         }
+
+        public async Task<bool> DeleteOpeningHoursAsync(OpeningHoursModel openingHours)
+        {
+            if (openingHours is null)
+            {
+                throw new ArgumentNullException(nameof(openingHours));
+            }
+
+            HttpResponseMessage response = await _httpClient.DeleteAsync($"OpeningHours/{openingHours.Id}");
+
+            response.EnsureSuccessStatusCode();
+
+            return true;
+        }
     }
 }

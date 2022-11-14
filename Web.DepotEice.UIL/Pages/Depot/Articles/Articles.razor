@@ -1,0 +1,25 @@
+﻿@page "/depot/articles"
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.ViewModels;
+
+@inject IArticleService ArticleService;
+
+<PageTitle>Articles</PageTitle>
+
+<div class="container">
+
+    <div class="row">
+    </div>
+
+</div>
+
+@code {
+    private ArticlesDepotViewModel _viewModel = new();
+    private List<ArticleModel> _articles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _articles = (await ArticleService.GetArticlesAsync()).ToList();
+    }
+}

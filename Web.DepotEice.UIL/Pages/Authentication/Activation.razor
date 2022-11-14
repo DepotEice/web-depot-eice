@@ -1,0 +1,39 @@
+﻿@page "/activation/{userId}/{userToken}"
+
+@using Web.DepotEice.UIL.Managers
+
+@inject ILogger<Activation> Logger;
+@inject UserManager UserManager;
+
+<h3 class="text-center my-5">@_activationResult</h3>
+
+@code {
+    [Parameter]
+    public string UserId { get; set; } = string.Empty;
+
+    [Parameter]
+    public string UserToken { get; set; } = string.Empty;
+
+    private string _activationResult = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            bool result = await UserManager.Activate(UserId, UserToken);
+
+            if (result)
+            {
+                _activationResult = "Votre compte a correctement été activé";
+            }
+            else
+            {
+                _activationResult = "Le jeton est invalide ou le lien est expiré";
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e.Message);
+        }
+    }
+}

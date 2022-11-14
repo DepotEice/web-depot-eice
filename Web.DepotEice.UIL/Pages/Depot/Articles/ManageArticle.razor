@@ -1,0 +1,61 @@
+﻿@page "/depot/managearticle/{ArticleId:int?}"
+
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models.Forms;
+@using Syncfusion.Blazor.RichTextEditor;
+
+@inject ILogger<ManageArticle> Logger;
+@inject IArticleService ArticleService;
+@inject IMapper Mapper;
+
+<h3>ArticleCreate</h3>
+
+<EditForm Model="_article" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator></DataAnnotationsValidator>
+
+    <div class="row border-bottom pb-3">
+        <div class="mb-3">
+            <label class="form-label">Date du premier jour d'ouverture</label>
+            <InputText class="form-control" @bind-Value="_article.Title" />
+        </div>
+    </div>
+
+    <div class="row">
+       <SfRichTextEditor>
+
+       </SfRichTextEditor>
+    </div>
+
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? ArticleId { get; set; }
+
+    private ArticleForm _article = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ArticleId is not null)
+        {
+            ArticleModel? articleFromRepo = await ArticleService.GetArticleAsync(ArticleId.Value);
+
+            if (articleFromRepo is not null)
+            {
+                _article = Mapper.Map<ArticleForm>(articleFromRepo);
+            }
+        }
+    }
+
+    public void HandleValidSubmit()
+    {
+
+    }
+
+    public void OnContentChanged()
+    {
+
+    }
+}

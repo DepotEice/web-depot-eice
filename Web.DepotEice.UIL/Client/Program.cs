@@ -16,7 +16,7 @@ namespace Company.WebApplication1
         public static async Task Main(string[] args)
         {
             SyncfusionLicenseProvider
-                .RegisterLicense("NzU5NDEyQDMyMzAyZTMzMmUzMGJFdTU3bHV2S01SY1hzVnpxcmJ0djBpN29TMlpCM1hnbk53blJ3a3BCdDQ9");
+                .RegisterLicense("");
 
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<Web.DepotEice.UIL.App>("#app");

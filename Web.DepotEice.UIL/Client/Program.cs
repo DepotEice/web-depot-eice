@@ -15,7 +15,8 @@ namespace Company.WebApplication1
         public static async Task Main(string[] args)
         {
             SyncfusionLicenseProvider
-                .RegisterLicense("");
+                .RegisterLicense(Environment.GetEnvironmentVariable("API_SYNCFUSION_SECRET") ??
+                    throw new NullReferenceException("There is no environment variable named API_SYNCFUSION_SECRET"));
 
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<Web.DepotEice.UIL.App>("#app");

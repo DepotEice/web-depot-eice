@@ -1,6 +1,5 @@
 using System.Data;
 using Blazored.LocalStorage;
-using Blazored.SessionStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Syncfusion.Blazor;
@@ -24,7 +23,6 @@ namespace Company.WebApplication1
 
             builder.Services.AddLogging();
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-            builder.Services.AddBlazoredSessionStorage();
             builder.Services.AddBlazoredLocalStorage();
             builder.Services.AddSyncfusionBlazor(options =>
             {

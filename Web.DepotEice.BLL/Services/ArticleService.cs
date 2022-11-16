@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Blazored.LocalStorage;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -13,9 +14,17 @@ namespace Web.DepotEice.BLL.Services
     public class ArticleService : IArticleService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILocalStorageService _localStorageService;
 
-        public ArticleService()
+        public ArticleService(ILocalStorageService localStorageService)
         {
+            if (localStorageService is null)
+            {
+                throw new ArgumentNullException(nameof(localStorageService));
+            }
+
+            _localStorageService = localStorageService;
+
             _httpClient = new HttpClient()
             {
                 BaseAddress = new Uri("https://localhost:7205/api/"),
@@ -54,6 +63,32 @@ namespace Web.DepotEice.BLL.Services
             }
 
             return articles;
+        }
+
+        public async Task<bool> CanPinArticleAsync()
+        {
+            IEnumerable<ArticleModel> articlesFromApi = await GetArticlesAsync();
+
+            return articlesFromApi.Count(a => a.IsPinned) < 12;
+        }
+
+        public async Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate)
+        {
+            if (articleCreate is null)
+            {
+                throw new ArgumentNullException(nameof(articleCreate));
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
+
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Articles", articleCreate);
+
+            response.EnsureSuccessStatusCode();
+
+            ArticleModel? createdArticle = await response.Content.ReadFromJsonAsync<ArticleModel>();
+
+            return createdArticle;
         }
     }
 }

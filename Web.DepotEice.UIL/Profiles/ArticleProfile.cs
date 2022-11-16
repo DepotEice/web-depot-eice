@@ -13,6 +13,8 @@ namespace Web.DepotEice.UIL.Profiles
                     dest => dest.Pinned,
                     opt => opt.MapFrom(
                         src => src.IsPinned));
+
+            CreateMap<ArticleForm, ArticleCreateModel>();
         }
     }
 }

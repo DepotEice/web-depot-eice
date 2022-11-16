@@ -11,5 +11,7 @@ namespace Web.DepotEice.BLL.IServices
     {
         Task<IEnumerable<ArticleModel>> GetArticlesAsync();
         Task<ArticleModel?> GetArticleAsync(int id);
+        Task<bool> CanPinArticleAsync();
+        Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate);
     }
 }

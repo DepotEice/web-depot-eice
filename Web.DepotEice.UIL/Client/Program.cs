@@ -12,11 +12,14 @@ namespace Company.WebApplication1
 {
     public class Program
     {
+        public static readonly string API_SYNCFUSION_SECRET = 
+            "NzU5NDEyQDMyMzAyZTMzMmUzMGJFdTU3bHV2S01SY1hzVnpxcmJ0djBpN29TMlpCM1hnbk53blJ3a3BCdDQ9";
+
         public static async Task Main(string[] args)
         {
+
             SyncfusionLicenseProvider
-                .RegisterLicense(Environment.GetEnvironmentVariable("API_SYNCFUSION_SECRET") ??
-                    throw new NullReferenceException("There is no environment variable named API_SYNCFUSION_SECRET"));
+                .RegisterLicense(API_SYNCFUSION_SECRET);
 
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<Web.DepotEice.UIL.App>("#app");

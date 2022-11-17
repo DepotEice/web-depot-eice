@@ -1,6 +1,7 @@
 ﻿@page "/depot/managearticle/{ArticleId:int?}"
 
 @using AutoMapper;
+@using Blazored.LocalStorage;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Models.Forms;
@@ -9,6 +10,7 @@
 @inject ILogger<ManageArticle> Logger;
 @inject IArticleService ArticleService;
 @inject IMapper Mapper;
+@inject ILocalStorageService LocalStorageService;
 
 <PageTitle>Gestion d'article</PageTitle>
 
@@ -29,7 +31,11 @@
 
     <div class="row my-3">
         <div class="mb-3">
-            <SfRichTextEditor Height="35rem" @bind-Value="_article.Body" />
+            <SfRichTextEditor Height="35rem" @bind-Value="_article.Body">
+                <RichTextEditorEvents BeforeUploadImage="BeforeUploadAsync" />
+                <RichTextEditorImageSettings Path="https://localhost:7205/api/Images/"
+                                             SaveUrl="https://localhost:7205/api/Images/" />
+            </SfRichTextEditor>
         </div>
     </div>
 
@@ -83,5 +89,13 @@
         {
             Logger.LogError($"{DateTime.Now} - {e.Message}");
         }
+    }
+
+    public async Task BeforeUploadAsync(ImageUploadingEventArgs args)
+    {
+        string token = await LocalStorageService.GetItemAsStringAsync("token");
+        args.CurrentRequest = new List<Object> { new { Authorization = $"Bearer {token}" } };
+
+        args.CustomFormData = new List<Object> { new { file = args.FilesData.FirstOrDefault() } };
     }
 }

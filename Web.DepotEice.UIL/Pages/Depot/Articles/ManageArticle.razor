@@ -95,7 +95,5 @@
     {
         string token = await LocalStorageService.GetItemAsStringAsync("token");
         args.CurrentRequest = new List<Object> { new { Authorization = $"Bearer {token}" } };
-
-        args.CustomFormData = new List<Object> { new { file = args.FilesData.FirstOrDefault() } };
     }
 }

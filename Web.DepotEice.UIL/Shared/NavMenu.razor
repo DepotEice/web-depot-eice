@@ -4,7 +4,7 @@
 
 <nav class="navbar navbar-expand-lg bg-light">
     <div class="container">
-        <a class="navbar-brand" href="#">EICE</a>
+        <a class="navbar-brand" href="#">IPAMC Ecaussinnes</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
                 aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -15,10 +15,10 @@
                     <NavLink class="nav-link" aria-current="page" href="/Index">Accueil</NavLink>
                 </li>
                 <li class="nav-item">
-                    <NavLink class="nav-link" href="#">Features</NavLink>
+                    <NavLink class="nav-link" href="blog">Blog</NavLink>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Pricing</a>
+                    <NavLink class="nav-link" href="appointment">Prendre rendez-vous</NavLink>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -31,6 +31,11 @@
                     </ul>
                 </li>
             </ul>
+
+            <a class="text-dark m-1" href="#" role="button" style="text-decoration: none;">
+                <i class="bi bi-chat" style="font-size: 1.5em;"></i>
+                Message
+            </a>
 
             <div class="dropdown m-1">
                 <a class="dropbox-toggle text-dark" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown"
@@ -49,6 +54,9 @@
                         </li>
                         <li>
                             <NavLink class="dropdown-item text-dark" href="depot">Depot</NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item text-dark" href="profile/appointments">Rendez-vous</NavLink>
                         </li>
                         <li>
                             <hr class="dropdown-divider">

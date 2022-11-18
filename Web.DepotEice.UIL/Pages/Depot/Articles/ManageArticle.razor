@@ -7,6 +7,7 @@
 @using Web.DepotEice.UIL.Models.Forms;
 @using Syncfusion.Blazor.RichTextEditor;
 
+@inject NavigationManager NavigationManager;
 @inject ILogger<ManageArticle> Logger;
 @inject IArticleService ArticleService;
 @inject IMapper Mapper;
@@ -39,7 +40,7 @@
         </div>
     </div>
 
-    <span class="text-danger">@_errorMessage</span>
+    <span class="text-danger">@_resultMessage</span>
 
     <button type="submit" class="btn btn-outline-primary">Enregistrer</button>
 
@@ -51,7 +52,7 @@
 
     private ArticleForm _article = new();
 
-    private string _errorMessage = string.Empty;
+    private string _resultMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,7 +71,7 @@
     {
         if (!await ArticleService.CanPinArticleAsync())
         {
-            _errorMessage = "Vous avez dépassé le nombre d'article maximum qu'il est possible d'épingler";
+            _resultMessage = "Vous avez dépassé le nombre d'article maximum qu'il est possible d'épingler";
             return;
         }
 
@@ -84,6 +85,8 @@
             {
                 Logger.LogError($"{DateTime.Now} - Article couldn't be created");
             }
+
+            NavigationManager.NavigateTo("depot/articles");
         }
         catch (Exception e)
         {

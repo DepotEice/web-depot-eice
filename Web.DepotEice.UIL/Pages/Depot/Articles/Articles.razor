@@ -3,23 +3,164 @@
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.ViewModels;
 
+@inject ILogger<Articles> Logger;
 @inject IArticleService ArticleService;
 
 <PageTitle>Articles</PageTitle>
 
 <div class="container">
+    <EditForm Model="_viewModel" OnValidSubmit="FilterSelectionAsync">
+        <div class="row py-3 border-bottom">
+            <div class="input-group mb-3">
+                <button class="btn btn-outline-secondary" type="button" id="clear" @onclick="ClearFiltersAsync">Clear</button>
+                <input type="text" class="form-control" placeholder="Texte de recherche" aria-label="texte de recherche"
+                       aria-describedby="recherche" />
+                <button class="btn btn-outline-secondary" type="submit" id="recherche">Recherche</button>
+            </div>
 
-    <div class="row">
+            <div class="row mb-3">
+                <div class="mb-3 col-lg-3">
+                    <label class="form-label">Inclure les articles supprimés</label>
+                    <InputCheckbox placeholder="Inclure les articles effacés" aria-label="article supprimés"
+                                   @bind-Value="_viewModel.SelectDeleted" />
+                </div>
+
+                <div class="mb-3 col-lg-4">
+                    <label class="form-label">A partir de :</label>
+                    <InputDate @bind-Value="_viewModel.From" class="form-control" />
+                </div>
+                <div class="mb-3 col-lg-4">
+                    <label class="form-label">Jusqu'au :</label>
+                    <InputDate @bind-Value="_viewModel.To" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row align-items-center">
+                <div class="col-lg-3 form-groups">
+                    <label class="form-label">Nombre d'articles à afficher</label>
+                    <InputSelect @bind-Value="_viewModel.ArticlesToDisplay" class="form-control float-end"
+                                 @onchange="NumberOfArticlesToDisplayChangedAsync">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </InputSelect>
+                </div>
+                <div class="col">
+                    <NavLink href="depot/managearticle" type="button" class="btn btn-outline-primary float-end">
+                        Ecrire un article
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+
+    <div class="d-flex my-3">
+
+        @foreach (var article in _articles)
+        {
+            <div class="card m-1" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        @article.Title
+                    </h5>
+
+                    <div class="d-flex flex-column">
+                        <span>Crée le @article.CreatedAt</span>
+
+                        @if (article.UpdatedAt is not null)
+                        {
+                            <span>Modifié le @article.UpdatedAt</span>
+                        }
+
+                        @if (article.DeletedAt is not null)
+                        {
+                            <span>Supprimé le @article.DeletedAt</span>
+                        }
+
+                        @if (article.IsPinned)
+                        {
+                            <span>Article épingler</span>
+                        }
+                    </div>
+
+                    <NavLink href="@article.ArticleUrl" class="card-link">Editer</NavLink>
+
+                    @if (article.DeletedAt is null)
+                    {
+                        <a class="mx-2" @onclick="( async () => await DeleteArticleAsync(article.Id))">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="mx-2" @onclick="(async () => await RestoreArticle(article.Id))">
+                            <i class="bi bi-arrow-90deg-left"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
     </div>
-
 </div>
 
 @code {
     private ArticlesDepotViewModel _viewModel = new();
+
     private List<ArticleModel> _articles = new();
 
     protected override async Task OnInitializedAsync()
     {
-        _articles = (await ArticleService.GetArticlesAsync()).ToList();
+        _articles = (await FilterArticlesAsync()).ToList();
+    }
+
+    public async Task ClearFiltersAsync()
+    {
+        _viewModel = new();
+
+        _articles = (await FilterArticlesAsync()).ToList();
+    }
+
+    public async Task FilterSelectionAsync()
+    {
+        _articles = (await FilterArticlesAsync()).ToList();
+    }
+
+    public async Task NumberOfArticlesToDisplayChangedAsync()
+    {
+        _articles = (await FilterArticlesAsync()).ToList();
+    }
+
+    private async Task<IEnumerable<ArticleModel>> FilterArticlesAsync()
+    {
+        return (await ArticleService.GetArticlesAsync())
+            .Where(a => (a.Title.Contains(_viewModel.Search, StringComparison.OrdinalIgnoreCase) ||
+                        a.Body.Contains(_viewModel.Search, StringComparison.OrdinalIgnoreCase)) &&
+                        (_viewModel.SelectDeleted
+                            ? a.DeletedAt is not null || a.DeletedAt is null
+                            : a.DeletedAt is null) &&
+                        a.CreatedAt >= _viewModel.From && a.CreatedAt <= _viewModel.To)
+            .Skip(_viewModel.ActualPage - 1 * 10)
+            .Take(_viewModel.ArticlesToDisplay)
+            .OrderByDescending(a => a.CreatedAt);
+    }
+
+    public async Task DeleteArticleAsync(int articleId)
+    {
+        if (await ArticleService.DeleteArticleAsync(articleId))
+        {
+            Logger.LogInformation($"{DateTime.Now} - Article with ID \"{articleId}\" successfully deleted");
+        }
+
+        _articles = (await FilterArticlesAsync()).ToList();
+    }
+
+    public async Task RestoreArticle(int articleId)
+    {
+        if (await ArticleService.RestoreArticleAsync(articleId))
+        {
+            Logger.LogInformation($"{DateTime.Now} - Article with ID \"{articleId}\" successfully restored");
+        }
+
+        _articles = (await FilterArticlesAsync()).ToList();
     }
 }

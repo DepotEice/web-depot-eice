@@ -16,5 +16,13 @@ namespace Web.DepotEice.BLL.Models
         public DateTime? DeletedAt { get; set; }
         public bool IsPinned { get; set; }
         public string UserId { get; set; } = string.Empty;
+
+        public string ArticleUrl
+        {
+            get
+            {
+                return $"depot/managearticle/{Id}";
+            }
+        }
     }
 }

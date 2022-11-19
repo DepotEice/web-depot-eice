@@ -12,7 +12,7 @@ namespace Company.WebApplication1
 {
     public class Program
     {
-        public static readonly string API_SYNCFUSION_SECRET = 
+        public static readonly string API_SYNCFUSION_SECRET =
             "NzU5NDEyQDMyMzAyZTMzMmUzMGJFdTU3bHV2S01SY1hzVnpxcmJ0djBpN29TMlpCM1hnbk53blJ3a3BCdDQ9";
 
         public static async Task Main(string[] args)

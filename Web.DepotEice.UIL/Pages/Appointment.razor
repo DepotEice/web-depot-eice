@@ -2,10 +2,12 @@
 
 @using Web.DepotEice.BLL.IServices
 @using Web.DepotEice.BLL.Models
+@using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models.Forms
 
 @inject ILogger<Appointment> Logger;
 @inject IOpeningHoursService OpeningHoursService;
+@inject UserManager UserManager;
 
 <PageTitle>Rendez-vous</PageTitle>
 
@@ -35,9 +37,20 @@
                 <span class="text-danger">@_validationMessage</span>
             </div>
             <div class="mb-3">
-                <button type="submit" class="btn btn-outline-primary mx-auto" @onclick="OnValidationSubmit">
-                    Se connecter
-                </button>
+                @if (UserManager.IsConnected)
+                {
+                    <button type="submit" class="btn btn-outline-primary mx-auto">
+                        Prendre rendez-vous
+                    </button>
+                }
+                else
+                {
+                    <span class="text-danger">
+                        Pour prendre rendez-vous, veuillez vous connecter ou vous s'inscrire en cliquant
+                    </span>
+                    <NavLink href="/login" class="" >ici</NavLink>
+                }
+
             </div>
         </EditForm>
     </div>

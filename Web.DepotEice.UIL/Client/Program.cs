@@ -43,6 +43,7 @@ namespace Company.WebApplication1
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IOpeningHoursService, OpeningHoursService>();
             builder.Services.AddScoped<IArticleService, ArticleService>();
+            builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 
             builder.Services.AddScoped<UserManager>();
 

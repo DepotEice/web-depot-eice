@@ -40,7 +40,7 @@
                     int x = i;
 
                     <button class="btn btn-outline-secondary m-1 @(_selectedIndex == x ? "active" : "")"
-                        @onclick="(async () => await SelectIndex(x))">
+                        @onclick="(() => SelectIndex(x))">
 
                         @_availableTimes[i].ToString("HH:mm")
                         -
@@ -88,7 +88,7 @@
         await LoadAvailableTimeSpans();
     }
 
-    private async Task SelectIndex(int index)
+    private void SelectIndex(int index)
     {
         _selectedIndex = index;
 

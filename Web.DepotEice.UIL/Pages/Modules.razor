@@ -1,0 +1,47 @@
+﻿@page "/modules"
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.UIL.Models;
+
+@inject IModuleService ModuleService;
+
+<div class="container">
+    <InfiniteScrolling ItemsProvider="GetItemsAsync">
+        <ItemTemplate Context="item">
+
+            <div class="container">
+                <div class="row border-bottom py-3 my-3">
+                    <h3 class="border-bottom py-2">@item.Title</h3>
+                    <p class="p-3">
+                        @item.Description
+                    </p>
+                    <span>@item.TeacherName</span>
+                    <a href="@item.ModuleUrl">Plus de détails</a>
+                </div>
+            </div>
+
+        </ItemTemplate>
+        <LoadingTemplate>
+            <div>Loading...</div>
+        </LoadingTemplate>
+    </InfiniteScrolling>
+</div>
+
+@code {
+    private async Task<IEnumerable<ModulePresentationModel>> GetItemsAsync(InfiniteScrollingItemsProviderRequest request)
+    {
+        var modules = await ModuleService.GetModulesAsync();
+
+        if (modules.Count() == 0)
+        {
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+        else if (modules.Count() < 10)
+        {
+            return (IEnumerable<ModulePresentationModel>)modules.ToList().GetRange(request.StartIndex, modules.Count());
+        }
+        else
+        {
+            return (IEnumerable<ModulePresentationModel>)modules.ToList().GetRange(request.StartIndex, 10);
+        }
+    }
+}

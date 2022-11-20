@@ -120,6 +120,63 @@
 
         </div>
 
+        <div class="my-4">
+            <div class="row border-bottom pb-3">
+                <div class="col-10">
+                    <h4 class="text-center align-bottom">Cours exceptionels</h4>
+                </div>
+
+                <div class="col-2">
+                    <button class="btn btn-outline-secondary float-end" type="button" disabled="@_moduleScheduleIsDisabled"
+                            @onclick="AddExceptionalSchedule">
+                        +
+                    </button>
+                </div>
+            </div>
+
+            @foreach (var exceptionalSchedule in _moduleScheduleForm.ExceptionalSchedules)
+            {
+                <div class="row my-3">
+                    <div class="col-lg-4 mx-2 my-1">
+                        <div class="d-inline-flex w-100">
+                            <label class="col-form-label col-3 me-3">A la date du :</label>
+                            <div class="col-sm-9">
+                                <InputDate class="form-control" @bind-Value="exceptionalSchedule.Date" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 mx-2 my-1">
+                        <div class="d-inline-flex w-100">
+                            <label class="col-form-label col-3 me-3">De :</label>
+                            <div class="col-sm-9">
+                                <RadzenDatePicker TValue="DateTime?" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
+                                              ShowTimeOkButton="true"
+                                              Change=@(args => OnChangeFrom(args, "Time-only DatePicker", "HH:mm", exceptionalSchedule.Id))
+                                              Class="w-100" Value="exceptionalSchedule.From" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 mx-2 my-1">
+                        <div class="d-inline-flex w-100">
+                            <label class="col-form-label col-3 me-3">A :</label>
+                            <div class="col-sm-9">
+                                <RadzenDatePicker TValue="DateTime?" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
+                                              ShowTimeOkButton="true"
+                                              Change=@(args => OnChangeTo(args, "Time-only DatePicker", "HH:mm", exceptionalSchedule.Id))
+                                              Class="w-100" Value="exceptionalSchedule.To" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-1 mx-2 my-1">
+                        <button class="btn btn-outline-danger" type="button"
+                            @onclick="@(() => RemoveExceptionalSchedule(exceptionalSchedule.Id))">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
         <div class="mb-3">
             <button type="submit" class="btn btn-outline-primary float-end" disabled="@_moduleScheduleIsDisabled">
                 Enregistrer
@@ -224,8 +281,8 @@
                             From = closedFrom,
                             To = closedTo,
                             Id = _moduleScheduleForm.ExceptionalCloses.Count == 0
-                                                                        ? 0
-                                                                        : _moduleScheduleForm.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
+                                                                                    ? 0
+                                                                                    : _moduleScheduleForm.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
                         });
 
                     dti = new DateTime(closedTo.Year, closedTo.Month, closedTo.Day);
@@ -299,9 +356,9 @@
                 schedulesToCreate.Add(new ScheduleForm()
                     {
                         StartAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelection.From.Hour,
-                                            daySelection.From.Minute, 0),
+                                                    daySelection.From.Minute, 0),
                         EndAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelection.To.Hour,
-                                            daySelection.To.Minute, 0),
+                                                    daySelection.To.Minute, 0),
                     });
             }
         }
@@ -326,6 +383,37 @@
             }
         }
 
+        foreach (var exceptionalSchedule in _moduleScheduleForm.ExceptionalSchedules)
+        {
+            try
+            {
+                DateTime scheduleFrom = new DateTime(exceptionalSchedule.Date.Year, exceptionalSchedule.Date.Month,
+                    exceptionalSchedule.Date.Day, exceptionalSchedule.From.Hour, exceptionalSchedule.From.Minute, 0);
+
+                DateTime scheduleTo = new DateTime(exceptionalSchedule.Date.Year, exceptionalSchedule.Date.Month,
+                    exceptionalSchedule.Date.Day, exceptionalSchedule.To.Hour, exceptionalSchedule.To.Minute, 0);
+
+                ScheduleCreateModel scheduleCreate = new ScheduleCreateModel()
+                    {
+                        StartAt = scheduleFrom,
+                        EndAt = scheduleTo
+                    };
+
+                var createdSchedule = await ModuleService.CreateScheduleAsync(Id.Value, scheduleCreate);
+
+                if (createdSchedule is null)
+                {
+                    Logger.LogError($"{DateTime.Now} - The creation of the exceptional schedule for date \"{scheduleFrom}\" " +
+                        $"failed");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to create an exceptional schedule\n"
+                    + $"{e.Message}\n{e.StackTrace}");
+            }
+        }
+
         Logger.LogInformation($"{DateTime.Now} - Form submitted");
     }
 
@@ -333,7 +421,7 @@
     {
         _moduleScheduleForm.ExceptionalCloses.Add(new ExceptionalCloseForm(_moduleScheduleForm.ExceptionalCloses.Count));
         Logger.LogInformation($"{DateTime.Now} - The number of exceptional closes is " +
-            "\"{_moduleScheduleForm.ExceptionalCloses.Count}\"");
+            $"\"{_moduleScheduleForm.ExceptionalCloses.Count}\"");
     }
 
     private void RemoveExceptionalClose(int id)
@@ -344,17 +432,91 @@
 
             if (element is null)
             {
-                Logger.LogWarning($"{DateTime.Now} - There is not element in the list with ID \"{id}\"");
+                Logger.LogWarning($"{DateTime.Now} - There is no element in the list with ID \"{id}\"");
             }
             else
             {
                 _moduleScheduleForm.ExceptionalCloses.Remove(element);
+                StateHasChanged();
             }
         }
         catch (Exception e)
         {
             Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to remove an exceptional close :\n" +
                 $"{e.Message}\n{e.StackTrace}");
+        }
+    }
+
+    private void AddExceptionalSchedule()
+    {
+        _moduleScheduleForm.ExceptionalSchedules.Add(new ExceptionalScheduleForm(_moduleScheduleForm.ExceptionalSchedules.Count));
+
+        StateHasChanged();
+
+        Logger.LogInformation($"{DateTime.Now} - The number of exceptional schedules is " +
+            $"\"{_moduleScheduleForm.ExceptionalSchedules.Count}\"");
+    }
+
+    private void RemoveExceptionalSchedule(int id)
+    {
+        try
+        {
+            var element = _moduleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
+
+            if (element is null)
+            {
+                Logger.LogWarning($"{DateTime.Now} - There is no element in the list with ID \"{id}\"");
+            }
+            else
+            {
+                _moduleScheduleForm.ExceptionalSchedules.Remove(element);
+                StateHasChanged();
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to remove an exceptional schedule :\n" +
+                $"{e.Message}\n{e.StackTrace}");
+        }
+    }
+
+    private void OnChangeFrom(DateTime? value, string name, string format, int id)
+    {
+        if (value.HasValue)
+        {
+            Logger.LogInformation(value.Value.ToString());
+
+            var element = _moduleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
+
+            if (element is not null)
+            {
+                int index = _moduleScheduleForm.ExceptionalSchedules.IndexOf(element);
+
+                _moduleScheduleForm.ExceptionalSchedules[index].From = value.Value;
+
+                Logger.LogInformation($"{DateTime.Now} - {nameof(element.From)} new value " +
+                    $"{_moduleScheduleForm.ExceptionalSchedules[index].From.ToString()}");
+            }
+        }
+    }
+
+    private void OnChangeTo(DateTime? value, string name, string format, int id)
+    {
+        if (value.HasValue)
+        {
+            Logger.LogInformation(value.Value.ToString());
+
+            var element = _moduleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
+
+            if (element is not null)
+            {
+                int index = _moduleScheduleForm.ExceptionalSchedules.IndexOf(element);
+
+                _moduleScheduleForm.ExceptionalSchedules[index].To = value.Value;
+
+                Logger.LogInformation($"{DateTime.Now} - {nameof(element.To)} New value " +
+                    $"{_moduleScheduleForm.ExceptionalSchedules[index].To.ToString()}");
+            }
         }
     }
 }

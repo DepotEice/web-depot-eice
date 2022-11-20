@@ -8,6 +8,7 @@ namespace Web.DepotEice.UIL.Models.Forms
         public DateTime EndDate { get; set; } = DateTime.Now;
         public List<DayTimeSelectorModel> DayTimeSelectors { get; set; }
         public List<ExceptionalCloseForm> ExceptionalCloses { get; set; } = new();
+        public List<ExceptionalScheduleForm> ExceptionalSchedules { get; set; } = new();
 
         public ModuleScheduleForm()
         {

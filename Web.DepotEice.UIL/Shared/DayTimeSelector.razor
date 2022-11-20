@@ -6,27 +6,52 @@
     <h4>@DayTimeSelectorModel.DayOfWeek</h4>
     <br />
     <label>Sélectionner</label>
-    <InputCheckbox DisplayName="Sélectionner" @bind-Value="DayTimeSelectorModel.IsSelected" />
+    <InputCheckbox DisplayName="Sélectionner" @bind-Value="DayTimeSelectorModel.IsSelected" disabled="@Disabled"
+                   @onclick="OnCheckBoxChanged" />
     <br />
     <label class="my-2">Début</label>
     <RadzenDatePicker TValue="DateTime?" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
                       ShowTimeOkButton="true"
                       Change=@(args => OnChangeFrom(args, "Time-only DatePicker", "HH:mm")) Class="w-100"
-                      Value="DayTimeSelectorModel.From" Disabled="!DayTimeSelectorModel.IsSelected" />
+                      Value="DayTimeSelectorModel.From" Disabled="_isSelected == false" />
     <label class="my-2">Fin</label>
     <RadzenDatePicker TValue="DateTime?" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
                       ShowTimeOkButton="true"
                       Change=@(args => OnChangeTo(args, "Time-only DatePicker", "HH:mm")) Class="w-100"
-                      Value="DayTimeSelectorModel.To" Disabled="!DayTimeSelectorModel.IsSelected" />
+                      Value="DayTimeSelectorModel.To" Disabled="_isSelected == false" />
 </div>
 
 @code {
     [Parameter]
     public DayTimeSelectorModel DayTimeSelectorModel { get; set; } = new();
 
+    [Parameter]
+    public bool Disabled { get; set; } = true;
+
+    private bool _isSelected = false;
+
+    protected override void OnInitialized()
+    {
+        _isSelected = DayTimeSelectorModel.IsSelected;
+    }
+
+    private void OnCheckBoxChanged()
+    {
+        DayTimeSelectorModel.IsSelected = !DayTimeSelectorModel.IsSelected;
+
+        if (DayTimeSelectorModel.IsSelected)
+        {
+            _isSelected = true;
+        }
+        else
+        {
+            _isSelected = false;
+        }
+    }
+
     private void OnChangeFrom(DateTime? value, string name, string format)
     {
-        if(value.HasValue)
+        if (value.HasValue)
         {
             DayTimeSelectorModel.From = value.Value;
             Logger.LogInformation("{date} - TimePicker value changed \"{value}\"", value.Value);

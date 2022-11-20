@@ -6,11 +6,10 @@ using System.Threading.Tasks;
 
 namespace Web.DepotEice.BLL.Models
 {
-    public class ModuleModel
+    public class ModuleCreationModel
     {
-        public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string? TeacherId { get; set; }
+        public string? TeacherId { get; set; } = string.Empty;
     }
 }

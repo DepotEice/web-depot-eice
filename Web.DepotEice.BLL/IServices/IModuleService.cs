@@ -10,5 +10,10 @@ namespace Web.DepotEice.BLL.IServices
     public interface IModuleService
     {
         Task<IEnumerable<ModuleModel>> GetModulesAsync();
+        Task<ModuleModel?> CreateModuleAsync(ModuleCreationModel moduleCreation);
+        Task<ModuleModel?> GetModuleAsync(int id);
+        Task<ScheduleModel?> CreateScheduleAsync(int moduleId, ScheduleCreateModel scheduleCreate);
+        Task<IEnumerable<ScheduleModel>> GetModuleSchedulesAsync(int moduleId);
+        Task<bool> DeleteScheduleAsync(int moduleId, int scheduleId);
     }
 }

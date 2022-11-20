@@ -24,6 +24,22 @@ namespace Web.DepotEice.BLL.Services
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        public async Task<IEnumerable<UserModel>> GetTeachersAsync()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync("Users/Teachers");
+
+            response.EnsureSuccessStatusCode();
+
+            IEnumerable<UserModel>? result = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
+
+            if (result is null)
+            {
+                return Enumerable.Empty<UserModel>();
+            }
+
+            return result;
+        }
+
         public async Task<bool> UpdatePassword(PasswordUpdateModel passwordUpdate, string? token = null)
         {
             if (passwordUpdate is null)

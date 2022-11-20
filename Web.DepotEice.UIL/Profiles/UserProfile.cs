@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Web.DepotEice.BLL.Models;
+using Web.DepotEice.UIL.Models;
 using Web.DepotEice.UIL.Models.Forms;
 
 namespace Web.DepotEice.UIL.Profiles
@@ -9,6 +10,12 @@ namespace Web.DepotEice.UIL.Profiles
         public UserProfile()
         {
             CreateMap<UpdatePasswordForm, PasswordUpdateModel>();
+
+            CreateMap<UserModel, UserSelectionModel>()
+                .ForMember(
+                    dest => dest.FullName,
+                    opt => opt.MapFrom(
+                        src => $"{src.LastName.ToUpper()} {src.FirstName}"));
         }
     }
 }

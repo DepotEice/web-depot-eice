@@ -33,6 +33,31 @@ namespace Web.DepotEice.BLL.Services
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        public async Task<ModuleModel?> CreateModuleAsync(ModuleCreationModel moduleCreation)
+        {
+            if (moduleCreation is null)
+            {
+                throw new ArgumentNullException(nameof(moduleCreation));
+            }
+
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Modules", moduleCreation);
+
+            response.EnsureSuccessStatusCode();
+
+            ModuleModel? result = await response.Content.ReadFromJsonAsync<ModuleModel>();
+
+            return result;
+        }
+
+        public async Task<ModuleModel?> GetModuleAsync(int id)
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{id}");
+
+            var result = await response.Content.ReadFromJsonAsync<ModuleModel>();
+
+            return result;
+        }
+
         public async Task<IEnumerable<ModuleModel>> GetModulesAsync()
         {
             string? token = await _localStorageService.GetItemAsStringAsync("token");
@@ -51,6 +76,47 @@ namespace Web.DepotEice.BLL.Services
             }
 
             return result;
+        }
+
+        public async Task<ScheduleModel?> CreateScheduleAsync(int moduleId, ScheduleCreateModel scheduleCreate)
+        {
+            if (scheduleCreate is null)
+            {
+                throw new ArgumentNullException(nameof(scheduleCreate));
+            }
+
+            HttpResponseMessage response =
+                await _httpClient.PostAsJsonAsync($"Modules/{moduleId}/Schedules", scheduleCreate);
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<ScheduleModel>();
+        }
+
+        public async Task<IEnumerable<ScheduleModel>> GetModuleSchedulesAsync(int moduleId)
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/Schedules");
+
+            response.EnsureSuccessStatusCode();
+
+            IEnumerable<ScheduleModel>? result = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
+
+            if (result is null)
+            {
+                return Enumerable.Empty<ScheduleModel>();
+            }
+
+            return result;
+        }
+
+        public async Task<bool> DeleteScheduleAsync(int moduleId, int scheduleId)
+        {
+            HttpResponseMessage response =
+                await _httpClient.DeleteAsync($"Modules/{moduleId}/Schedules/{scheduleId}");
+
+            response.EnsureSuccessStatusCode();
+
+            return response.IsSuccessStatusCode;
         }
     }
 }

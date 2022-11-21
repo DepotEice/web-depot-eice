@@ -1,0 +1,41 @@
+﻿@page "/depot/modulerequests"
+@using AutoMapper;
+@using Syncfusion.Blazor.Grids
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.UIL.Models;
+
+@inject ILogger<ModuleRequests> Logger;
+@inject IMapper Mapper;
+@inject IModuleService ModuleService;
+
+<h3>ModuleRequest</h3>
+
+<div class="container">
+    <div>
+        <SfGrid DataSource="@_users" EnableHeaderFocus="true" EnableAdaptiveUI="true" AllowFiltering="true"
+                AllowSorting="true">
+
+            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
+            <GridPageSettings PageSize="50"></GridPageSettings>
+            <GridSelectionSettings CheckboxOnly="true" PersistSelection="true" Type="SelectionType.Multiple"></GridSelectionSettings>
+            <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="false" AllowEditOnDblClick="false"
+                              AllowNextRowEdit="false"></GridEditSettings>
+
+            <GridColumns>
+                <GridColumn Type="ColumnType.CheckBox" AllowFiltering="false" AllowSorting="false" Width="60"></GridColumn>
+                <GridColumn Field="ID" HeaderText="ID de l'utilisateur" IsPrimaryKey="true"></GridColumn>
+                <GridColumn Field="Prénom" HeaderTemplate="Prénom"></GridColumn>
+            </GridColumns>
+
+        </SfGrid>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<UserModuleRequestModel> _users = new List<UserModuleRequestModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _users = await ModuleService.GetUsersRequestingModules();
+    }
+}

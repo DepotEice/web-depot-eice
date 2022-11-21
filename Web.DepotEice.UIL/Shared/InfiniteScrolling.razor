@@ -36,7 +36,9 @@
     public async Task LoadMoreItems()
     {
         if (_loading)
+        {
             return;
+        }
 
         _loading = true;
         try

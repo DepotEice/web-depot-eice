@@ -13,6 +13,7 @@ namespace Web.DepotEice.BLL.IServices
         Task<ArticleModel?> GetArticleAsync(int id);
         Task<bool> CanPinArticleAsync();
         Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate);
+        Task<ArticleModel?> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate);
         Task<bool> DeleteArticleAsync(int id);
         Task<bool> RestoreArticleAsync(int id);
     }

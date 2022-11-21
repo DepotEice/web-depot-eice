@@ -118,5 +118,22 @@ namespace Web.DepotEice.BLL.Services
 
             return response.IsSuccessStatusCode;
         }
+
+        public async Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules()
+        {
+            HttpResponseMessage response =
+                await _httpClient.GetAsync("Modules/RequestingUsers");
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<IEnumerable<UserModuleRequestModel>>();
+
+            if (result is null)
+            {
+                return Enumerable.Empty<UserModuleRequestModel>();
+            }
+
+            return result;
+        }
     }
 }

@@ -110,5 +110,22 @@ namespace Web.DepotEice.BLL.Services
 
             return response.IsSuccessStatusCode;
         }
+
+        public async Task<ArticleModel?> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate)
+        {
+            if (articleUpdate is null)
+            {
+                throw new ArgumentNullException(nameof(articleUpdate));
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
+
+            HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"Articles/{id}", articleUpdate);
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<ArticleModel>();
+        }
     }
 }

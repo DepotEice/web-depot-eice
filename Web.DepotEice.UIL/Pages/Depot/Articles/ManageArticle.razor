@@ -80,11 +80,23 @@
 
         try
         {
-            ArticleModel? result = await ArticleService.CreateArticleAsync(articleModel);
-
-            if (result is null)
+            if (ArticleId is null)
             {
-                Logger.LogError($"{DateTime.Now} - Article couldn't be created");
+                ArticleModel? result = await ArticleService.CreateArticleAsync(articleModel);
+
+                if (result is null)
+                {
+                    Logger.LogError($"{DateTime.Now} - Article couldn't be created");
+                }
+            }
+            else
+            {
+                ArticleModel? result = await ArticleService.UpdateArticleAsync(ArticleId.Value, articleModel);
+
+                if (result is null)
+                {
+                    Logger.LogError($"{DateTime.Now} - Article with ID \"{ArticleId}\" couldn't be updated");
+                }
             }
 
             NavigationManager.NavigateTo("depot/articles");

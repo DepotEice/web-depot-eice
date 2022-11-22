@@ -56,5 +56,19 @@ namespace Web.DepotEice.BLL.Services
 
             return true;
         }
+
+        public async Task<UserModel?> GetUserAsync(string? userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                return null;
+            }
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Users/{userId}");
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<UserModel>();
+        }
     }
 }

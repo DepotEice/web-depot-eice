@@ -1,8 +1,13 @@
 ﻿@page "/modules"
+@using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.UIL.Models;
 
+@inject ILogger<Modules> Logger;
+@inject IMapper Mapper;
 @inject IModuleService ModuleService;
+
+<h3 class="text-center my-5">Modules disponibles</h3>
 
 <div class="container">
     <InfiniteScrolling ItemsProvider="GetItemsAsync">
@@ -29,19 +34,40 @@
 @code {
     private async Task<IEnumerable<ModulePresentationModel>> GetItemsAsync(InfiniteScrollingItemsProviderRequest request)
     {
-        var modules = await ModuleService.GetModulesAsync();
+        var modulesFromRepo = await ModuleService.GetModulesAsync();
 
-        if (modules.Count() == 0)
+        if (modulesFromRepo.Count() == 0)
         {
             return Enumerable.Empty<ModulePresentationModel>();
         }
-        else if (modules.Count() < 10)
+
+        if (request.StartIndex >= modulesFromRepo.Count())
         {
-            return (IEnumerable<ModulePresentationModel>)modules.ToList().GetRange(request.StartIndex, modules.Count());
+            return Enumerable.Empty<ModulePresentationModel>();
         }
-        else
+
+        try
         {
-            return (IEnumerable<ModulePresentationModel>)modules.ToList().GetRange(request.StartIndex, 10);
+            modulesFromRepo = modulesFromRepo.ToList().GetRange(request.StartIndex,
+               modulesFromRepo.Count() - request.StartIndex > 20
+               ? 20
+               : modulesFromRepo.Count());
+
+            var modules = Mapper.Map<IEnumerable<ModulePresentationModel>>(modulesFromRepo);
+
+            return modules;
+        }
+        catch (ArgumentOutOfRangeException e)
+        {
+            Logger.LogError($"{DateTime.Now} - One of the argument is out of range.\n{e.Message}\n{e.StackTrace}");
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to load the rest of the data.\n" +
+                $"{e.Message}\n{e.StackTrace}");
+
+            return Enumerable.Empty<ModulePresentationModel>();
         }
     }
 }

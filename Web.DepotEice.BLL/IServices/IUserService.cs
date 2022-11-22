@@ -11,5 +11,7 @@ namespace Web.DepotEice.BLL.IServices
     {
         Task<bool> UpdatePassword(PasswordUpdateModel passwordUpdate, string? token = null);
         Task<IEnumerable<UserModel>> GetTeachersAsync();
+
+        Task<UserModel?> GetUserAsync(string? id);
     }
 }

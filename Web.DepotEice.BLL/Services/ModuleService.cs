@@ -135,5 +135,65 @@ namespace Web.DepotEice.BLL.Services
 
             return result;
         }
+
+        public async Task<bool?> UserIsAccepted(int moduleId)
+        {
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response =
+                await _httpClient.GetAsync($"Modules/{moduleId}/UserRequestStatus");
+
+            bool? result = await response.Content.ReadFromJsonAsync<bool>();
+
+            if (result is null)
+            {
+                return false;
+            }
+
+            return result.Value;
+        }
+
+        public async Task<bool?> UserIsAccepted(int moduleId, string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response =
+                await _httpClient.GetAsync($"Modules/{moduleId}/UserRequestStatus/{userId}");
+
+            bool? result = await response.Content.ReadFromJsonAsync<bool>();
+
+            if (result is null)
+            {
+                return false;
+            }
+
+            return result.Value;
+        }
+
+        public async Task<bool> RequestAcceptance(int moduleId)
+        {
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response =
+                await _httpClient.PostAsync($"Modules/{moduleId}/RequestAcceptance", null);
+
+            return response.IsSuccessStatusCode;
+        }
     }
 }

@@ -67,6 +67,8 @@
     protected override async Task OnInitializedAsync()
     {
         // TODO : Récupérer les utilisateurs ajoutés à un module mais qui n'ont pas encore le status accepté
+
+        _numberOfAcceptationDemands = (await ModuleService.GetUsersRequestingModules()).Count();
     }
 
     private async Task HandleFiltersValidSubmitAsync()
@@ -102,13 +104,6 @@
 
         try
         {
-            // 57
-            // 0 - 20
-            // 37
-            // 21 - 40
-            // 17
-            // 41 - 57
-            //
             modulesFromRepo = modulesFromRepo.ToList().GetRange(request.StartIndex,
                modulesFromRepo.Count() - request.StartIndex > 20
                ? 20

@@ -16,5 +16,8 @@ namespace Web.DepotEice.BLL.IServices
         Task<IEnumerable<ScheduleModel>> GetModuleSchedulesAsync(int moduleId);
         Task<bool> DeleteScheduleAsync(int moduleId, int scheduleId);
         Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules();
+        Task<bool?> UserIsAccepted(int moduleId);
+        Task<bool?> UserIsAccepted(int moduleId, string userId);
+        Task<bool> RequestAcceptance(int moduleId);
     }
 }

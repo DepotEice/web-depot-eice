@@ -195,5 +195,105 @@ namespace Web.DepotEice.BLL.Services
 
             return response.IsSuccessStatusCode;
         }
+
+        public async Task<IEnumerable<ScheduleModel>> GetSchedulesAsync()
+        {
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return Enumerable.Empty<ScheduleModel>();
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response = await _httpClient.GetAsync("Modules/Schedules");
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
+
+            if (result is null)
+            {
+                return Enumerable.Empty<ScheduleModel>();
+            }
+
+            return result;
+        }
+
+        public async Task<IEnumerable<ScheduleModel>> GetSchedulesAsync(int moduleId)
+        {
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return Enumerable.Empty<ScheduleModel>();
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/Schedules");
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
+
+            if (result is null)
+            {
+                return Enumerable.Empty<ScheduleModel>();
+            }
+
+            return result;
+        }
+
+        public async Task<ScheduleModel?> GetScheduleAsync(int id)
+        {
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return null;
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/Schedules/{id}");
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<ScheduleModel>();
+
+            return result;
+        }
+
+        public async Task<IEnumerable<ScheduleFileModel>> GetScheduleFilesAsync(int scheduleId)
+        {
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return Enumerable.Empty<ScheduleFileModel>();
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{scheduleId}/Files");
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleFileModel>>();
+
+            if (result is null)
+            {
+                return Enumerable.Empty<ScheduleFileModel>();
+            }
+
+            return result;
+        }
+
+        public Task<ScheduleFileModel?> GetScheduleFileAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

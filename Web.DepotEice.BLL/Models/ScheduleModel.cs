@@ -13,5 +13,11 @@ namespace Web.DepotEice.BLL.Models
         public string Details { get; set; } = string.Empty;
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
+        public int ModuleId { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id}\n{Title}\n{Details}\n{StartAt}\n{EndAt}\n{ModuleId}";
+        }
     }
 }

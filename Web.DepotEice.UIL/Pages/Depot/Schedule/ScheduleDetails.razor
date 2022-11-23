@@ -1,0 +1,118 @@
+﻿@page "/depot/schedules/{Id:int}/details"
+
+@inject ILogger<ScheduleDetails> Logger;
+@inject IMapper Mapper;
+@inject IModuleService ModuleService;
+@inject IUserService UserService;
+
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.UIL.Models;
+
+<PageTitle>EICE Dépot - @_scheduleDetails.Title</PageTitle>
+
+<h3 class="text-center  my-5">Détails</h3>
+
+
+<div class="container">
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <span class="text-danger fs-4">@_errorMessage</span>
+    }
+
+    <div class="row my-3">
+        <span class="fs-5">
+            Module : @_scheduleDetails.ModuleName
+        </span>
+
+        <span class="fs-5">
+            Professeur en charge : @_scheduleDetails.TeacherName
+        </span>
+    </div>
+    <EditForm Model="_scheduleDetails">
+
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+
+        <div class="border-bottom pb-3">
+            <div class="row mb-3">
+                <label class="form-label">Intitulé</label>
+                <InputText class="form-control" @bind-Value="_scheduleDetails.Title" />
+            </div>
+
+            <div class="row mb-3">
+                <label class="form-label">Détails</label>
+                <InputTextArea class="form-control" style="height:25rem" @bind-Value="_scheduleDetails.Details" />
+            </div>
+        </div>
+
+        <div class="my-4 border-bottom">
+            <div class="row my-3">
+                <h4 class="text-center align-bottom">Fichiers</h4>
+            </div>
+
+            <div class="my-3">
+                <InputFile class="form-control" OnChange="OnFileChangedAsync" />
+            </div>
+
+            @foreach (var file in _scheduleDetails.ScheduleFiles)
+            {
+                <div class="input-group mb-3">
+                    @*<span class="form-control" style="min-width:50%">blabla</span>*@
+                    <NavLink href="@file.FileUrl" class="form-control" style="min-width:50%" />
+                    <button type="button" class="btn btn-outline-danger" @onclick="(async () => await DownloadFileAsync(file.Id))">
+                        X
+                    </button>
+                </div>
+            }
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private ScheduleDetailsModel _scheduleDetails = new();
+
+    private string _errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var scheduleFromService = await ModuleService.GetScheduleAsync(Id);
+
+        if (scheduleFromService is null)
+        {
+            _errorMessage = $"Le cours que vous essayez de récupérer n'existe pas!";
+            return;
+        }
+
+        ScheduleDetailsModel schedule = Mapper.Map<ScheduleDetailsModel>(scheduleFromService);
+
+        var module = await ModuleService.GetModuleAsync(schedule.ModuleId);
+        var user = await UserService.GetUserAsync(module.TeacherId);
+
+        if (user is not null)
+        {
+            scheduleModel.TeacherName = $"{user.LastName.ToUpper()} {user.FirstName}";
+        }
+
+        schedule.ModuleName = module.Name;
+        schedule.ScheduleFiles = await ModuleService.GetScheduleFilesAsync(Id);
+    }
+
+    public async Task DownloadFileAsync(int fileId)
+    {
+        // TODO : Download file from API
+    }
+
+    public async Task OnFileChangedAsync(InputFileChangeEventArgs args)
+    {
+
+    }
+
+    public async Task HandleValidSubmit()
+    {
+        // TODO : Delete file from file system
+    }
+}

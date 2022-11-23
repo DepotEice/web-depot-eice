@@ -33,7 +33,17 @@ namespace Web.DepotEice.UIL.Profiles
                     opt => opt.MapFrom(
                         src => src.Description.Substring(0, src.Description.Length > 250 ? 250 : src.Description.Length)));
 
-            CreateMap<BLL.Models.ModuleModel, ModuleModel>();
+            CreateMap<BLL.Models.ModuleModel, UIL.Models.ModuleModel>();
+
+            CreateMap<BLL.Models.ScheduleModel, UIL.Models.ScheduleModel>()
+                .ForMember(
+                    dest => dest.StartTime,
+                    opt => opt.MapFrom(
+                        src => src.StartAt))
+                .ForMember(
+                    dest => dest.EndTime,
+                    opt => opt.MapFrom(
+                        src => src.EndAt));
         }
     }
 }

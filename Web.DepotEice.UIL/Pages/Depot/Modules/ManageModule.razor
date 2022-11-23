@@ -315,7 +315,7 @@
 
         List<ScheduleForm> schedulesToCreate = new();
 
-        IEnumerable<ScheduleModel> schedulesFromRepo = await ModuleService.GetModuleSchedulesAsync(Id.Value);
+        IEnumerable<BLL.Models.ScheduleModel> schedulesFromRepo = await ModuleService.GetModuleSchedulesAsync(Id.Value);
 
         try
         {

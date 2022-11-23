@@ -14,6 +14,7 @@ namespace Web.DepotEice.UIL.Managers
         private readonly ILocalStorageService _localStorageService;
         private readonly ISyncLocalStorageService _syncLocalStorageService;
         private readonly IAuthService _authService;
+        private readonly IRoleService _roleService;
 
         public bool IsConnected
         {
@@ -26,7 +27,7 @@ namespace Web.DepotEice.UIL.Managers
         }
 
         public UserManager(ILogger<UserManager> logger, IMapper mapper, ILocalStorageService localStorageService,
-            ISyncLocalStorageService syncLocalStorageService, IAuthService authService)
+            ISyncLocalStorageService syncLocalStorageService, IAuthService authService, IRoleService roleService)
         {
             if (logger is null)
             {
@@ -53,11 +54,17 @@ namespace Web.DepotEice.UIL.Managers
                 throw new ArgumentNullException(nameof(authService));
             }
 
+            if (roleService is null)
+            {
+                throw new ArgumentNullException(nameof(roleService));
+            }
+
             _logger = logger;
             _mapper = mapper;
             _localStorageService = localStorageService;
             _syncLocalStorageService = syncLocalStorageService;
             _authService = authService;
+            _roleService = roleService;
         }
 
         public async Task<bool> SignInAsync(SignInForm signInForm)
@@ -149,6 +156,18 @@ namespace Web.DepotEice.UIL.Managers
             }
 
             return await _authService.Activate(userId, token);
+        }
+
+        public async Task<bool> IsInRoleAsync(string role)
+        {
+            if (string.IsNullOrEmpty(role))
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+
+            bool result = await _roleService.UserHasRoleAsync(role);
+
+            return result;
         }
     }
 }

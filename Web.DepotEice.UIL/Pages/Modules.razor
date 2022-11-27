@@ -1,0 +1,73 @@
+﻿@page "/modules"
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.UIL.Models;
+
+@inject ILogger<Modules> Logger;
+@inject IMapper Mapper;
+@inject IModuleService ModuleService;
+
+<h3 class="text-center my-5">Modules disponibles</h3>
+
+<div class="container">
+    <InfiniteScrolling ItemsProvider="GetItemsAsync">
+        <ItemTemplate Context="item">
+
+            <div class="container">
+                <div class="row border-bottom py-3 my-3">
+                    <h3 class="border-bottom py-2">@item.Title</h3>
+                    <p class="p-3">
+                        @item.Description
+                    </p>
+                    <span>@item.TeacherName</span>
+                    <a href="@item.ModuleUrl">Plus de détails</a>
+                </div>
+            </div>
+
+        </ItemTemplate>
+        <LoadingTemplate>
+            <div>Loading...</div>
+        </LoadingTemplate>
+    </InfiniteScrolling>
+</div>
+
+@code {
+    private async Task<IEnumerable<ModulePresentationModel>> GetItemsAsync(InfiniteScrollingItemsProviderRequest request)
+    {
+        var modulesFromRepo = await ModuleService.GetModulesAsync();
+
+        if (modulesFromRepo.Count() == 0)
+        {
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+
+        if (request.StartIndex >= modulesFromRepo.Count())
+        {
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+
+        try
+        {
+            modulesFromRepo = modulesFromRepo.ToList().GetRange(request.StartIndex,
+               modulesFromRepo.Count() - request.StartIndex > 20
+               ? 20
+               : modulesFromRepo.Count());
+
+            var modules = Mapper.Map<IEnumerable<ModulePresentationModel>>(modulesFromRepo);
+
+            return modules;
+        }
+        catch (ArgumentOutOfRangeException e)
+        {
+            Logger.LogError($"{DateTime.Now} - One of the argument is out of range.\n{e.Message}\n{e.StackTrace}");
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to load the rest of the data.\n" +
+                $"{e.Message}\n{e.StackTrace}");
+
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+    }
+}

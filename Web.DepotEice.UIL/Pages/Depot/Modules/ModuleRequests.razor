@@ -1,0 +1,49 @@
+﻿@page "/depot/modulerequests"
+@using AutoMapper;
+@using Syncfusion.Blazor.Grids
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+
+@inject ILogger<ModuleRequests> Logger;
+@inject IMapper Mapper;
+@inject IModuleService ModuleService;
+
+<PageTitle>Demande d'acceptation</PageTitle>
+
+<h3 class="text-center my-5">Demande d'acceptation</h3>
+
+<div class="container">
+    <SfGrid DataSource="@_users" EnableHeaderFocus="true" EnableAdaptiveUI="true" AllowFiltering="true"
+            AllowSorting="true">
+
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
+        <GridPageSettings PageSize="50"></GridPageSettings>
+        <GridSelectionSettings CheckboxOnly="true" PersistSelection="true" Type="SelectionType.Multiple"></GridSelectionSettings>
+        <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="false" AllowEditOnDblClick="false"
+                          AllowNextRowEdit="false"></GridEditSettings>
+
+        <GridColumns>
+            <GridColumn Type="ColumnType.CheckBox" AllowFiltering="false" AllowSorting="false" Width="60"></GridColumn>
+            <GridColumn Field="ID" HeaderText="ID de l'utilisateur" IsPrimaryKey="true"></GridColumn>
+            <GridColumn Field="Prénom" HeaderText="Prénom"></GridColumn>
+            <GridColumn Field="Nom" HeaderText="Nom"></GridColumn>
+            <GridColumn Field="ID module" HeaderText="ID Module"></GridColumn>
+            <GridColumn Field="Nom Module" HeaderText="Nom Module"></GridColumn>
+        </GridColumns>
+
+    </SfGrid>
+
+    <div class="row mb-3">
+        <button type="button" class="btn btn-outline-danger my-2">Refuser la sélection</button>
+        <button type="button" class="btn btn-outline-primary my-1">Accepter la sélection</button>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<UserModuleRequestModel> _users = new List<UserModuleRequestModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _users = await ModuleService.GetUsersRequestingModules();
+    }
+}

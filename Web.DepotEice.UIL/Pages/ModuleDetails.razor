@@ -1,0 +1,125 @@
+﻿@page "/modules/details/{Id:int}"
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.UIL.Models;
+
+@inject ILogger<ModuleDetails> Logger;
+@inject IMapper Mapper;
+@inject IModuleService ModuleService;
+@inject IUserService UserService;
+
+<h3 class="text-center my-5"></h3>
+
+@if (_module is null)
+{
+    <h4 class="text-center my-5">@_moduleErrorMessage</h4>
+}
+else
+{
+    <div class="container">
+        <div class="row mb-3 border-bottom pb-3">
+            <label class="form-label">Nom du module</label>
+            <input class="form-control" value="@_module.Name" disabled />
+        </div>
+
+        <div class="row mb-3 border-bottom pb-3">
+            <label class="form-label">Description</label>
+            <textarea disabled style="height: 10rem">@_module.Description</textarea>
+        </div>
+
+        <div class="row mb-3 border-bottom pb-3">
+            <label class="form-label">Professeur en charge</label>
+            <input class="form-control" value="@_module.TeacherFullName" disabled />
+        </div>
+
+        <div class="d-flex flex-lg-row align-items-center">
+            @if (_userIsAccepted.HasValue)
+            {
+                if (_userIsAccepted.Value)
+                {
+                    <button type="button" class="btn btn-outline-secondary" disabled>
+                        Vous êtes déjà inscris à ce module
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btnbtn-outline-secondary" disabled>
+                        Votre demande est en cours de traitement
+                    </button>
+                }
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-primary" @onclick="RequestAcceptance">
+                    Demander à s'inscrire
+                </button>
+            }
+            <NavLink href="#" class="mx-3">Voir l'horaire</NavLink>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <span class="text-danger">@_errorMessage</span>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private string _moduleErrorMessage = string.Empty;
+    private string _errorMessage = string.Empty;
+    private bool? _userIsAccepted = false;
+    private ModuleModel _module = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var moduleFromRepo = await ModuleService.GetModuleAsync(Id);
+
+        if (moduleFromRepo is null)
+        {
+            _moduleErrorMessage = "Le module recherché n'exite pas";
+            return;
+        }
+
+        _module = Mapper.Map<ModuleModel>(moduleFromRepo);
+
+        try
+        {
+            var teacher = (await UserService.GetUserAsync(moduleFromRepo.TeacherId));
+
+            if (teacher is not null)
+            {
+                _module.TeacherFullName = $"{teacher.LastName.ToUpper()} {teacher.FirstName}";
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - An exception was thrown when retrieving user and setting user full " +
+                $"name.\n{e.Message}\n{e.StackTrace}");
+        }
+
+        // TODO : Check not if user is accepted but rather if there is a request and based on the value of the request
+        // show pending request button if false and "You are already registered"
+        _userIsAccepted = await ModuleService.UserIsAccepted(Id);
+    }
+
+    public async Task RequestAcceptance()
+    {
+        bool result = await ModuleService.RequestAcceptance(Id);
+
+        if (!result)
+        {
+            Logger.LogError($"{DateTime.Now} - The request failed");
+            _errorMessage = "La demande a échouée";
+        }
+        else
+        {
+            _errorMessage = "La demande est en cours";
+        }
+
+        _userIsAccepted = await ModuleService.UserIsAccepted(Id);
+        StateHasChanged();
+    }
+}

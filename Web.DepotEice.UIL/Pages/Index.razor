@@ -1,9 +1,103 @@
 ﻿@page "/"
+@page "/index"
 
-<PageTitle>Index</PageTitle>
+@inject ILogger<Index> Logger;
 
-<h1>Hello, world!</h1>
+<PageTitle>Accueil</PageTitle>
 
-Welcome to your new app.
+<div class="banner">
+    @{
+        /*Banner*/
+    }
+    <img src="https://www.etudierenhainaut.be/images/editeurs/119634258_988675168222129_1203433725708972538_o.webp"
+         alt="banner" class="img-fluid" style="width:100%; height:100%" />
+</div>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+<div class="container body-content">
+
+    @{
+        /*
+        * TODO : Load 6 or 12 pinned articles :
+        * - If there is less than 6 : skip this part
+        * - If there is more than 6 and less than 12 : Keep 6
+        * - If there is more than 12 : ERROR (Add a limit on the number of articles you can pin
+        * */
+    }
+
+    <div class="d-flex py-5 flex-wrap justify-content-evenly align-content-evenly mt-2 mb-2 main-articles"
+         style="width: 100%; height: auto;">
+
+        @{
+            for (int i = 1; i <= 12; i++)
+            {
+                <div class="card m-1" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">Card title</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
+                        <p class="card-text">
+                            Some quick example text to build on the card title and make up the bulk of the
+                            card's
+                            content.
+                        </p>
+                        <a href="#" class="card-link">Card link</a>
+                        <a href="#" class="card-link">Another link</a>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    @{
+        /*
+        * Adapt the display of the static informations :
+        * - Alternate the Circle shape left and right (The circle is the image) and the rectangle is the text
+        */
+    }
+
+    <div class="my-5">
+        <div class="row m-1 border-bottom py-5">
+            <div class="col-lg-6">
+                <img src="https://www.etudierenhainaut.be/images/editeurs/20191015_132538.webp" alt="school"
+                     style="border-radius: 50%;" class="img-fluid p-3" />
+            </div>
+            <div class="col-lg-6 py-5" style="font-size:larger">
+                L'Ecole Industrielle et Commerciale d’Ecaussinnes propose des formations de niveau secondaire en
+                bureautique, art floral, loisirs créatifs, œnologie, anglais et espagnol mais également un
+                formation d’enseignement supérieur, le bachelier en informatique de gestion.
+
+                Ces formations répondent aux besoins du marché du travail et correspondent aux demandes formulées
+                par les employeurs et les administrations.
+            </div>
+        </div>
+
+        <div class="row m-1 border-bottom py-5">
+            <div class="col-lg-6 py-5" style="font-size:larger">
+                Un certain nombre de ces formations font partie de la liste des métiers en pénurie du Forem et de la
+                Région Wallonne.
+
+                La mise à l’emploi, notamment de nos informaticiens, est très rapide.
+
+                En tant qu’établissement d’enseignement supérieur, l’établissement fait partie du pôle hainuyer et de
+                l’Académie de Recherche et d’Enseignement Supérieur.
+            </div>
+            <div class="col-lg-6">
+                <img src="images/penurie.jpg" alt="penurie" style="border-radius: 50%;" class="img-fluid p-3" />
+            </div>
+        </div>
+
+        <div class="row m-1 py-5">
+            <div class="col-lg-6">
+                <img src="images/teaching.jpg" alt="teaching" style="border-radius: 50%" class="img-fluid p-3" />
+            </div>
+            <div class="col-lg-6 py-5" style="font-size:larger">
+                Ces instances ont pour rôle de réguler l’enseignement supérieur, assurer l’information relative à
+                celui-ci et favoriser les collaborations entre les différents acteurs de l’enseignement.
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+}

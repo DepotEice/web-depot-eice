@@ -1,0 +1,51 @@
+﻿@page "/blog"
+@page "/blog/index"
+
+<div class="container body-content">
+    <h1 class="text-center">Blog</h1>
+
+    @{
+        for (int i = 1; i <= 10; i++)
+        {
+            <div class="row my-5">
+                <div class="col-lg-3 row-cols-auto ms-auto">
+
+                    <div class="row ms-auto">
+                        <img class="img-fluid rounded" style="width: 15em" src="https://lemka-assets.s3.amazonaws.com/media/articles/robe-confort-totale/robe-confort-totale-zmakei.jpg" alt="Article image" />
+                    </div>
+                </div>
+
+                <div class="col-lg-9 ms-auto">
+
+                    <div class="row h-100 mx-1">
+                        <p class="card-text">
+                            @_description
+                        </p>
+                        <h4 class="card-title">Special title treatment</h4>
+                        <div class="d-flex justify-content-end">
+                            <div class="col d-flex flex-column justify-content-end">
+                                <span>AUTHOR</span>
+                                <span>DATE</span>
+                            </div>
+
+                            <div class="col d-flex justify-content-end align-items-end">
+                                <a href="#" class="btn btn-primary">Lire</a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        }
+    }
+</div>
+
+
+@code {
+    private string _description = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".Substring(0, 200);
+    }
+}

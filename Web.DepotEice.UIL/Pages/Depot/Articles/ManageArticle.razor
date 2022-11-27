@@ -1,0 +1,115 @@
+﻿@page "/depot/managearticle/{ArticleId:int?}"
+
+@using AutoMapper;
+@using Blazored.LocalStorage;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models.Forms;
+@using Syncfusion.Blazor.RichTextEditor;
+
+@inject NavigationManager NavigationManager;
+@inject ILogger<ManageArticle> Logger;
+@inject IArticleService ArticleService;
+@inject IMapper Mapper;
+@inject ILocalStorageService LocalStorageService;
+
+<PageTitle>Gestion d'article</PageTitle>
+
+<EditForm Model="_article" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator></DataAnnotationsValidator>
+
+    <div class="row border-bottom pb-3">
+        <div class="mb-3">
+            <label class="form-label">Titre</label>
+            <InputText class="form-control" @bind-Value="_article.Title" />
+        </div>
+
+        <div class="">
+            <label class="form-label">Epingler l'article</label>
+            <InputCheckbox @bind-Value="_article.Pinned">Epingler l'article'</InputCheckbox>
+        </div>
+    </div>
+
+    <div class="row my-3">
+        <div class="mb-3">
+            <SfRichTextEditor Height="35rem" @bind-Value="_article.Body">
+                <RichTextEditorEvents BeforeUploadImage="BeforeUploadAsync" />
+                <RichTextEditorImageSettings Path="https://localhost:7205/api/Images/"
+                                             SaveUrl="https://localhost:7205/api/Images/" />
+            </SfRichTextEditor>
+        </div>
+    </div>
+
+    <span class="text-danger">@_resultMessage</span>
+
+    <button type="submit" class="btn btn-outline-primary">Enregistrer</button>
+
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? ArticleId { get; set; }
+
+    private ArticleForm _article = new();
+
+    private string _resultMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ArticleId is not null)
+        {
+            ArticleModel? articleFromRepo = await ArticleService.GetArticleAsync(ArticleId.Value);
+
+            if (articleFromRepo is not null)
+            {
+                _article = Mapper.Map<ArticleForm>(articleFromRepo);
+            }
+        }
+    }
+
+    // TODO : Update when ID is provided
+    public async Task HandleValidSubmit()
+    {
+        if (!await ArticleService.CanPinArticleAsync())
+        {
+            _resultMessage = "Vous avez dépassé le nombre d'article maximum qu'il est possible d'épingler";
+            return;
+        }
+
+        ArticleCreateModel articleModel = Mapper.Map<ArticleCreateModel>(_article);
+
+        try
+        {
+            if (ArticleId is null)
+            {
+                ArticleModel? result = await ArticleService.CreateArticleAsync(articleModel);
+
+                if (result is null)
+                {
+                    Logger.LogError($"{DateTime.Now} - Article couldn't be created");
+                }
+            }
+            else
+            {
+                ArticleModel? result = await ArticleService.UpdateArticleAsync(ArticleId.Value, articleModel);
+
+                if (result is null)
+                {
+                    Logger.LogError($"{DateTime.Now} - Article with ID \"{ArticleId}\" couldn't be updated");
+                }
+            }
+
+            NavigationManager.NavigateTo("depot/articles");
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - {e.Message}");
+        }
+    }
+
+    public async Task BeforeUploadAsync(ImageUploadingEventArgs args)
+    {
+        string token = await LocalStorageService.GetItemAsStringAsync("token");
+        args.CurrentRequest = new List<Object> { new { Authorization = $"Bearer {token}" } };
+    }
+}

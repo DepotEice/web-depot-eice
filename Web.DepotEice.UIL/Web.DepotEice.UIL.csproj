@@ -4,11 +4,26 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>27b54816-56df-4e65-9be4-2650b906ad1d</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.5" PrivateAssets="all" />
+    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.10" PrivateAssets="all" />
+    <PackageReference Include="Radzen.Blazor" Version="4.2.2" />
+    <PackageReference Include="Syncfusion.Blazor" Version="20.3.0.56" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="20.3.0.57" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Web.DepotEice.BLL\Web.DepotEice.BLL.csproj" />
+    <ProjectReference Include="..\Web.DepotEice.Helpers\Web.DepotEice.Helpers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Pages\Depot\Shared\" />
   </ItemGroup>
 
 </Project>

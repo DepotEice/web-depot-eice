@@ -1,0 +1,34 @@
+﻿@page "/signout"
+@using Web.DepotEice.UIL.Managers
+
+@inject UserManager UserManager
+@inject NavigationManager NavigationManager
+
+<h3 class="text-center my-5">@_displayMessage</h3>
+
+@code {
+    private string _displayMessage = string.Empty;
+    private bool _signedOutSuccessfully = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        bool result = await UserManager.SignOutAsync();
+
+        if (result)
+        {
+            _displayMessage = "Vous vous êtes correctement déconnecté";
+        }
+        else
+        {
+            _displayMessage = "Une erreur est survenue et la déconnexion a échouée";
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if(firstRender)
+        {
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+    }
+}

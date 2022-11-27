@@ -1,0 +1,133 @@
+﻿@page "/depot/modules"
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.UIL.Models;
+@using Web.DepotEice.UIL.Models.Forms;
+
+@inject ILogger<Modules> Logger;
+@inject IMapper Mapper;
+@inject IModuleService ModuleService;
+
+<h3 class="text-center my-5">Modules</h3>
+
+<div class="container">
+    <div class="row">
+        <a href="#" class="text-dark">
+            Demandes d'acceptation aux modules (@_numberOfAcceptationDemands)
+        </a>
+    </div>
+
+    <EditForm Model="_moduleFilters" OnValidSubmit="( async () => await HandleFiltersValidSubmitAsync())">
+        <div class="row">
+            <div class="py-3 border-bottom">
+                <div class="input-group mb-3">
+                    <button class="btn btn-outline-danger" type="button" id="clear" @onclick="ClearFiltersAsync">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    <InputText type="text" class="form-control" placeholder="Recherche" aria-label="Texte de recherche"
+                               aria-describedby="Recherche" @bind-Value="_moduleFilters.SearchText" />
+                    <button class="btn btn-outline-secondary" type="submit" id="recherche">Recherche</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+
+    <InfiniteScrolling ItemsProvider="GetItemsAsync">
+        <ItemTemplate Context="module">
+
+            <div class="container">
+                <div class="row border-bottom py-3 my-3">
+                    <h3 class="border-bottom py-2">@module.Title</h3>
+                    <p class="p-3">
+                        @module.Description
+                    </p>
+                    <span>@module.TeacherName</span>
+                    <div class="row">
+                        <a href="@module.ModuleUrl">Plus de détails</a>
+                        <a href="">Gérer l'horaire</a>
+                        <a href=""></a>
+                    </div>
+                </div>
+            </div>
+
+        </ItemTemplate>
+        <LoadingTemplate>
+            <div class="d-flex justify-content-center text-center">
+                <div class="mt-5 pt-5 spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Chargement des modules...</span>
+                </div>
+            </div>
+        </LoadingTemplate>
+    </InfiniteScrolling>
+</div>
+
+@code {
+    // TODO :
+    //  1. Les modules disponibles (liste)
+    //  2. Les utilisateurs demandant de rejoindre un module
+    private int _numberOfAcceptationDemands = 0;
+    private ModuleFiltersForm _moduleFilters = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // TODO : Récupérer les utilisateurs ajoutés à un module mais qui n'ont pas encore le status accepté
+
+        _numberOfAcceptationDemands = (await ModuleService.GetUsersRequestingModules()).Count();
+    }
+
+    private async Task HandleFiltersValidSubmitAsync()
+    {
+
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _moduleFilters = new();
+    }
+
+    private async Task<IEnumerable<ModulePresentationModel>> GetItemsAsync(InfiniteScrollingItemsProviderRequest request)
+    {
+        var modulesFromRepo = await ModuleService.GetModulesAsync();
+
+        if (!string.IsNullOrEmpty(_moduleFilters.SearchText))
+        {
+            modulesFromRepo = modulesFromRepo.Where(m =>
+                m.Name.Contains(_moduleFilters.SearchText, StringComparison.InvariantCultureIgnoreCase) ||
+                m.Description.Contains(_moduleFilters.SearchText, StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        if (modulesFromRepo.Count() == 0)
+        {
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+
+        if (request.StartIndex >= modulesFromRepo.Count())
+        {
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+
+        try
+        {
+            modulesFromRepo = modulesFromRepo.ToList().GetRange(request.StartIndex,
+               modulesFromRepo.Count() - request.StartIndex > 20
+               ? 20
+               : modulesFromRepo.Count());
+
+            var modules = Mapper.Map<IEnumerable<ModulePresentationModel>>(modulesFromRepo);
+
+            return modules;
+        }
+        catch (ArgumentOutOfRangeException e)
+        {
+            Logger.LogError($"{DateTime.Now} - One of the argument is out of range.\n{e.Message}\n{e.StackTrace}");
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to load the rest of the data.\n" +
+                $"{e.Message}\n{e.StackTrace}");
+
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+    }
+}

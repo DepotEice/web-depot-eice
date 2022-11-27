@@ -1,0 +1,129 @@
+﻿@page "/depot/schedules"
+@using AutoMapper;
+@using Syncfusion.Blazor.Schedule
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.UIL.Managers;
+@using Web.DepotEice.UIL.Models;
+
+@inject ILogger<Schedules> Logger;
+@inject IMapper Mapper;
+@inject IModuleService ModuleService;
+@inject UserManager UserManager;
+@inject IUserService UserService;
+
+<h3 class="text-center my-5">Calendrier</h3>
+
+<div class="container">
+
+    <SfSchedule TValue="UIL.Models.ScheduleModel" @bind-SelectedDate="_curentDate" StartHour="07:00">
+        <ScheduleEvents TValue="UIL.Models.ScheduleModel" OnPopupOpen="@OnPopupOpen"></ScheduleEvents>
+        <ScheduleQuickInfoTemplates>
+            <HeaderTemplate>
+                <h4 class="text-center my-3">@((context as ScheduleModel)?.ModuleName)</h4>
+            </HeaderTemplate>
+
+            <ContentTemplate>
+                <div class="container">
+                    <div class="row mb-2">
+                        <label class="form-label">Intitulé</label>
+                        <input class="form-control" value="@((context as ScheduleModel)?.Title)" disabled />
+                    </div>
+
+                    <div class="row mb-2">
+                        <label class="form-label">Détails</label>
+                        <textarea class="form-control" style="height:12rem" disabled>
+                            @((context as ScheduleModel)?.Details)
+                        </textarea>
+                    </div>
+                </div>
+            </ContentTemplate>
+
+            <FooterTemplate>
+                <div class="row my-1">
+                    <NavLink class="float-end" href="@((context as ScheduleModel).ScheduleDetailsUrl)">
+                        Plus de détails
+                    </NavLink>
+                </div>
+            </FooterTemplate>
+
+        </ScheduleQuickInfoTemplates>
+        <ScheduleTemplates>
+            <EditorTemplate>
+                <span>blablabla</span>
+            </EditorTemplate>
+        </ScheduleTemplates>
+
+
+        <ScheduleEventSettings DataSource="_schedules" AllowEditFollowingEvents="false" AllowEditing="_hasAdminRights"
+                               AllowDeleting="_hasAdminRights" AllowAdding="_hasAdminRights" EnableTooltip="true">
+            <Template>
+                <div class="container">
+                    <div class="row text-center">
+                        <span class="my-2">
+                            @((context as ScheduleModel)?.StartTime.ToString("H:m"))
+                            -
+                            @((context as ScheduleModel)?.EndTime.ToString("H:m"))
+                        </span>
+
+                        <span class="my-2 fw-bold">@((context as ScheduleModel)?.TeacherName)</span>
+                        <span class="my-2">@((context as ScheduleModel)?.ModuleName)</span>
+                        <span class="my-2">@((context as ScheduleModel)?.Title)</span>
+                    </div>
+                </div>
+            </Template>
+        </ScheduleEventSettings>
+
+        <ScheduleView>
+            <ScheduleView Option="View.Day"></ScheduleView>
+            <ScheduleView Option="View.Week"></ScheduleView>
+            <ScheduleView Option="View.Month"></ScheduleView>
+        </ScheduleView>
+    </SfSchedule>
+
+</div>
+
+@code {
+    private bool _hasAdminRights = false;
+    private DateTime _curentDate = DateTime.Now;
+    private UIL.Models.ScheduleModel _schedule = new();
+    private List<ScheduleModel> _schedules = new List<ScheduleModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hasAdminRights = (await UserManager.IsInRoleAsync("DIRECTION") || await UserManager.IsInRoleAsync("TEACHER"));
+
+        var schedulesFromRepo = await ModuleService.GetSchedulesAsync();
+
+        foreach (var schedule in schedulesFromRepo)
+        {
+            Logger.LogInformation($"{schedule}");
+
+            UIL.Models.ScheduleModel scheduleModel = Mapper.Map<UIL.Models.ScheduleModel>(schedule);
+
+            var module = await ModuleService.GetModuleAsync(schedule.ModuleId);
+            var user = await UserService.GetUserAsync(module.TeacherId);
+
+            if (user is not null)
+            {
+                scheduleModel.TeacherName = $"{user.LastName.ToUpper()} {user.FirstName}";
+            }
+
+            scheduleModel.ModuleName = module.Name;
+
+            Logger.LogInformation($"{scheduleModel.StartTime} {scheduleModel.EndTime}");
+
+            _schedules.Add(scheduleModel);
+        }
+
+        // TODO : Retrieve the schedules
+        //  1. Get Schedules to which the user is subscribed
+    }
+
+    public void OnPopupOpen(PopupOpenEventArgs<ScheduleModel> args)
+    {
+        if (args.Type == PopupType.Editor)
+        {
+            args.Cancel = true;
+        }
+    }
+}

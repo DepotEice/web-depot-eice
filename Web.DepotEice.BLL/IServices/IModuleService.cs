@@ -15,6 +15,7 @@ namespace Web.DepotEice.BLL.IServices
         Task<ScheduleModel?> CreateScheduleAsync(int moduleId, ScheduleCreateModel scheduleCreate);
         Task<IEnumerable<ScheduleModel>> GetModuleSchedulesAsync(int moduleId);
         Task<bool> DeleteScheduleAsync(int moduleId, int scheduleId);
+        Task<bool> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId);
         Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules();
         Task<bool?> UserIsAccepted(int moduleId);
         Task<bool?> UserIsAccepted(int moduleId, string userId);
@@ -22,7 +23,8 @@ namespace Web.DepotEice.BLL.IServices
         Task<IEnumerable<ScheduleModel>> GetSchedulesAsync();
         Task<IEnumerable<ScheduleModel>> GetSchedulesAsync(int moduleId);
         Task<ScheduleModel?> GetScheduleAsync(int id);
-        Task<IEnumerable<ScheduleFileModel?>> GetScheduleFilesAsync(int scheduleId);
+        Task<IEnumerable<ScheduleFileModel>> GetScheduleFilesAsync(int scheduleId);
         Task<ScheduleFileModel?> GetScheduleFileAsync(int id);
+        Task<bool> UserHasRoleAsync(string role, int moduleId);
     }
 }

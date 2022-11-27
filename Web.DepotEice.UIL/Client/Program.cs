@@ -12,7 +12,7 @@ namespace Company.WebApplication1
 {
     public class Program
     {
-        public static readonly string API_SYNCFUSION_SECRET =
+        public static readonly string API_SYNCFUSION_SECRET = Environment.GetEnvironmentVariable("SYNCFUSION_SECRET") ??
             "NzU5NDEyQDMyMzAyZTMzMmUzMGJFdTU3bHV2S01SY1hzVnpxcmJ0djBpN29TMlpCM1hnbk53blJ3a3BCdDQ9";
 
         public static async Task Main(string[] args)
@@ -33,11 +33,19 @@ namespace Company.WebApplication1
                 options.IgnoreScriptIsolation = true;
             });
 
+#if DEBUG
             builder.Services.AddScoped(sp => new HttpClient
             {
                 BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
             });
-
+#else
+            builder.Services.AddScoped(sp => new HttpClient
+            {
+                BaseAddress = new Uri(Environment.GetEnvironmentVariable("API_BASE_ADDRESS") ??
+                                throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
+                                    $"\"API_BASE_ADDRESS\""))
+            });
+#endif
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IUserTokenService, UserTokenService>();
             builder.Services.AddScoped<IUserService, UserService>();

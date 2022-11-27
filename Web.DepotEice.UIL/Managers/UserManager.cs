@@ -9,12 +9,18 @@ namespace Web.DepotEice.UIL.Managers
 {
     public class UserManager
     {
+        public const string GUEST_ROLE = "Guest";
+        public const string STUDENT_ROLE = "Student";
+        public const string TEACHER_ROLE = "Teacher";
+        public const string DIRECTION_ROLE = "Direction";
+
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
         private readonly ILocalStorageService _localStorageService;
         private readonly ISyncLocalStorageService _syncLocalStorageService;
         private readonly IAuthService _authService;
         private readonly IRoleService _roleService;
+        private readonly IModuleService _moduleService;
 
         public bool IsConnected
         {
@@ -27,7 +33,8 @@ namespace Web.DepotEice.UIL.Managers
         }
 
         public UserManager(ILogger<UserManager> logger, IMapper mapper, ILocalStorageService localStorageService,
-            ISyncLocalStorageService syncLocalStorageService, IAuthService authService, IRoleService roleService)
+            ISyncLocalStorageService syncLocalStorageService, IAuthService authService, IRoleService roleService,
+            IModuleService moduleService)
         {
             if (logger is null)
             {
@@ -59,12 +66,18 @@ namespace Web.DepotEice.UIL.Managers
                 throw new ArgumentNullException(nameof(roleService));
             }
 
+            if (moduleService is null)
+            {
+                throw new ArgumentNullException(nameof(moduleService));
+            }
+
             _logger = logger;
             _mapper = mapper;
             _localStorageService = localStorageService;
             _syncLocalStorageService = syncLocalStorageService;
             _authService = authService;
             _roleService = roleService;
+            _moduleService = moduleService;
         }
 
         public async Task<bool> SignInAsync(SignInForm signInForm)
@@ -166,6 +179,23 @@ namespace Web.DepotEice.UIL.Managers
             }
 
             bool result = await _roleService.UserHasRoleAsync(role);
+
+            return result;
+        }
+
+        public async Task<bool> HasRole(string role, int moduleId)
+        {
+            if (string.IsNullOrEmpty(role))
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
+            var result = await _moduleService.UserHasRoleAsync(role, moduleId);
 
             return result;
         }

@@ -19,20 +19,20 @@
         <ScheduleEvents TValue="UIL.Models.ScheduleModel" OnPopupOpen="@OnPopupOpen"></ScheduleEvents>
         <ScheduleQuickInfoTemplates>
             <HeaderTemplate>
-                <h4 class="text-center my-3">@((context as ScheduleModel).ModuleName)</h4>
+                <h4 class="text-center my-3">@((context as ScheduleModel)?.ModuleName)</h4>
             </HeaderTemplate>
 
             <ContentTemplate>
                 <div class="container">
                     <div class="row mb-2">
                         <label class="form-label">Intitulé</label>
-                        <input class="form-control" value="@((context as ScheduleModel).Title)" disabled />
+                        <input class="form-control" value="@((context as ScheduleModel)?.Title)" disabled />
                     </div>
 
                     <div class="row mb-2">
                         <label class="form-label">Détails</label>
                         <textarea class="form-control" style="height:12rem" disabled>
-                            @((context as ScheduleModel).Details)
+                            @((context as ScheduleModel)?.Details)
                         </textarea>
                     </div>
                 </div>

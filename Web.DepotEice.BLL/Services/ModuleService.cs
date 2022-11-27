@@ -1,6 +1,7 @@
 ﻿using Blazored.LocalStorage;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -294,6 +295,58 @@ namespace Web.DepotEice.BLL.Services
         public Task<ScheduleFileModel?> GetScheduleFileAsync(int id)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> UserHasRoleAsync(string role, int moduleId)
+        {
+            if (string.IsNullOrEmpty(role))
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/HasRole/{role}");
+
+            response.EnsureSuccessStatusCode();
+
+            bool? result = await response.Content.ReadFromJsonAsync<bool>();
+
+            return result is null ? false : result.Value;
+        }
+
+        public async Task<bool> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId)
+        {
+            if (scheduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(scheduleId));
+            }
+
+            string? token = await _localStorageService.GetItemAsStringAsync("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage response =
+                await _httpClient.DeleteAsync($"Modules/{moduleId}/Schedules/{scheduleId}/Files/{scheduleFileId}");
+
+            return response.IsSuccessStatusCode;
         }
     }
 }

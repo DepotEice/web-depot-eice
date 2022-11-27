@@ -44,6 +44,8 @@ namespace Web.DepotEice.UIL.Profiles
                     dest => dest.EndTime,
                     opt => opt.MapFrom(
                         src => src.EndAt));
+
+            CreateMap<BLL.Models.ScheduleModel, ScheduleDetailsModel>();
         }
     }
 }

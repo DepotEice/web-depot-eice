@@ -16,7 +16,7 @@ namespace Web.DepotEice.BLL.Services
         private readonly HttpClient _httpClient;
         private readonly ILocalStorageService _localStorageService;
 
-        public ArticleService(ILocalStorageService localStorageService)
+        public ArticleService(ILocalStorageService localStorageService, HttpClient httpClient)
         {
             if (localStorageService is null)
             {
@@ -24,11 +24,8 @@ namespace Web.DepotEice.BLL.Services
             }
 
             _localStorageService = localStorageService;
+            _httpClient= httpClient;
 
-            _httpClient = new HttpClient()
-            {
-                BaseAddress = new Uri("https://localhost:7205/api/"),
-            };
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }

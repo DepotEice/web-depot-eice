@@ -16,19 +16,21 @@ namespace Web.DepotEice.BLL.Services
         private readonly HttpClient _httpClient;
         private readonly ILocalStorageService _localStorageService;
 
-        public AppointmentService(ILocalStorageService localStorageService)
+        public AppointmentService(ILocalStorageService localStorageService, HttpClient httpClient)
         {
             if (localStorageService is null)
             {
                 throw new ArgumentNullException(nameof(localStorageService));
             }
 
-            _localStorageService = localStorageService;
-
-            _httpClient = new HttpClient()
+            if (httpClient is null)
             {
-                BaseAddress = new Uri("https://localhost:7205/api/"),
-            };
+                throw new ArgumentNullException(nameof(httpClient));
+            }
+
+            _localStorageService = localStorageService;
+            _httpClient = httpClient;
+
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }

@@ -36,7 +36,7 @@ namespace Company.WebApplication1
 #if DEBUG
             builder.Services.AddScoped(sp => new HttpClient
             {
-                BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+                BaseAddress = new Uri("https://localhost:7205/api/")
             });
 #else
             builder.Services.AddScoped(sp => new HttpClient

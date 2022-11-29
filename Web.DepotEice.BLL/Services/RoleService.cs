@@ -17,7 +17,7 @@ namespace Web.DepotEice.BLL.Services
         private readonly HttpClient _httpClient;
         private readonly ILocalStorageService _localStorageService;
 
-        public RoleService(ILogger<RoleService> logger, ILocalStorageService localStorageService)
+        public RoleService(ILogger<RoleService> logger, ILocalStorageService localStorageService, HttpClient httpClient)
         {
             if (logger is null)
             {
@@ -29,13 +29,15 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(localStorageService));
             }
 
+            if (httpClient is null)
+            {
+                throw new ArgumentNullException(nameof(httpClient));
+            }
+
             _logger = logger;
             _localStorageService = localStorageService;
+            _httpClient = httpClient;
 
-            _httpClient = new HttpClient()
-            {
-                BaseAddress = new Uri("https://localhost:7205/api/"),
-            };
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }

@@ -39,7 +39,7 @@
                 {
                     int x = i;
 
-                    <button class="btn btn-outline-secondary m-1 @(_selectedIndex == x ? "active" : "")"
+                    <button class="btn btn-outline-secondary m-1 @(_selectedIndex == x ? "active" : "")" type="button"
                         @onclick="(() => SelectIndex(x))">
 
                         @_availableTimes[i].ToString("HH:mm")

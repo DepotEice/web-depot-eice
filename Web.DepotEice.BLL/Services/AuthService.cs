@@ -14,12 +14,15 @@ namespace Web.DepotEice.BLL.Services
     {
         private readonly HttpClient _httpClient;
 
-        public AuthService()
+        public AuthService(HttpClient httpClient)
         {
-            _httpClient = new HttpClient()
+            if (httpClient is null)
             {
-                BaseAddress = new Uri("https://localhost:7205/api/"),
-            };
+                throw new ArgumentNullException(nameof(httpClient));
+            }
+
+            _httpClient = httpClient;
+
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
 

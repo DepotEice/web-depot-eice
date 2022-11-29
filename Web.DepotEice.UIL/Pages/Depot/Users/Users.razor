@@ -1,5 +1,18 @@
-﻿<h3>Users</h3>
+﻿@page "/depot/users"
+@using Web.DepotEice.UIL.Managers;
+
+@inject NavigationManager NavigationManager;
+@inject UserManager UserManager;
+
+<h3>Users</h3>
 
 @code {
-
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE))
+        {
+            NavigationManager.NavigateTo("unauthorized");
+            return;
+        }
+    }
 }

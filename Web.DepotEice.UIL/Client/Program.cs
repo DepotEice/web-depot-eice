@@ -41,9 +41,7 @@ namespace Company.WebApplication1
 #else
             builder.Services.AddScoped(sp => new HttpClient
             {
-                BaseAddress = new Uri(Environment.GetEnvironmentVariable("API_BASE_ADDRESS") ??
-                                throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
-                                    $"\"API_BASE_ADDRESS\""))
+                BaseAddress = new Uri("https://api-depot-eice.azurewebsites.net/api/")
             });
 #endif
             builder.Services.AddScoped<IAuthService, AuthService>();

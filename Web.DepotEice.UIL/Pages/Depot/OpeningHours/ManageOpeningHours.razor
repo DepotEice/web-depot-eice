@@ -3,11 +3,14 @@
 @using Web.DepotEice.BLL.IServices
 @using Web.DepotEice.BLL.Models
 @using Web.DepotEice.Helpers
+@using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models.Forms
 @using Web.DepotEice.UIL.ViewModels
 
 @inject ILogger<ManageOpeningHours> Logger;
 @inject IOpeningHoursService OpeningHoursService;
+@inject UserManager UserManager;
+@inject NavigationManager NavigationManager;
 
 <h3 class="text-center my-5">Gérer les heures d'ouvertures</h3>
 
@@ -31,7 +34,7 @@
             @foreach (var item in viewModel.DayTimeSelectors)
             {
                 <div class="col-lg-2 mb-4">
-                    <DayTimeSelector DayTimeSelectorModel="item" Disabled="false"/>
+                    <DayTimeSelector DayTimeSelectorModel="item" Disabled="false" />
                 </div>
             }
 
@@ -86,6 +89,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (!await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE))
+        {
+            NavigationManager.NavigateTo("unauthorized");
+            return;
+        }
         var openingHoursfromRepo = await OpeningHoursService.GetOpeningHoursAsync();
 
         var firstDay = openingHoursfromRepo.First().OpenAt;
@@ -153,8 +161,8 @@
                         From = closedFrom,
                         To = closedTo,
                         Id = viewModel.ExceptionalCloses.Count == 0
-                            ? 0
-                            : viewModel.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
+                                    ? 0
+                                    : viewModel.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
                     });
 
                 Logger.LogInformation(viewModel.ExceptionalCloses.Count.ToString());
@@ -245,19 +253,19 @@
                 openingHoursToCreate.Add(new OpeningHoursCreateModel()
                     {
                         OpenAt = new DateTime(
-                                            dti.Year,
-                                            dti.Month,
-                                            dti.Day,
-                                            daySelector.From.Hour,
-                                            daySelector.From.Minute,
-                                            0),
+                                                    dti.Year,
+                                                    dti.Month,
+                                                    dti.Day,
+                                                    daySelector.From.Hour,
+                                                    daySelector.From.Minute,
+                                                    0),
                         CloseAt = new DateTime(
-                                            dti.Year,
-                                            dti.Month,
-                                            dti.Day,
-                                            daySelector.To.Hour,
-                                            daySelector.To.Minute,
-                                            0)
+                                                    dti.Year,
+                                                    dti.Month,
+                                                    dti.Day,
+                                                    daySelector.To.Hour,
+                                                    daySelector.To.Minute,
+                                                    0)
                     });
             }
         }

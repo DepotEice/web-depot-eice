@@ -24,7 +24,7 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(localStorageService));
             }
 
-            if(httpClient is null)
+            if (httpClient is null)
             {
                 throw new ArgumentNullException(nameof(httpClient));
             }
@@ -44,6 +44,22 @@ namespace Web.DepotEice.BLL.Services
             }
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Modules", moduleCreation);
+
+            response.EnsureSuccessStatusCode();
+
+            ModuleModel? result = await response.Content.ReadFromJsonAsync<ModuleModel>();
+
+            return result;
+        }
+
+        public async Task<ModuleModel?> UpdateModuleAsync(int id, ModuleCreationModel moduleCreation)
+        {
+            if (moduleCreation is null)
+            {
+                throw new ArgumentNullException(nameof(moduleCreation));
+            }
+
+            HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"Modules/{id}", moduleCreation);
 
             response.EnsureSuccessStatusCode();
 

@@ -218,6 +218,12 @@
 
             var schedulesFromRepo = await ModuleService.GetModuleSchedulesAsync(Id.Value);
 
+            if (schedulesFromRepo is null || schedulesFromRepo.Count() <= 0)
+            {
+                Logger.LogInformation($"{DateTime.Now} - The Schedules sequence contains no element");
+                return;
+            }
+
             var firstDay = schedulesFromRepo.First().StartAt;
             var lastDay = schedulesFromRepo.Last().EndAt;
 
@@ -281,8 +287,8 @@
                             From = closedFrom,
                             To = closedTo,
                             Id = _moduleScheduleForm.ExceptionalCloses.Count == 0
-                                                                                    ? 0
-                                                                                    : _moduleScheduleForm.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
+                                    ? 0
+                                    : _moduleScheduleForm.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
                         });
 
                     dti = new DateTime(closedTo.Year, closedTo.Month, closedTo.Day);
@@ -295,17 +301,35 @@
     {
         Logger.LogInformation($"{DateTime.Now} - {nameof(HandleValidModuleSubmitAsync)} started");
 
-        var moduleToCreate = Mapper.Map<ModuleCreationModel>(_moduleForm);
-
-        var createdModule = await ModuleService.CreateModuleAsync(moduleToCreate);
-
-        if (createdModule is not null)
+        if (Id.HasValue)
         {
-            NavigationManager.NavigateTo($"/depot/managemodule/{createdModule.Id}");
+            var moduleToUpdate = Mapper.Map<ModuleCreationModel>(_moduleForm);
+
+            var updatedModule = await ModuleService.UpdateModuleAsync(Id.Value, moduleToUpdate);
+
+            if (updatedModule is null)
+            {
+                _moduleResultMessage = "La mise à jour du module a échouée";
+
+                Logger.LogError($"{DateTime.Now} - Module update failed !");
+            }
         }
         else
         {
-            _moduleResultMessage = "La création du module a échouée, veuillez contacter l'équipe technique";
+            var moduleToCreate = Mapper.Map<ModuleCreationModel>(_moduleForm);
+
+            var createdModule = await ModuleService.CreateModuleAsync(moduleToCreate);
+
+            Logger.LogInformation($"{DateTime.Now} - Creation result : {createdModule is not null}");
+
+            if (createdModule is not null)
+            {
+                NavigationManager.NavigateTo($"/depot/managemodule/{createdModule.Id}");
+            }
+            else
+            {
+                _moduleResultMessage = "La création du module a échouée, veuillez contacter l'équipe technique";
+            }
         }
     }
 
@@ -356,9 +380,9 @@
                 schedulesToCreate.Add(new ScheduleForm()
                     {
                         StartAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelection.From.Hour,
-                                                    daySelection.From.Minute, 0),
+                                                                                daySelection.From.Minute, 0),
                         EndAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelection.To.Hour,
-                                                    daySelection.To.Minute, 0),
+                                                                                daySelection.To.Minute, 0),
                     });
             }
         }

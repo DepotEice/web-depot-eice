@@ -11,6 +11,7 @@ namespace Web.DepotEice.BLL.IServices
     {
         Task<IEnumerable<ModuleModel>> GetModulesAsync();
         Task<ModuleModel?> CreateModuleAsync(ModuleCreationModel moduleCreation);
+        Task<ModuleModel?> UpdateModuleAsync(int id, ModuleCreationModel moduleCreation);
         Task<ModuleModel?> GetModuleAsync(int id);
         Task<ScheduleModel?> CreateScheduleAsync(int moduleId, ScheduleCreateModel scheduleCreate);
         Task<IEnumerable<ScheduleModel>> GetModuleSchedulesAsync(int moduleId);

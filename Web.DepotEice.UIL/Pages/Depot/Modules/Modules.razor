@@ -1,12 +1,14 @@
 ﻿@page "/depot/modules"
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
 @using Web.DepotEice.UIL.Models.Forms;
 
 @inject ILogger<Modules> Logger;
 @inject IMapper Mapper;
 @inject IModuleService ModuleService;
+@inject UserManager UserManager;
 
 <h3 class="text-center my-5">Modules</h3>
 
@@ -17,19 +19,20 @@
         </a>
     </div>
 
-    <EditForm Model="_moduleFilters" OnValidSubmit="( async () => await HandleFiltersValidSubmitAsync())">
-        <div class="row">
-            <div class="py-3 border-bottom">
-                <div class="input-group mb-3">
-                    <button class="btn btn-outline-danger" type="button" id="clear" @onclick="ClearFiltersAsync">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                    <InputText type="text" class="form-control" placeholder="Recherche" aria-label="Texte de recherche"
-                               aria-describedby="Recherche" @bind-Value="_moduleFilters.SearchText" />
-                    <button class="btn btn-outline-secondary" type="submit" id="recherche">Recherche</button>
-                </div>
-            </div>
+    <EditForm class="py-3 border-bottom" Model="_moduleFilters" OnValidSubmit="( async () => await HandleFiltersValidSubmitAsync())">
+        <div class="input-group">
+            <button class="btn btn-outline-danger" type="button" id="clear" @onclick="ClearFiltersAsync">
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <InputText type="text" class="form-control" placeholder="Recherche" aria-label="Texte de recherche"
+                       aria-describedby="Recherche" @bind-Value="_moduleFilters.SearchText" />
+            <button class="btn btn-outline-secondary" type="submit" id="recherche">Recherche</button>
         </div>
+
+        @if (_isDirection)
+        {
+            <NavLink class="btn btn-outline-primary my-2" href="depot/managemodule">Créer un module</NavLink>
+        }
     </EditForm>
 
     <InfiniteScrolling ItemsProvider="GetItemsAsync">
@@ -44,8 +47,10 @@
                     <span>@module.TeacherName</span>
                     <div class="row">
                         <a href="@module.ModuleUrl">Plus de détails</a>
-                        <a href="">Gérer l'horaire</a>
-                        <a href=""></a>
+                        @if (_isDirection)
+                        {
+                            <NavLink href="">Gérer l'horaire</NavLink>
+                        }
                     </div>
                 </div>
             </div>
@@ -67,10 +72,13 @@
     //  2. Les utilisateurs demandant de rejoindre un module
     private int _numberOfAcceptationDemands = 0;
     private ModuleFiltersForm _moduleFilters = new();
+    private bool _isDirection = false;
 
     protected override async Task OnInitializedAsync()
     {
         // TODO : Récupérer les utilisateurs ajoutés à un module mais qui n'ont pas encore le status accepté
+
+        _isDirection = await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE);
 
         _numberOfAcceptationDemands = (await ModuleService.GetUsersRequestingModules()).Count();
     }

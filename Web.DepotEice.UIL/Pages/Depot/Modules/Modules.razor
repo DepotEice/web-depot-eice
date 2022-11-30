@@ -14,9 +14,12 @@
 
 <div class="container">
     <div class="row">
-        <a href="#" class="text-dark">
-            Demandes d'acceptation aux modules (@_numberOfAcceptationDemands)
-        </a>
+        @if (_isDirection)
+        {
+            <NavLink href="depot/modulerequests" class="text-dark">
+                Demandes d'acceptation aux modules (@_numberOfAcceptationDemands)
+            </NavLink>
+        }
     </div>
 
     <EditForm class="py-3 border-bottom" Model="_moduleFilters" OnValidSubmit="( async () => await HandleFiltersValidSubmitAsync())">
@@ -46,7 +49,7 @@
                     </p>
                     <span>@module.TeacherName</span>
                     <div class="row">
-                        <a href="@module.ModuleUrl">Plus de détails</a>
+                        <NavLink href="@module.ModuleUrl">Plus de détails</NavLink>
                         @if (_isDirection)
                         {
                             <NavLink href="">Gérer l'horaire</NavLink>

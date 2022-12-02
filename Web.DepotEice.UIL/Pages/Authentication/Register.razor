@@ -72,22 +72,28 @@
             <span>
                 Si vous avez déjà un compte, pour vous connecter cliquez <NavLink href="/login">ici</NavLink>
             </span>
+            <span>
+                @_resultMessage
+            </span>
         </div>
     </EditForm>
 </div>
 
 @code {
     private RegisterForm _registerForm = new();
+    private string _resultMessage = string.Empty;
 
     private async Task HandleValidSubmit()
     {
         var result = await UserManager.SignUpAsync(_registerForm);
         if (result)
         {
+            _resultMessage = "Vous vous êtes correctement inscris, vérifiez vos mails pour confirmer votre compte";
             Logger.LogInformation("Account successfully created!");
         }
         else
         {
+            _resultMessage = "La création du compte a échoué";
             Logger.LogError("Account creation failed");
         }
         Logger.LogInformation("{date} | Submit form clicked", DateTime.Now);

@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Pages\PrivacyPolicy.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.0" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.10" />
@@ -24,6 +28,18 @@
 
   <ItemGroup>
     <Folder Include="Pages\Depot\Shared\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Pages\PrivacyPolicy.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Pages\PrivacyPolicy.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Pages\PrivacyPolicy.razor" />
   </ItemGroup>
 
 </Project>

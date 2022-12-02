@@ -13,5 +13,14 @@
                 return $"/modules/details/{Id}";
             }
         }
+
+        public string ModuleManageUrl
+        {
+            get
+            {
+                return $"/depot/managemodule/{Id}";
+            }
+
+        }
     }
 }

@@ -287,14 +287,16 @@
                             From = closedFrom,
                             To = closedTo,
                             Id = _moduleScheduleForm.ExceptionalCloses.Count == 0
-                                    ? 0
-                                    : _moduleScheduleForm.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
+                                        ? 0
+                                        : _moduleScheduleForm.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
                         });
 
                     dti = new DateTime(closedTo.Year, closedTo.Month, closedTo.Day);
                 }
             }
         }
+
+        StateHasChanged();
     }
 
     private async Task HandleValidModuleSubmitAsync()
@@ -380,9 +382,9 @@
                 schedulesToCreate.Add(new ScheduleForm()
                     {
                         StartAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelection.From.Hour,
-                                                                                daySelection.From.Minute, 0),
+                                                                                    daySelection.From.Minute, 0),
                         EndAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelection.To.Hour,
-                                                                                daySelection.To.Minute, 0),
+                                                                                    daySelection.To.Minute, 0),
                     });
             }
         }

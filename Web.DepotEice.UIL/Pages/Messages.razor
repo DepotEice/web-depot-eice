@@ -1,15 +1,13 @@
 ﻿@page "/messages"
 
-<div class="container">
-    <div class="col-lg-3">
-        <div class="card-list">
-
-        </div>
-    </div>
-
-    <div class="col-lg-9">
-    </div>
-</div>
+<Authorize Role="Guest">
+    <Authorized>
+        <h1>Vous êtes authorisé à accéder à la page</h1>
+    </Authorized>
+    <Unauthorized>
+        <h1>Vous n'êtes pas authorisé à accéder à la page</h1>
+    </Unauthorized>
+</Authorize>
 
 @code {
 

@@ -141,6 +141,8 @@
             Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to retrieve files.\n" +
                 $"{e.Message}\n{e.StackTrace}");
         }
+
+        StateHasChanged();
     }
 
     public async Task DownloadFileAsync(int fileId)

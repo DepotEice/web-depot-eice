@@ -1,3 +1,41 @@
-﻿@code {
+﻿@using Web.DepotEice.UIL.Managers;
 
+@inject UserManager UserManager;
+@inject ILogger<Authorize> Logger;
+
+@if (_isAuthorized)
+{
+    @Authorized
+}
+else
+{
+    @Unauthorized
+}
+
+@code {
+    [Parameter]
+    public string Role { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment? Authorized { get; set; }
+
+    [Parameter]
+    public RenderFragment? Unauthorized { get; set; }
+
+    private bool _isAuthorized = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Role))
+        {
+            throw new ArgumentNullException(nameof(Role));
+        }
+
+        Logger.LogInformation($"{DateTime.Now} - Requesting authorization for role \"{Role}\"");
+
+        _isAuthorized = await UserManager.IsInRoleAsync(Role);
+
+        StateHasChanged();
+    }
 }

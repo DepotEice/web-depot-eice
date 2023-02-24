@@ -21,6 +21,28 @@
             <span>Img circle button comes here</span>
         </div>
 
+        <div class="mb-3 row">
+            <label for="gender" class="form-label">
+                Genre
+            </label>
+
+            <div class="d-flex flex-row justify-content-between" style="width: 50%;">
+                <InputRadioGroup @bind-Value="_profileUpdate.Gender">
+                    <div class="">
+                        <InputRadio Value="@("Homme")" class="mx-1" /> Homme
+                    </div>
+
+                    <div class="">
+                        <InputRadio Value="@("Femme")" class="mx-1" /> Femme
+                    </div>
+
+                    <div class="">
+                        <InputRadio Value="@("Autre")" class="mx-1" /> Autre
+                    </div>
+                </InputRadioGroup>
+            </div>
+        </div>
+
         <div class="mb-3 d-flex flex-lg-row justify-content-between">
             <div class="me-1 col-lg">
                 <label for="firstName" class="form-label">
@@ -77,28 +99,6 @@
                            @bind-Value="_profileUpdate.PhoneNumber"
                            oninput="@(() => ValidatePhoneInput(_profileUpdate.PhoneNumber))" />
                 <ValidationMessage class="text-danger" For="(() => _profileUpdate.PhoneNumber)"></ValidationMessage>
-            </div>
-        </div>
-
-        <div class="mb-3 row">
-            <label for="gender" class="form-label">
-                Genre
-            </label>
-
-            <div class="d-flex flex-row justify-content-between" style="width: 50%;">
-                <InputRadioGroup @bind-Value="_profileUpdate.Gender">
-                    <div class="">
-                        <InputRadio Value="@("Homme")" class="mx-1" /> Homme
-                    </div>
-
-                    <div class="">
-                        <InputRadio Value="@("Femme")" class="mx-1" /> Femme
-                    </div>
-
-                    <div class="">
-                        <InputRadio Value="@("Autre")" class="mx-1" /> Autre
-                    </div>
-                </InputRadioGroup>
             </div>
         </div>
 

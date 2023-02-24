@@ -73,5 +73,14 @@ namespace Web.DepotEice.BLL.Services
 
             return await response.Content.ReadFromJsonAsync<UserModel>();
         }
+
+        public async Task<UserModel?> GetUserAsync()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync($"Users/me");
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<UserModel>();
+        }
     }
 }

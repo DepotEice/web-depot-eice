@@ -35,7 +35,7 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(signInModel));
             }
 
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/SignIn", signInModel);
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/Login", signInModel);
             response.EnsureSuccessStatusCode();
 
             var token = await response.Content.ReadFromJsonAsync<SignInResponseModel>();

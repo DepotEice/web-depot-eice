@@ -1,0 +1,186 @@
+﻿@page "/Profile/Information"
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Managers;
+@using Web.DepotEice.UIL.Models.Forms;
+
+@inject IUserService UserService;
+@inject ILogger<Information> Logger;
+@inject IMapper Mapper;
+@inject UserManager UserManager;
+
+<h3 class="text-center my-5">Informations générales</h3>
+
+<div class="container">
+
+    <EditForm Model="_profileUpdate">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+
+        <div class="mb-3">
+            <span>Img circle button comes here</span>
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg">
+                <label for="firstName" class="form-label">
+                    Prénom
+                </label>
+                <InputText id="firstName" class="form-control" aria-describedby="firstName"
+                           @bind-Value="@_profileUpdate.FirstName" disabled />
+                <ValidationMessage class="text-danger" For="(() => _profileUpdate.FirstName)"></ValidationMessage>
+            </div>
+            <div class="ms-1 col-lg">
+                <label for="lastName" class="form-label">
+                    Nom de famille
+                </label>
+                <InputText id="lastName" class="form-control" aria-describedby="lastName"
+                           @bind-Value="@_profileUpdate.LastName" disabled />
+                <ValidationMessage class="text-danger" For="(() => _profileUpdate.LastName)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">
+                Adresse email
+            </label>
+            <InputText id="emailAddress" class="form-control" aria-describedby="emailAddress"
+                       @bind-Value="@_profileUpdate.Email" disabled />
+            <ValidationMessage class="text-danger" For="(() => _profileUpdate.Email)"></ValidationMessage>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">
+                Addresse email de l'école
+            </label>
+            <InputText id="schoolEmailAddress" class="form-control" aria-describedby="schoolEmailAddress"
+                       @bind-Value="_profileUpdate.SchoolEmail" disabled />
+            <ValidationMessage class="text-danger" For="(() => _profileUpdate.SchoolEmail)"></ValidationMessage>
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg">
+                <label for="mobileNumber" class="form-label">
+                    Mobile
+                </label>
+                <InputText id="mobileNumber" class="form-control" aria-describedby="mobileNumber"
+                           @bind-Value="_profileUpdate.MobileNumber"
+                           oninput="@(() => ValidatePhoneInput(_profileUpdate.MobileNumber))" />
+                <ValidationMessage class="text-danger" For="(() => _profileUpdate.MobileNumber)"></ValidationMessage>
+            </div>
+
+            <div class="ms-1 col-lg">
+                <label for="phoneNumber" class="form-label">
+                    Téléphone
+                </label>
+                <InputText id="phoneNumber" class="form-control" aria-describedby="phoneNumber"
+                           @bind-Value="_profileUpdate.PhoneNumber"
+                           oninput="@(() => ValidatePhoneInput(_profileUpdate.PhoneNumber))" />
+                <ValidationMessage class="text-danger" For="(() => _profileUpdate.PhoneNumber)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3 row">
+            <label for="gender" class="form-label">
+                Genre
+            </label>
+
+            <div class="d-flex flex-row justify-content-between" style="width: 50%;">
+                <InputRadioGroup @bind-Value="_profileUpdate.Gender">
+                    <div class="">
+                        <InputRadio Value="@("Homme")" class="mx-1" /> Homme
+                    </div>
+
+                    <div class="">
+                        <InputRadio Value="@("Femme")" class="mx-1" /> Femme
+                    </div>
+
+                    <div class="">
+                        <InputRadio Value="@("Autre")" class="mx-1" /> Autre
+                    </div>
+                </InputRadioGroup>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="street" class="form-label">
+                Rue
+            </label>
+            <InputText id="street" class="form-control" aria-describedby="street" @bind-Value="_profileUpdate.Street" />
+            <ValidationMessage class="text-danger" For="(() => _profileUpdate.Street)"></ValidationMessage>
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg">
+                <label for="houseNumber" class="form-label">
+                    Numéro
+                </label>
+                <InputText id="houseNumber" class="form-control" aria-describedby="houseNumber"
+                           @bind-Value="_profileUpdate.HouseNumber" />
+                <ValidationMessage class="text-danger" For="(() => _profileUpdate.HouseNumber)"></ValidationMessage>
+            </div>
+
+            <div class="ms-1 col-lg">
+                <label for="houseBoxNumber" class="form-label">
+                    Boite (optionel)
+                </label>
+                <InputText id="houseBoxNumber" class="form-control" aria-describedby="houseBoxNumber"
+                           @bind-Value="_profileUpdate.HouseBoxNumber" />
+                <ValidationMessage class="text-danger" For="(() => _profileUpdate.HouseBoxNumber)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg-3">
+                <label for="zipCode" class="form-label">
+                    Code postal
+                </label>
+                <InputText id="zipCode" class="form-control" aria-describedby="zipCode"
+                           @bind-Value="_profileUpdate.ZipCode" />
+                <ValidationMessage class="text-danger" For="(() => _profileUpdate.ZipCode)"></ValidationMessage>
+            </div>
+
+            <div class="ms-1 col-lg">
+                <label for="city" class="form-label">
+                    Ville
+                </label>
+                <InputText id="city" class="form-control" aria-describedby="city" @bind-Value="_profileUpdate.City" />
+                <ValidationMessage class="text-danger" For="(() => _profileUpdate.City)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-outline-primary mx-auto">
+                Enregistrer
+            </button>
+            <button type="button" class="btn btn-light mx-auto">
+                Réinitialiser
+            </button>
+        </div>
+    </EditForm>
+
+</div>
+
+@code {
+    private ProfileUpdateForm _profileUpdate = new();
+
+    private string[] _options = new string[] { "Homme", "Femme", "Autre" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserModel? userModel = await UserService.GetUserAsync();
+
+        if (userModel is null)
+        {
+            Logger.LogError($"{DateTime.Now} - The current user couldn't be retrieved from the API");
+            return;
+        }
+
+        _profileUpdate = Mapper.Map<ProfileUpdateForm>(userModel);
+    }
+
+    private void ValidatePhoneInput(string phone)
+    {
+
+    }
+}

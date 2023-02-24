@@ -16,6 +16,8 @@ namespace Web.DepotEice.UIL.Profiles
                     dest => dest.FullName,
                     opt => opt.MapFrom(
                         src => $"{src.LastName.ToUpper()} {src.FirstName}"));
+
+            CreateMap<UserModel, ProfileUpdateForm>();
         }
     }
 }

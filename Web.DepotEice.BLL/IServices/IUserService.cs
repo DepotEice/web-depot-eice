@@ -13,5 +13,6 @@ namespace Web.DepotEice.BLL.IServices
         Task<IEnumerable<UserModel>> GetTeachersAsync();
 
         Task<UserModel?> GetUserAsync(string? id);
+        Task<UserModel?> GetUserAsync();
     }
 }

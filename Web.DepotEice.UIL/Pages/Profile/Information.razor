@@ -18,7 +18,7 @@
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
         <div class="mb-3">
-            <span>Img circle button comes here</span>
+            <ImageUploader />
         </div>
 
         <div class="mb-3 row">
@@ -99,53 +99,6 @@
                            @bind-Value="_profileUpdate.PhoneNumber"
                            oninput="@(() => ValidatePhoneInput(_profileUpdate.PhoneNumber))" />
                 <ValidationMessage class="text-danger" For="(() => _profileUpdate.PhoneNumber)"></ValidationMessage>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label for="street" class="form-label">
-                Rue
-            </label>
-            <InputText id="street" class="form-control" aria-describedby="street" @bind-Value="_profileUpdate.Street" />
-            <ValidationMessage class="text-danger" For="(() => _profileUpdate.Street)"></ValidationMessage>
-        </div>
-
-        <div class="mb-3 d-flex flex-lg-row justify-content-between">
-            <div class="me-1 col-lg">
-                <label for="houseNumber" class="form-label">
-                    Numéro
-                </label>
-                <InputText id="houseNumber" class="form-control" aria-describedby="houseNumber"
-                           @bind-Value="_profileUpdate.HouseNumber" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.HouseNumber)"></ValidationMessage>
-            </div>
-
-            <div class="ms-1 col-lg">
-                <label for="houseBoxNumber" class="form-label">
-                    Boite (optionel)
-                </label>
-                <InputText id="houseBoxNumber" class="form-control" aria-describedby="houseBoxNumber"
-                           @bind-Value="_profileUpdate.HouseBoxNumber" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.HouseBoxNumber)"></ValidationMessage>
-            </div>
-        </div>
-
-        <div class="mb-3 d-flex flex-lg-row justify-content-between">
-            <div class="me-1 col-lg-3">
-                <label for="zipCode" class="form-label">
-                    Code postal
-                </label>
-                <InputText id="zipCode" class="form-control" aria-describedby="zipCode"
-                           @bind-Value="_profileUpdate.ZipCode" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.ZipCode)"></ValidationMessage>
-            </div>
-
-            <div class="ms-1 col-lg">
-                <label for="city" class="form-label">
-                    Ville
-                </label>
-                <InputText id="city" class="form-control" aria-describedby="city" @bind-Value="_profileUpdate.City" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.City)"></ValidationMessage>
             </div>
         </div>
 

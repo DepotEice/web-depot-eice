@@ -1,11 +1,59 @@
 ﻿@page "/Profile/Addresses"
 @using AutoMapper;
+@using Web.DepotEice.UIL.Models.Forms;
 
 @inject ILogger<Addresses> Logger;
 @inject IMapper Mapper;
 
 <h3>Addresses</h3>
 
-@code {
+<div class="mb-3">
+    <label for="street" class="form-label">
+        Rue
+    </label>
+    <InputText id="street" class="form-control" aria-describedby="street" @bind-Value="_addressForm.Street" />
+    <ValidationMessage class="text-danger" For="(() => _addressForm.Street)"></ValidationMessage>
+</div>
 
+<div class="mb-3 d-flex flex-lg-row justify-content-between">
+    <div class="me-1 col-lg">
+        <label for="houseNumber" class="form-label">
+            Numéro
+        </label>
+        <InputText id="houseNumber" class="form-control" aria-describedby="houseNumber"
+                   @bind-Value="_addressForm.Number" />
+        <ValidationMessage class="text-danger" For="(() => _addressForm.Number)"></ValidationMessage>
+    </div>
+
+    <div class="ms-1 col-lg">
+        <label for="houseBoxNumber" class="form-label">
+            Boite (optionel)
+        </label>
+        <InputText id="houseBoxNumber" class="form-control" aria-describedby="houseBoxNumber"
+                   @bind-Value="_addressForm.BoxNumber" />
+        <ValidationMessage class="text-danger" For="(() => _addressForm.BoxNumber)"></ValidationMessage>
+    </div>
+</div>
+
+<div class="mb-3 d-flex flex-lg-row justify-content-between">
+    <div class="me-1 col-lg-3">
+        <label for="zipCode" class="form-label">
+            Code postal
+        </label>
+        <InputText id="zipCode" class="form-control" aria-describedby="zipCode"
+                   @bind-Value="_addressForm.ZipCode" />
+        <ValidationMessage class="text-danger" For="(() => _addressForm.ZipCode)"></ValidationMessage>
+    </div>
+
+    <div class="ms-1 col-lg">
+        <label for="city" class="form-label">
+            Ville
+        </label>
+        <InputText id="city" class="form-control" aria-describedby="city" @bind-Value="_addressForm.City" />
+        <ValidationMessage class="text-danger" For="(() => _addressForm.City)"></ValidationMessage>
+    </div>
+</div>
+
+@code {
+    private AddressForm _addressForm = new AddressForm();
 }

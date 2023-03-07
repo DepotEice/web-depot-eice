@@ -134,7 +134,7 @@
     public string ImageSource { get; set; } = "https://www.autoscout24.be/cms-content-assets/7DJdOP1KapFbuQulSMKCsz-cbb2a2f3959e64af8120e1760e734d89-Kia_EV6_Rijtest_4-1100.jpg";
 
     [Parameter]
-    public byte[] ImageBytes { get; set; }
+    public byte[]? ImageBytes { get; set; }
 
     private string _newImage = "";
 
@@ -272,7 +272,7 @@
 
         byte[] bytes = ImageHelper.GetBytes(_originalImage, _imageFormat.Value);
 
-        Image image = ImageHelper.Crop(bytes, cropX, cropY, cropWidth, cropHeight);
+        Image image = ImageHelper.Crop(bytes, Math.Abs(cropX), Math.Abs(cropY), cropWidth, cropHeight);
 
         ImageBytes = ImageHelper.GetBytes(image, _imageFormat.Value);
 
@@ -280,13 +280,13 @@
 
         ImageSource = _newImage;
 
-        await OnResetClicked();
+        OnResetClicked();
     }
 
     /// <summary>
     /// Set everything back to the default values
     /// </summary>
-    private async Task OnResetClicked()
+    private void OnResetClicked()
     {
         Console.WriteLine("Reset clicked");
         ImageBytes = new byte[0];

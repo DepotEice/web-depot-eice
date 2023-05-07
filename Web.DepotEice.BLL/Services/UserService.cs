@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Blazored.LocalStorage;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -12,16 +14,30 @@ namespace Web.DepotEice.BLL.Services
 {
     public class UserService : IUserService
     {
+        private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
+        private readonly ILocalStorageService _localStorageService;
 
-        public UserService(HttpClient httpClient)
+        public UserService(ILogger<UserService> logger, HttpClient httpClient, ILocalStorageService localStorageService)
         {
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             if (httpClient is null)
             {
                 throw new ArgumentNullException(nameof(httpClient));
             }
 
+            if (localStorageService is null)
+            {
+                throw new ArgumentNullException(nameof(localStorageService));
+            }
+
+            _logger = logger;
             _httpClient = httpClient;
+            _localStorageService = localStorageService;
 
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -67,6 +83,10 @@ namespace Web.DepotEice.BLL.Services
                 return null;
             }
 
+            string token = await _localStorageService.GetItemAsync<string>("token");
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
             HttpResponseMessage response = await _httpClient.GetAsync($"Users/{userId}");
 
             response.EnsureSuccessStatusCode();
@@ -76,6 +96,10 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<UserModel?> GetUserAsync()
         {
+            string token = await _localStorageService.GetItemAsync<string>("token");
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
             HttpResponseMessage response = await _httpClient.GetAsync($"Users/me");
 
             response.EnsureSuccessStatusCode();

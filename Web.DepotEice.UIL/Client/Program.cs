@@ -44,6 +44,7 @@ namespace Company.WebApplication1
                 BaseAddress = new Uri("https://api-depot-eice.azurewebsites.net/api/")
             });
 #endif
+            builder.Services.AddScoped<IAddressService, AddressService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IUserTokenService, UserTokenService>();
             builder.Services.AddScoped<IUserService, UserService>();

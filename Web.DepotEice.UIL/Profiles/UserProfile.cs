@@ -18,6 +18,8 @@ namespace Web.DepotEice.UIL.Profiles
                         src => $"{src.LastName.ToUpper()} {src.FirstName}"));
 
             CreateMap<UserModel, ProfileUpdateForm>();
+
+            CreateMap<ProfileUpdateForm, UserUpdateModel>();
         }
     }
 }

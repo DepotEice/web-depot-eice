@@ -14,33 +14,11 @@
 
 <div class="container">
 
-    <EditForm Model="_profileUpdate">
+    <EditForm Model="profileUpdate">
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
         <div class="mb-3">
             <ImageUploader />
-        </div>
-
-        <div class="mb-3 row">
-            <label for="gender" class="form-label">
-                Genre
-            </label>
-
-            <div class="d-flex flex-row justify-content-between" style="width: 50%;">
-                <InputRadioGroup @bind-Value="_profileUpdate.Gender">
-                    <div class="">
-                        <InputRadio Value="@("Homme")" class="mx-1" /> Homme
-                    </div>
-
-                    <div class="">
-                        <InputRadio Value="@("Femme")" class="mx-1" /> Femme
-                    </div>
-
-                    <div class="">
-                        <InputRadio Value="@("Autre")" class="mx-1" /> Autre
-                    </div>
-                </InputRadioGroup>
-            </div>
         </div>
 
         <div class="mb-3 d-flex flex-lg-row justify-content-between">
@@ -49,16 +27,16 @@
                     Prénom
                 </label>
                 <InputText id="firstName" class="form-control" aria-describedby="firstName"
-                           @bind-Value="@_profileUpdate.FirstName" disabled />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.FirstName)"></ValidationMessage>
+                @bind-Value="@profileUpdate.FirstName" disabled />
+                <ValidationMessage class="text-danger" For="(() => profileUpdate.FirstName)"></ValidationMessage>
             </div>
             <div class="ms-1 col-lg">
                 <label for="lastName" class="form-label">
                     Nom de famille
                 </label>
                 <InputText id="lastName" class="form-control" aria-describedby="lastName"
-                           @bind-Value="@_profileUpdate.LastName" disabled />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.LastName)"></ValidationMessage>
+                @bind-Value="@profileUpdate.LastName" disabled />
+                <ValidationMessage class="text-danger" For="(() => profileUpdate.LastName)"></ValidationMessage>
             </div>
         </div>
 
@@ -67,8 +45,8 @@
                 Adresse email
             </label>
             <InputText id="emailAddress" class="form-control" aria-describedby="emailAddress"
-                       @bind-Value="@_profileUpdate.Email" disabled />
-            <ValidationMessage class="text-danger" For="(() => _profileUpdate.Email)"></ValidationMessage>
+            @bind-Value="@profileUpdate.Email" disabled />
+            <ValidationMessage class="text-danger" For="(() => profileUpdate.Email)"></ValidationMessage>
         </div>
 
         <div class="mb-3">
@@ -76,8 +54,41 @@
                 Addresse email de l'école
             </label>
             <InputText id="schoolEmailAddress" class="form-control" aria-describedby="schoolEmailAddress"
-                       @bind-Value="_profileUpdate.SchoolEmail" disabled />
-            <ValidationMessage class="text-danger" For="(() => _profileUpdate.SchoolEmail)"></ValidationMessage>
+            @bind-Value="profileUpdate.SchoolEmail" disabled />
+            <ValidationMessage class="text-danger" For="(() => profileUpdate.SchoolEmail)"></ValidationMessage>
+        </div>
+
+        <div class="mb-3 row">
+            <div class="me-1 col-lg">
+                <label for="gender" class="form-label">
+                    Genre
+                </label>
+
+                <div class="d-flex flex-row justify-content-between" style="width: 50%;">
+                    <InputRadioGroup @bind-Value="profileUpdate.Gender">
+                        <div class="">
+                            <InputRadio Value="@("Homme")" class="mx-1" /> Homme
+                        </div>
+
+                        <div class="">
+                            <InputRadio Value="@("Femme")" class="mx-1" /> Femme
+                        </div>
+
+                        <div class="">
+                            <InputRadio Value="@("Autre")" class="mx-1" /> Autre
+                        </div>
+                    </InputRadioGroup>
+                </div>
+            </div>
+
+            <div class="ms-1 col-lg">
+                <label for="birthDate" class="form-label">
+                    Date de naissance
+                </label>
+                <InputDate id="birthDate" class="form-control" aria-describedby="birthDate"
+                @bind-Value="profileUpdate.BirthDate" />
+                <ValidationMessage class="text-danger" For="(() => profileUpdate.BirthDate)"></ValidationMessage>
+            </div>
         </div>
 
         <div class="mb-3 d-flex flex-lg-row justify-content-between">
@@ -86,9 +97,9 @@
                     Mobile
                 </label>
                 <InputText id="mobileNumber" class="form-control" aria-describedby="mobileNumber"
-                           @bind-Value="_profileUpdate.MobileNumber"
-                           oninput="@(() => ValidatePhoneInput(_profileUpdate.MobileNumber))" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.MobileNumber)"></ValidationMessage>
+                @bind-Value="profileUpdate.MobileNumber"
+                           oninput="@(() => ValidatePhoneInput(profileUpdate.MobileNumber))" />
+                <ValidationMessage class="text-danger" For="(() => profileUpdate.MobileNumber)"></ValidationMessage>
             </div>
 
             <div class="ms-1 col-lg">
@@ -96,14 +107,14 @@
                     Téléphone
                 </label>
                 <InputText id="phoneNumber" class="form-control" aria-describedby="phoneNumber"
-                           @bind-Value="_profileUpdate.PhoneNumber"
-                           oninput="@(() => ValidatePhoneInput(_profileUpdate.PhoneNumber))" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.PhoneNumber)"></ValidationMessage>
+                @bind-Value="profileUpdate.PhoneNumber"
+                           oninput="@(() => ValidatePhoneInput(profileUpdate.PhoneNumber))" />
+                <ValidationMessage class="text-danger" For="(() => profileUpdate.PhoneNumber)"></ValidationMessage>
             </div>
         </div>
 
         <div class="mb-3">
-            <button type="submit" class="btn btn-outline-primary mx-auto">
+            <button type="submit" class="btn btn-outline-primary mx-auto" @onclick="OnSubmitClicked">
                 Enregistrer
             </button>
             <button type="button" class="btn btn-light mx-auto">
@@ -115,9 +126,8 @@
 </div>
 
 @code {
-    private ProfileUpdateForm _profileUpdate = new();
-
-    private string[] _options = new string[] { "Homme", "Femme", "Autre" };
+    private ProfileUpdateForm profileUpdate = new();
+    private string[] options = new string[] { "Homme", "Femme", "Autre" };
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,7 +139,24 @@
             return;
         }
 
-        _profileUpdate = Mapper.Map<ProfileUpdateForm>(userModel);
+        profileUpdate = Mapper.Map<ProfileUpdateForm>(userModel);
+    }
+
+    private void OnSubmitClicked()
+    {
+        Logger.LogInformation($"{DateTime.Now} - The user clicked on the submit button");
+
+        if (profileUpdate is null)
+        {
+            Logger.LogError($"{DateTime.Now} - The profile update form is null");
+            return;
+        }
+
+        Logger.LogInformation($"{DateTime.Now} - The profile update form is valid");
+
+        UserUpdateModel userModel = Mapper.Map<UserUpdateModel>(profileUpdate);
+
+        UserService.UpdateUserAsync(userModel);
     }
 
     private void ValidatePhoneInput(string phone)

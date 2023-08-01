@@ -1,4 +1,6 @@
-﻿namespace Web.DepotEice.UIL.Models.Forms
+﻿using Microsoft.AspNetCore.Components.Forms;
+
+namespace Web.DepotEice.UIL.Models.Forms
 {
     public class ProfileUpdateForm
     {
@@ -10,5 +12,6 @@
         public string MobileNumber { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
+        public DateTime BirthDate { get; set; }
     }
 }

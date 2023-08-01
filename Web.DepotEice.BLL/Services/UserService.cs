@@ -18,7 +18,11 @@ namespace Web.DepotEice.BLL.Services
         private readonly HttpClient _httpClient;
         private readonly ILocalStorageService _localStorageService;
 
-        public UserService(ILogger<UserService> logger, HttpClient httpClient, ILocalStorageService localStorageService)
+        public UserService(
+            ILogger<UserService> logger,
+            HttpClient httpClient,
+            ILocalStorageService localStorageService
+        )
         {
             if (logger is null)
             {
@@ -39,37 +43,60 @@ namespace Web.DepotEice.BLL.Services
             _httpClient = httpClient;
             _localStorageService = localStorageService;
 
-            _httpClient.DefaultRequestHeaders.Accept
-                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json")
+            );
         }
 
+        /// <summary>
+        /// Retrieves a collection of teacher users asynchronously.
+        /// </summary>
+        /// <returns>The collection of teacher users.</returns>
         public async Task<IEnumerable<UserModel>> GetTeachersAsync()
         {
+            _logger.LogInformation("GetTeachersAsync");
+
             HttpResponseMessage response = await _httpClient.GetAsync("Users/Teachers");
 
             response.EnsureSuccessStatusCode();
 
-            IEnumerable<UserModel>? result = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
+            IEnumerable<UserModel>? result = await response.Content.ReadFromJsonAsync<
+                IEnumerable<UserModel>
+            >();
 
             if (result is null)
             {
+                _logger.LogWarning("GetTeachersAsync: result is null");
+
                 return Enumerable.Empty<UserModel>();
             }
+
+            _logger.LogInformation("GetTeachersAsync: {resultNumber}", result.Count());
 
             return result;
         }
 
-        public async Task<bool> UpdatePassword(PasswordUpdateModel passwordUpdate, string? token = null)
+        public async Task<bool> UpdatePassword(
+            PasswordUpdateModel passwordUpdate,
+            string? token = null
+        )
         {
+            _logger.LogInformation("UpdatePassword");
+
             if (passwordUpdate is null)
             {
+                _logger.LogWarning("UpdatePassword: passwordUpdate is null");
+
                 throw new ArgumentNullException(nameof(passwordUpdate));
             }
 
-            string requestString = "Users/Password" + (token is not null ? $"?token={token}" : string.Empty);
+            string requestString =
+                "Users/Password" + (token is not null ? $"?token={token}" : string.Empty);
 
-            HttpResponseMessage response =
-                await _httpClient.PostAsJsonAsync(requestString, passwordUpdate);
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
+                requestString,
+                passwordUpdate
+            );
 
             response.EnsureSuccessStatusCode();
 
@@ -85,7 +112,10 @@ namespace Web.DepotEice.BLL.Services
 
             string token = await _localStorageService.GetItemAsync<string>("token");
 
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                token
+            );
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Users/{userId}");
 
@@ -98,13 +128,40 @@ namespace Web.DepotEice.BLL.Services
         {
             string token = await _localStorageService.GetItemAsync<string>("token");
 
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                token
+            );
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Users/me");
 
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadFromJsonAsync<UserModel>();
+        }
+
+        public async Task<UserModel?> UpdateUserAsync(UserUpdateModel userUpdateModel)
+        {
+            if (userUpdateModel is null)
+            {
+                throw new NullReferenceException(nameof(userUpdateModel));
+            }
+
+            string token = await _localStorageService.GetItemAsync<string>("token");
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                token
+            );
+
+            HttpResponseMessage responseMessage = await _httpClient.PutAsJsonAsync(
+                "Users",
+                userUpdateModel
+            );
+
+            responseMessage.EnsureSuccessStatusCode();
+
+            return await responseMessage.Content.ReadFromJsonAsync<UserModel>();
         }
     }
 }

@@ -235,6 +235,12 @@
             return;
         }
 
+        if(_originalImage is null)
+        {
+            _errorMessages.Add("The original image could not be loaded. Reset and try again");
+            return;
+        }
+
         var imgWrapperPosition = await JsRuntime.InvokeAsync<Position>("getDOMElementPosition", "img-wrapper");
         var imgWrapperSize = await JsRuntime.InvokeAsync<Size>("getDOMElementSize", "img-wrapper");
         var imgPosition = await JsRuntime.InvokeAsync<Position>("getDOMElementPosition", "img-overlay");

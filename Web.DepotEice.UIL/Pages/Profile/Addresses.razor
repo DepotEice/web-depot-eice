@@ -61,7 +61,14 @@
     /// <returns></returns>
     private async Task<IEnumerable<AddressModel>> GetAddressesAsync()
     {
-        return (await AddressService.GetAddresses()).OrderBy(a => a.IsPrimary);
+        ResultModel<IEnumerable<AddressModel>> result = await AddressService.GetAddressesAsync();
+
+        if (result.Data is not null)
+        {
+            return result.Data.OrderBy(a => a.IsPrimary);
+        }
+
+        return new List<AddressModel>();
     }
 
     /// <summary>
@@ -93,13 +100,13 @@
         {
             AddressCreateModel addressCreate = Mapper.Map<AddressCreateModel>(address);
 
-            AddressModel? createdAddress = await AddressService.CreateAddress(addressCreate);
+            //AddressModel? createdAddress = await AddressService.CreateAddress(addressCreate);
 
-            if (createdAddress is null)
-            {
-                Logger.LogError($"The address could not be created");
-                return;
-            }
+            //if (createdAddress is null)
+            //{
+            //    Logger.LogError($"The address could not be created");
+            //    return;
+            //}
         }
     }
 
@@ -129,13 +136,13 @@
 
             if (address.Id != 0)
             {
-                if (!await AddressService.DeleteAddress(index))
-                {
-                    Logger.LogError($"Failed to delete address with id {index}");
+                //if (!await AddressService.DeleteAddress(index))
+                //{
+                //    Logger.LogError($"Failed to delete address with id {index}");
 
-                    await ShowModalAsync("Suppression", $"La suppression de l'addresse {index} a échouée");
-                    return;
-                }
+                //    await ShowModalAsync("Suppression", $"La suppression de l'addresse {index} a échouée");
+                //    return;
+                //}
             }
 
             _addresses.Remove(address);

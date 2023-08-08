@@ -9,10 +9,10 @@ namespace Web.DepotEice.BLL.IServices
 {
     public interface IAddressService
     {
-        Task<IEnumerable<AddressModel>> GetAddresses();
-        Task<AddressModel?> GetAddress(int id);
-        Task<AddressModel?> CreateAddress(AddressCreateModel addressCreate);
-        Task<AddressModel?> UpdateAddress(AddressUpdateModel addressUpdate);
-        Task<bool> DeleteAddress(int id);
+        Task<ResultModel<IEnumerable<AddressModel>>> GetAddressesAsync();
+        Task<ResultModel<AddressModel>> GetAddressAsync(int id);
+        Task<ResultModel<AddressModel>> CreateAddressAsync(AddressCreateModel addressCreate);
+        Task<ResultModel<AddressModel>> UpdateAddressAsync(AddressUpdateModel addressUpdate);
+        Task<ResultModel<AddressModel>> DeleteAddressAsync(int id);
     }
 }

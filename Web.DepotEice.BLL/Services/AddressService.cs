@@ -41,7 +41,7 @@ namespace Web.DepotEice.BLL.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
         }
 
-        public async Task<AddressModel?> CreateAddress(AddressCreateModel addressCreate)
+        public async Task<ResultModel<AddressModel>> CreateAddressAsync(AddressCreateModel addressCreate)
         {
             if (addressCreate is null)
             {
@@ -50,12 +50,18 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Addresses", addressCreate);
 
-            AddressModel? createdAddress = await response.Content.ReadFromJsonAsync<AddressModel>();
+            ResultModel<AddressModel> result = new ResultModel<AddressModel>()
+            {
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = await response.Content.ReadFromJsonAsync<AddressModel>(),
+                Success = response.IsSuccessStatusCode
+            };
 
-            return createdAddress;
+            return result;
         }
 
-        public async Task<bool> DeleteAddress(int id)
+        public async Task<ResultModel<AddressModel>> DeleteAddressAsync(int id)
         {
             if (id <= 0)
             {
@@ -64,10 +70,18 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.DeleteAsync($"Addresses/{id}");
 
-            return response.IsSuccessStatusCode;
+            ResultModel<AddressModel> result = new ResultModel<AddressModel>()
+            {
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = await response.Content.ReadFromJsonAsync<AddressModel>(),
+                Success = response.IsSuccessStatusCode
+            };
+
+            return result;
         }
 
-        public async Task<AddressModel?> GetAddress(int id)
+        public async Task<ResultModel<AddressModel>> GetAddressAsync(int id)
         {
             if (id <= 0)
             {
@@ -76,26 +90,33 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Addresses/{id}");
 
-            AddressModel? address = await response.Content.ReadFromJsonAsync<AddressModel>();
+            ResultModel<AddressModel> result = new ResultModel<AddressModel>()
+            {
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = await response.Content.ReadFromJsonAsync<AddressModel>(),
+                Success = response.IsSuccessStatusCode
+            };
 
-            return address;
+            return result;
         }
 
-        public async Task<IEnumerable<AddressModel>> GetAddresses()
+        public async Task<ResultModel<IEnumerable<AddressModel>>> GetAddressesAsync()
         {
             HttpResponseMessage response = await _httpClient.GetAsync($"Addresses");
 
-            IEnumerable<AddressModel>? addresses = await response.Content.ReadFromJsonAsync<IEnumerable<AddressModel>>();
-
-            if (addresses is null)
+            ResultModel<IEnumerable<AddressModel>> result = new ResultModel<IEnumerable<AddressModel>>()
             {
-                return Enumerable.Empty<AddressModel>();
-            }
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = await response.Content.ReadFromJsonAsync<IEnumerable<AddressModel>>(),
+                Success = response.IsSuccessStatusCode
+            };
 
-            return addresses;
+            return result;
         }
 
-        public async Task<AddressModel?> UpdateAddress(AddressUpdateModel addressUpdate)
+        public async Task<ResultModel<AddressModel>> UpdateAddressAsync(AddressUpdateModel addressUpdate)
         {
             if (addressUpdate is null)
             {
@@ -105,9 +126,15 @@ namespace Web.DepotEice.BLL.Services
             HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync($"Addresses/${addressUpdate.Id}", addressUpdate);
 
-            AddressModel? address = await response.Content.ReadFromJsonAsync<AddressModel>();
+            ResultModel<AddressModel> result = new ResultModel<AddressModel>()
+            {
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = await response.Content.ReadFromJsonAsync<AddressModel>(),
+                Success = response.IsSuccessStatusCode
+            };
 
-            return address;
+            return result;
         }
     }
 }

@@ -21,8 +21,7 @@ namespace Web.DepotEice.UIL.Models.Forms
         [MaxLength(100, ErrorMessage = "La ville doit faire au plus 100 caractères !")]
         public string City { get; set; } = string.Empty;
 
-        [Required(AllowEmptyStrings = false, ErrorMessage = "Le code postal est requis !")]
-        [MaxLength(100, ErrorMessage = "Le code postal doit faire au plus 100 caractères !")]
+        [MaxLength(100, ErrorMessage = "L'état/La province doit faire au plus 100 caractères !")]
         public string State { get; set; } = string.Empty;
 
         [Required(AllowEmptyStrings = false, ErrorMessage = "Le code postal est requis !")]

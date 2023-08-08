@@ -10,6 +10,7 @@ namespace Web.DepotEice.UIL.Profiles
         {
             CreateMap<AddressModel, AddressForm>();
             CreateMap<AddressForm, AddressCreateModel>();
+            CreateMap<AddressForm, AddressUpdateModel>();
         }
     }
 }

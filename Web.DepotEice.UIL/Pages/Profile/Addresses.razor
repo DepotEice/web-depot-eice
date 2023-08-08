@@ -11,7 +11,7 @@
 <h2 class="text-center my-5">Adresses</h2>
 
 <div class="mb-3 d-flex justify-content-lg-end">
-    <button class="@($"btn btn-outline-secondary mx-1 {_disabled}")" @onclick="OnSetPrimaryClicked" disabled="@(primaryAddressId is not null)">
+    <button class="@_disabled" @onclick="OnSetPrimaryClicked" disabled="@(primaryAddressId is null)">
         Définir comme addresse principale
     </button>
     <button class="btn btn-outline-primary" @onclick="OnAddClicked">Ajouter</button>
@@ -22,14 +22,14 @@
 {
     int AddressFormComponentIndex = 0;
 
-    <InputRadioGroup @bind-Value="primaryAddressId" @onchange="OnPrimaryAddressChanged">
+    <InputRadioGroup @bind-Value="primaryAddressId">
         @foreach (AddressForm address in _addresses)
         {
             <div class="@(address.IsPrimary ? _primaryAddressClass : _addressClass)" style="border-radius: 10px;">
 
                 @if (address.Id != 0)
                 {
-                    <InputRadio Value="address.Id" class="mx-1" />
+                    <InputRadio Value="address.Id" class="mx-1" @onclick="OnPrimaryAddressChanged" />
                 }
 
                 <AddressFormComponent Address="address" Index="AddressFormComponentIndex" OnDelete="OnDeleteAsync"
@@ -72,7 +72,10 @@
     /// </summary>
     private string _primaryAddressClass = "border border-2 p-3 my-3";
 
-    private string _disabled = "disabled";
+    /// <summary>
+    /// Bootstrap css class "disabled" to disable an input
+    /// </summary>
+    private string _disabled = "btn btn-outline-secondary mx-1 disabled";
 
     /// <summary>
     /// Initialize the page
@@ -82,7 +85,9 @@
     {
         var addressesFromRepo = await GetAddressesAsync();
 
-        _addresses = Mapper.Map<List<AddressForm>>(addressesFromRepo.OrderBy(a => a.IsPrimary));
+        _addresses = Mapper.Map<List<AddressForm>>(addressesFromRepo.OrderByDescending(a => a.IsPrimary == true));
+
+        primaryAddressId = _addresses.SingleOrDefault(a => a.IsPrimary)?.Id;
     }
 
     /// <summary>
@@ -107,14 +112,7 @@
     /// </summary>
     private void OnSetPrimaryClicked()
     {
-        if (primaryAddressId is null)
-        {
-            _disabled = "";
-        }
-        else
-        {
-            _disabled = "disabled";
-        }
+
     }
 
     /// <summary>
@@ -129,7 +127,14 @@
 
     private void OnPrimaryAddressChanged(EventArgs e)
     {
+        Logger.LogInformation($"{nameof(OnPrimaryAddressChanged)} triggered. Selected ID is {primaryAddressId}. Disabled is {_disabled}");
 
+        if (primaryAddressId is null)
+        {
+            _disabled = "btn btn-outline-secondary mx-1 disabled";
+        }
+
+        _disabled = "btn btn-outline-secondary mx-1";
     }
 
     /// <summary>
@@ -151,26 +156,44 @@
             return;
         }
 
+        ResultModel<AddressModel>? addressResult = null;
+
         if (address.Id == 0)
         {
             AddressCreateModel addressCreate = Mapper.Map<AddressCreateModel>(address);
 
-            ResultModel<AddressModel> createdAddressResult = await AddressService.CreateAddressAsync(addressCreate);
+            addressResult = await AddressService.CreateAddressAsync(addressCreate);
 
-            if (!createdAddressResult.Success)
-            {
-                ShowMessage(ToastType.Danger, "Sauvegarde échouée", $"La sauvegarde de l'adresse a échouée avec le " +
-                    $"message suivant :\n{createdAddressResult.Message}", false);
-            }
-
-            //AddressModel? createdAddress = await AddressService.CreateAddress(addressCreate);
-
-            //if (createdAddress is null)
-            //{
-            //    Logger.LogError($"The address could not be created");
-            //    return;
-            //}
+            Logger.LogInformation($"Le résultat de la création de l'adresse est le suivant : " +
+                $"\nStatus : {addressResult.Code}" +
+                $"\nMessage : {addressResult.Message}");
         }
+        else
+        {
+            AddressUpdateModel addressUpdateModel = Mapper.Map<AddressUpdateModel>(address);
+
+            addressResult = await AddressService.UpdateAddressAsync(addressUpdateModel);
+
+            Logger.LogInformation($"Le résultat de la mise à jour de l'adresse est le suivant : " +
+                $"\nStatus : {addressResult.Code}" +
+                $"\nMessage : {addressResult.Message}");
+        }
+
+        if (!addressResult.Success)
+        {
+            ShowMessage(ToastType.Danger, "Sauvegarde échouée", $"La sauvegarde de l'adresse a échouée avec le " +
+                $"message suivant :\n{addressResult.Message}", false);
+        }
+
+        if (addressResult.Data is null)
+        {
+            Logger.LogWarning($"L'adresse retournée par l'API est null");
+            return;
+        }
+
+        AddressForm createdAddress = Mapper.Map<AddressForm>(addressResult.Data);
+
+        _addresses[index] = createdAddress;
     }
 
     /// <summary>

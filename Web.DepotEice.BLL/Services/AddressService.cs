@@ -124,7 +124,7 @@ namespace Web.DepotEice.BLL.Services
             }
 
             HttpResponseMessage response =
-                await _httpClient.PutAsJsonAsync($"Addresses/${addressUpdate.Id}", addressUpdate);
+                await _httpClient.PutAsJsonAsync($"Addresses/{addressUpdate.Id}", addressUpdate);
 
             ResultModel<AddressModel> result = new ResultModel<AddressModel>()
             {

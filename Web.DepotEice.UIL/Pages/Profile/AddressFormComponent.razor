@@ -118,7 +118,7 @@ else
     /// </summary>
     [Parameter]
     [EditorRequired]
-    public Func<int, EditContext, Task>? OnSaveChanges { get; set; }
+    public EventCallback<int> OnSaveChanges { get; set; }
 
     /// <summary>
     /// The event to execute when the is primary checkbox is clicked.
@@ -132,13 +132,7 @@ else
     /// <returns></returns>
     private async Task OnSaveClicked(EditContext editContext)
     {
-        if (OnSaveChanges is null)
-        {
-            Logger.LogWarning("The OnSaveChanges event is null !");
-            return;
-        }
-
-        await OnSaveChanges.Invoke(Index, editContext);
+        await OnSaveChanges.InvokeAsync(Index);
     }
 
     /// <summary>

@@ -74,7 +74,7 @@ namespace Web.DepotEice.BLL.Services
             {
                 Code = response.StatusCode,
                 Message = await response.Content.ReadAsStringAsync(),
-                Data = await response.Content.ReadFromJsonAsync<AddressModel>(),
+                Data = null,
                 Success = response.IsSuccessStatusCode
             };
 

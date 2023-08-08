@@ -5,13 +5,13 @@
 
 @if (Address is not null)
 {
-    <EditForm id="@($"address-{Index}")" Model="Address" OnValidSubmit="OnSaveClicked">
-        <div class="d-flex justify-content-end">
-            <button class="btn btn-outline-danger float-end" @onclick="OnDeleteClicked">
-                X
-            </button>
-        </div>
+    <div class="d-flex justify-content-end">
+        <button class="btn btn-outline-danger float-end" @onclick="OnDeleteClicked">
+            X
+        </button>
+    </div>
 
+    <EditForm id="@($"address-{Index}")" Model="Address" OnValidSubmit="OnSaveClicked">
         @if (Address.IsPrimary)
         {
             <div class="mb-3">
@@ -139,7 +139,7 @@ else
     /// Event handler for the save button. Execute the OnSaveChanges event.
     /// </summary>
     /// <returns></returns>
-    private async Task OnSaveClicked(EditContext editContext)
+    private async Task OnSaveClicked()
     {
         await OnSaveChanges.InvokeAsync(Index);
     }

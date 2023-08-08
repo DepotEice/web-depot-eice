@@ -181,7 +181,7 @@
 
         if (!addressResult.Success)
         {
-            ShowMessage(ToastType.Danger, "Sauvegarde échouée", $"La sauvegarde de l'adresse a échouée avec le " +
+            ShowMessage(ToastType.Danger, "Sauvegarde", $"La sauvegarde de l'adresse a échouée avec le " +
                 $"message suivant :\n{addressResult.Message}", false);
         }
 
@@ -190,6 +190,8 @@
             Logger.LogWarning($"L'adresse retournée par l'API est null");
             return;
         }
+
+        ShowMessage(ToastType.Success, "Sauvegarde", "L'adresse a correctement été sauvegardée", true);
 
         AddressForm createdAddress = Mapper.Map<AddressForm>(addressResult.Data);
 
@@ -204,11 +206,6 @@
     /// <returns></returns>
     private async Task OnDeleteAsync(int index)
     {
-        if (index >= _addresses.Count || index < 0)
-        {
-            throw new IndexOutOfRangeException($"{nameof(index)} is out of range: ${index}");
-        }
-
         try
         {
             AddressForm address = _addresses[index];
@@ -222,16 +219,26 @@
 
             if (address.Id != 0)
             {
-                //if (!await AddressService.DeleteAddress(index))
-                //{
-                //    Logger.LogError($"Failed to delete address with id {index}");
+                ResultModel<AddressModel> deleteResult = await AddressService.DeleteAddressAsync(address.Id);
 
-                //    await ShowModalAsync("Suppression", $"La suppression de l'addresse {index} a échouée");
-                //    return;
-                //}
+                if (!deleteResult.Success)
+                {
+                    ShowMessage(ToastType.Danger, "Suppression", $"La suprression de l'adresse a échouée avec le " +
+                        $"message suivant :\n{deleteResult.Message}", false);
+                }
+                else
+                {
+                    ShowMessage(ToastType.Success, "Suppression", "L'addresse a correctement été supprimée", true);
+                }
             }
 
             _addresses.Remove(address);
+        }
+        catch (IndexOutOfRangeException)
+        {
+            Logger.LogError($"{nameof(OnDeleteAsync)}. The index is out of range." +
+                $"\nIndex: \"{index}\".\nNumber of element in the list: \"{_addresses.Count}\"");
+            throw;
         }
         catch (Exception)
         {

@@ -11,105 +11,182 @@
 <h2 class="text-center my-5">Adresses</h2>
 
 <div class="mb-3 d-flex justify-content-lg-end">
-    <button class="btn btn-outline-primary" @onclick="AddAddress">Ajouter</button>
+    <button class="btn btn-outline-dark" @onclick="OnAddClicked">Ajouter</button>
 </div>
 
-@for (int i = 0; i < _addresses.Count; i++)
+
+@if (_addresses is not null)
 {
-    AddressModel address = _addresses[i];
+    int AddressFormComponentIndex = 0;
 
-    <EditForm class="border border-1 p-3 my-3" Model="address" style="border-radius: 10px;">
-        <div class="d-flex justify-content-end">
-            <button class="btn btn-outline-secondary float-end" @onclick="() => DeleteAddress(i)">
-                X
-            </button>
-        </div>
-        <div class="mb-3">
-            <label for="street" class="form-label">
-                Rue
-            </label>
-            <InputText id="street" class="form-control" aria-describedby="street" @bind-Value="address.Street" />
-            <ValidationMessage class="text-danger" For="(() => address.Street)"></ValidationMessage>
-        </div>
+    foreach (AddressModel address in _addresses)
+    {
+        <AddressFormComponent Address="address" Index="AddressFormComponentIndex" OnDelete="OnDeleteAsync"
+                              OnSaveChanges="OnSaveAsync" />
 
-        <div class="mb-3 d-flex flex-lg-row justify-content-between">
-            <div class="me-1 col-lg">
-                <label for="houseNumber" class="form-label">
-                    Numéro
-                </label>
-                <InputText id="houseNumber" class="form-control" aria-describedby="houseNumber"
-                       @bind-Value="address.HouseNumber" />
-                <ValidationMessage class="text-danger" For="(() => address.HouseNumber)"></ValidationMessage>
-            </div>
-
-            <div class="ms-1 col-lg">
-                <label for="appartment" class="form-label" aria-describedby="appartment">
-                    Appartement (optionel)
-                </label>
-                <InputText id="appartment" class="form-control" aria-describedby="appartment"
-                       @bind-Value="address.Appartment" />
-                <ValidationMessage class="text-danger" For="(() => address.Appartment)"></ValidationMessage>
-            </div>
-        </div>
-
-        <div class="mb-3 d-flex flex-lg-row justify-content-between">
-            <div class="me-1 col-lg-3">
-                <label for="zipCode" class="form-label">
-                    Code postal
-                </label>
-                <InputText id="zipCode" class="form-control" aria-describedby="zipCode"
-                       @bind-Value="address.Zipcode" />
-                <ValidationMessage class="text-danger" For="(() => address.Zipcode)"></ValidationMessage>
-            </div>
-
-            <div class="ms-1 col-lg">
-                <label for="city" class="form-label">
-                    Ville
-                </label>
-                <InputText id="city" class="form-control" aria-describedby="city" @bind-Value="address.City" />
-                <ValidationMessage class="text-danger" For="(() => address.City)"></ValidationMessage>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label for="country" class="form-label">
-                Pays
-            </label>
-            <InputText id="country" class="form-control" aria-describedby="country" @bind-Value="address.Country" />
-            <ValidationMessage class="text-danger" For="(() => address.Country)"></ValidationMessage>
-        </div>
-
-        <div class="mb-3">
-            <InputCheckbox id="isPrimary" @bind-Value="address.IsPrimary" placeholder="Adresse principale" />
-            <label for="isPrimary" class="form-label">
-                Adresse principale
-            </label>
-        </div>
-    </EditForm>
+        AddressFormComponentIndex++;
+    }
 }
 
-@foreach (AddressModel address in _addresses)
-{
-
-}
+<Modal @ref="modal" Title="@errorMessage.title">
+    <BodyTemplate>
+        <p>@errorMessage.body</p>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="OnHideModalClickAsync">Fermer</Button>
+    </FooterTemplate>
+</Modal>
 
 
 
 @code {
-    private List<AddressModel> _addresses = new List<AddressModel>();
+    private record ErrorMessage(string title = "", string body = "");
 
+    private List<AddressModel> _addresses = new List<AddressModel>();
+    private Modal modal = new Modal();
+    private ErrorMessage errorMessage = new ErrorMessage("", "");
+
+    /// <summary>
+    /// Initialize the page
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        _addresses = (await AddressService.GetAddresses()).ToList();
+        _addresses = (await GetAddressesAsync()).ToList();
     }
 
-    private void AddAddress()
+    /// <summary>
+    /// Get addresses from the API and order them by the IsPrimary property
+    /// </summary>
+    /// <returns></returns>
+    private async Task<IEnumerable<AddressModel>> GetAddressesAsync()
+    {
+        return (await AddressService.GetAddresses()).OrderBy(a => a.IsPrimary);
+    }
+
+    /// <summary>
+    /// Add a new empty address model in the list
+    /// </summary>
+    private void OnAddClicked()
     {
         _addresses.Add(new AddressModel());
     }
 
-    private void DeleteAddress(int index)
+    /// <summary>
+    /// Save the address in the backend. If the retrieved address id is 0, creates a new addres, otherwise,
+    /// update existing one
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    private async Task OnSaveAsync(int index)
     {
-        _addresses.RemoveAt(index);
+        AddressModel? address = _addresses[index];
+
+        if (address is null)
+        {
+            Logger.LogError($"The address with id {index} was not found");
+
+            return;
+        }
+
+        if (address.Id == 0)
+        {
+            AddressCreateModel addressCreate = Mapper.Map<AddressCreateModel>(address);
+
+            AddressModel? createdAddress = await AddressService.CreateAddress(addressCreate);
+
+            if (createdAddress is null)
+            {
+                Logger.LogError($"The address could not be created");
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Delete the address. If the address exist, use the address ID, otherwise use the index in the list of addresses
+    /// </summary>
+    /// <param name="index">The ID of the address to delete</param>
+    /// <param name="addressExist">Specify if the address exist</param>
+    /// <returns></returns>
+    private async Task OnDeleteAsync(int index)
+    {
+        if (index >= _addresses.Count || index < 0)
+        {
+            throw new IndexOutOfRangeException($"{nameof(index)} is out of range: ${index}");
+        }
+
+        try
+        {
+            AddressModel address = _addresses[index];
+
+            if (address is null)
+            {
+                Logger.LogError($"The address with id {index} was not found");
+                await ShowModalAsync("Suppression", $"L'addresse {index} n'a pas été trouvée");
+                return;
+            }
+
+            if (address.Id != 0)
+            {
+                if (!await AddressService.DeleteAddress(index))
+                {
+                    Logger.LogError($"Failed to delete address with id {index}");
+
+                    await ShowModalAsync("Suppression", $"La suppression de l'addresse {index} a échouée");
+                    return;
+                }
+            }
+
+            _addresses.Remove(address);
+        }
+        catch (Exception)
+        {
+            Logger.LogError($"An unknown exception was thrown on {nameof(OnDeleteAsync)}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Show the modal
+    /// </summary>
+    /// <param name="title">The title displayed in the header</param>
+    /// <param name="body">The body of the modal</param>
+    /// <returns></returns>
+    private async Task ShowModalAsync(string title, string body)
+    {
+        if (modal is null)
+        {
+            Logger.LogError("The modal is not initialized");
+
+            modal = new Modal();
+        }
+
+        if (string.IsNullOrEmpty(title))
+        {
+            Logger.LogError("The modal title is null or empty");
+            title = "Erreur";
+        }
+
+        if (string.IsNullOrEmpty(body))
+        {
+            Logger.LogError("The modal body is null or empty");
+            body = "Une erreur est survenue";
+        }
+
+        errorMessage = new ErrorMessage(title, body);
+
+        await modal.ShowAsync();
+    }
+
+    /// <summary>
+    /// Hide the modal
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnHideModalClickAsync()
+    {
+        await modal.HideAsync();
+
+        errorMessage = new ErrorMessage();
     }
 }

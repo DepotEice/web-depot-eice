@@ -4,7 +4,7 @@
 
 @if (Address is not null)
 {
-    <EditForm class="border border-1 p-3 my-3" Model="Address" style="border-radius: 10px;">
+    <EditForm id="@($"address-{Index}")" class="border border-1 p-3 my-3" Model="Address" style="border-radius: 10px;">
         <div class="d-flex justify-content-end">
             <button class="btn btn-outline-danger float-end" @onclick="OnDeleteClicked">
                 X

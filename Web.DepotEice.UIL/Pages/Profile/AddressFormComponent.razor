@@ -1,15 +1,26 @@
 ﻿@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models.Forms;
 
 @inject ILogger<AddressFormComponent> Logger;
 
 @if (Address is not null)
 {
-    <EditForm id="@($"address-{Index}")" class="border border-1 p-3 my-3" Model="Address" style="border-radius: 10px;">
+    <EditForm id="@($"address-{Index}")" Model="Address" OnValidSubmit="OnSaveClicked">
         <div class="d-flex justify-content-end">
             <button class="btn btn-outline-danger float-end" @onclick="OnDeleteClicked">
                 X
             </button>
         </div>
+
+        @if (Address.IsPrimary)
+        {
+            <div class="mb-3">
+                <h3 class="fw-bold">Addresse principale</h3>
+            </div>
+        }
+
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+
         <div class="mb-3">
             <label for="@($"street-{Index}")" class="form-label">
                 Rue
@@ -64,14 +75,15 @@
         </div>
 
         <div class="mb-3">
-            <InputCheckbox id="@($"isPrimary-{Index}")" @bind-Value="Address.IsPrimary" placeholder="Adresse principale" />
+            <InputCheckbox id="@($"isPrimary-{Index}")" @bind-Value="Address.IsPrimary" placeholder="Adresse principale"
+            @onclick="OnIsPrimaryClicked" checked="" />
             <label for="@($"isPrimary-{Index}")" class="form-label">
                 Adresse principale
             </label>
         </div>
 
-        <button class="btn btn-outline-primary mx-2" @onclick="OnSaveClicked">Créer</button>
 
+        <button class="btn btn-outline-primary mx-2" type="submit">Enregistrer</button>
     </EditForm>
 }
 else
@@ -85,7 +97,7 @@ else
     /// </summary>
     [Parameter]
     [EditorRequired]
-    public AddressModel Address { get; set; } = default!;
+    public AddressForm Address { get; set; } = default!;
 
     /// <summary>
     /// The index of the address in the list.
@@ -106,15 +118,27 @@ else
     /// </summary>
     [Parameter]
     [EditorRequired]
-    public EventCallback<int> OnSaveChanges { get; set; }
+    public Func<int, EditContext, Task>? OnSaveChanges { get; set; }
+
+    /// <summary>
+    /// The event to execute when the is primary checkbox is clicked.
+    /// </summary>
+    [Parameter]
+    public Action<int>? IsPrimaryChanged { get; set; }
 
     /// <summary>
     /// Event handler for the save button. Execute the OnSaveChanges event.
     /// </summary>
     /// <returns></returns>
-    private async Task OnSaveClicked()
+    private async Task OnSaveClicked(EditContext editContext)
     {
-        await OnSaveChanges.InvokeAsync(Index);
+        if (OnSaveChanges is null)
+        {
+            Logger.LogWarning("The OnSaveChanges event is null !");
+            return;
+        }
+
+        await OnSaveChanges.Invoke(Index, editContext);
     }
 
     /// <summary>
@@ -124,5 +148,14 @@ else
     private async Task OnDeleteClicked()
     {
         await OnDelete.InvokeAsync(Index);
+    }
+
+    /// <summary>
+    /// Event handler for the is primary checkbox. Execute the IsPrimaryChanged event.
+    /// </summary>
+    /// <param name="e"></param>
+    private void OnIsPrimaryClicked(EventArgs e)
+    {
+        IsPrimaryChanged?.Invoke(Index);
     }
 }

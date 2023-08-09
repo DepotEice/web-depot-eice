@@ -6,11 +6,7 @@
 @if (Address is not null)
 {
 
-    <div class="d-flex justify-content-end">
-        <button class="btn btn-outline-danger float-end" style="width:2.5rem; height:2.5rem;" @onclick="OnDeleteClicked">
-            <i class="bi bi-trash3"></i>
-        </button>
-    </div>
+    
 
     <EditForm id="@($"address-{Index}")" Model="Address" OnValidSubmit="OnSaveClicked">
 
@@ -79,7 +75,15 @@
             <ValidationMessage class="text-danger" For="(() => Address.Country)"></ValidationMessage>
         </div>
 
-        <button class="btn btn-outline-primary mt-2" type="submit">Enregistrer</button>
+        <div class="d-flex justify-content-between">
+            <button class="btn btn-outline-primary mt-2" type="submit">Enregistrer</button>
+
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-outline-danger float-end" style="width:2.5rem; height:2.5rem;" @onclick="OnDeleteClicked">
+                    <i class="bi bi-trash3"></i>
+                </button>
+            </div>
+        </div>
     </EditForm>
 }
 else

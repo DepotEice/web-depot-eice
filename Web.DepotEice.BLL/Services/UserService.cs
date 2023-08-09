@@ -84,7 +84,7 @@ namespace Web.DepotEice.BLL.Services
 
             try
             {
-                HttpResponseMessage response = await _httpClient.PostAsJsonAsync("User/UpdatePassword", passwordUpdate);
+                HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Users/UpdatePassword", passwordUpdate);
 
                 ResultModel<UserModel> result = new ResultModel<UserModel>()
                 {

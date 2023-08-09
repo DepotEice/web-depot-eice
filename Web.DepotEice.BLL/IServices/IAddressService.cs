@@ -14,5 +14,6 @@ namespace Web.DepotEice.BLL.IServices
         Task<ResultModel<AddressModel>> CreateAddressAsync(AddressCreateModel addressCreate);
         Task<ResultModel<AddressModel>> UpdateAddressAsync(AddressUpdateModel addressUpdate);
         Task<ResultModel<AddressModel>> DeleteAddressAsync(int id);
+        Task<ResultModel<AddressModel>> SetPrimaryAddress(int id);
     }
 }

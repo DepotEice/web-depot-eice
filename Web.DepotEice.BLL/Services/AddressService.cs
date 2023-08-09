@@ -116,6 +116,26 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
+        public async Task<ResultModel<AddressModel>> SetPrimaryAddress(int id)
+        {
+            if (id <= 0)
+            {
+                throw new IndexOutOfRangeException(nameof(id));
+            }
+
+            HttpResponseMessage response = await _httpClient.PostAsync($"Addresses/SetPrimary/{id}", null);
+
+            ResultModel<AddressModel> result = new ResultModel<AddressModel>()
+            {
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = await response.Content.ReadFromJsonAsync<AddressModel>(),
+                Success = response.IsSuccessStatusCode
+            };
+
+            return result;
+        }
+
         public async Task<ResultModel<AddressModel>> UpdateAddressAsync(AddressUpdateModel addressUpdate)
         {
             if (addressUpdate is null)

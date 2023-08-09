@@ -125,6 +125,10 @@
         ShowMessage(ToastType.Info, "Nouvelle addresse", "Une nouvelle addresse a été ajoutée à la liste", true);
     }
 
+    /// <summary>
+    /// Event handler for the InputRadio
+    /// </summary>
+    /// <param name="e"></param>
     private void OnPrimaryAddressChanged(EventArgs e)
     {
         Logger.LogInformation($"{nameof(OnPrimaryAddressChanged)} triggered. Selected ID is {primaryAddressId}. Disabled is {_disabled}");

@@ -16,13 +16,9 @@ namespace Web.DepotEice.BLL.Services
     {
         private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
-        private readonly ILocalStorageService _localStorageService;
+        private readonly ISyncLocalStorageService _localStorageService;
 
-        public UserService(
-            ILogger<UserService> logger,
-            HttpClient httpClient,
-            ILocalStorageService localStorageService
-        )
+        public UserService(ILogger<UserService> logger, HttpClient httpClient, ISyncLocalStorageService localStorageService)
         {
             if (logger is null)
             {
@@ -43,9 +39,12 @@ namespace Web.DepotEice.BLL.Services
             _httpClient = httpClient;
             _localStorageService = localStorageService;
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json")
-            );
+            string token = _localStorageService.GetItemAsString("token");
+
+            _httpClient.DefaultRequestHeaders.Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
         /// <summary>
@@ -54,15 +53,13 @@ namespace Web.DepotEice.BLL.Services
         /// <returns>The collection of teacher users.</returns>
         public async Task<IEnumerable<UserModel>> GetTeachersAsync()
         {
-            _logger.LogInformation("GetTeachersAsync");
+            _logger.LogInformation($"{nameof(GetTeachersAsync)}");
 
             HttpResponseMessage response = await _httpClient.GetAsync("Users/Teachers");
 
             response.EnsureSuccessStatusCode();
 
-            IEnumerable<UserModel>? result = await response.Content.ReadFromJsonAsync<
-                IEnumerable<UserModel>
-            >();
+            IEnumerable<UserModel>? result = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
 
             if (result is null)
             {
@@ -76,31 +73,43 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<bool> UpdatePassword(
-            PasswordUpdateModel passwordUpdate,
-            string? token = null
-        )
+        public async Task<ResultModel<UserModel>> UpdatePasswordAsync(PasswordUpdateModel passwordUpdate)
         {
-            _logger.LogInformation("UpdatePassword");
+            _logger.LogInformation($"{nameof(UpdatePasswordAsync)}");
 
             if (passwordUpdate is null)
             {
-                _logger.LogWarning("UpdatePassword: passwordUpdate is null");
-
                 throw new ArgumentNullException(nameof(passwordUpdate));
             }
 
-            string requestString =
-                "Users/Password" + (token is not null ? $"?token={token}" : string.Empty);
+            try
+            {
+                HttpResponseMessage response = await _httpClient.PostAsJsonAsync("User/UpdatePassword", passwordUpdate);
 
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
-                requestString,
-                passwordUpdate
-            );
+                ResultModel<UserModel> result = new ResultModel<UserModel>()
+                {
+                    Code = response.StatusCode,
+                    Message = await response.Content.ReadAsStringAsync(),
+                    Success = response.IsSuccessStatusCode
+                };
 
-            response.EnsureSuccessStatusCode();
+                try
+                {
+                    result.Data = await response.Content.ReadFromJsonAsync<UserModel>();
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning($"{nameof(UpdatePasswordAsync)}: An exception was thrown when trying to " +
+                        $"read from json.\n{e.Message}");
+                }
 
-            return true;
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"{nameof(UpdatePasswordAsync)}: An exception was thrown.\n{e.Message}");
+                throw;
+            }
         }
 
         public async Task<UserModel?> GetUserAsync(string? userId)
@@ -109,13 +118,6 @@ namespace Web.DepotEice.BLL.Services
             {
                 return null;
             }
-
-            string token = await _localStorageService.GetItemAsync<string>("token");
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                "Bearer",
-                token
-            );
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Users/{userId}");
 
@@ -126,13 +128,6 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<UserModel?> GetUserAsync()
         {
-            string token = await _localStorageService.GetItemAsync<string>("token");
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                "Bearer",
-                token
-            );
-
             HttpResponseMessage response = await _httpClient.GetAsync($"Users/me");
 
             response.EnsureSuccessStatusCode();
@@ -146,13 +141,6 @@ namespace Web.DepotEice.BLL.Services
             {
                 throw new NullReferenceException(nameof(userUpdateModel));
             }
-
-            string token = await _localStorageService.GetItemAsync<string>("token");
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                "Bearer",
-                token
-            );
 
             HttpResponseMessage responseMessage = await _httpClient.PutAsJsonAsync(
                 "Users",

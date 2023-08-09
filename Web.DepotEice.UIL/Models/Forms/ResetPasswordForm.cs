@@ -2,7 +2,7 @@
 
 namespace Web.DepotEice.UIL.Models.Forms
 {
-    public class UpdatePasswordForm
+    public class ResetPasswordForm
     {
         [Required(AllowEmptyStrings = false, ErrorMessage = "Veuillez entrer un mot de passe !")]
         [RegularExpression("(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-_+]).{8,20}$",

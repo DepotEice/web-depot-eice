@@ -9,7 +9,12 @@ namespace Web.DepotEice.BLL.IServices
 {
     public interface IUserService
     {
-        Task<bool> UpdatePassword(PasswordUpdateModel passwordUpdate, string? token = null);
+        /// <summary>
+        /// Update user password
+        /// </summary>
+        /// <param name="passwordUpdate">The password update form</param>
+        /// <returns>Result Model of UserModel</returns>
+        Task<ResultModel<UserModel>> UpdatePasswordAsync(PasswordUpdateModel passwordUpdate);
         Task<IEnumerable<UserModel>> GetTeachersAsync();
 
         Task<UserModel?> GetUserAsync(string? id);

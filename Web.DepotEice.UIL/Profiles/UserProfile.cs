@@ -9,7 +9,7 @@ namespace Web.DepotEice.UIL.Profiles
     {
         public UserProfile()
         {
-            CreateMap<UpdatePasswordForm, PasswordUpdateModel>();
+            CreateMap<ResetPasswordForm, PasswordResetModel>();
 
             CreateMap<UserModel, UserSelectionModel>()
                 .ForMember(
@@ -20,6 +20,8 @@ namespace Web.DepotEice.UIL.Profiles
             CreateMap<UserModel, ProfileUpdateForm>();
 
             CreateMap<ProfileUpdateForm, UserUpdateModel>();
+
+            CreateMap<PasswordUpdateForm, PasswordUpdateModel>();
         }
     }
 }

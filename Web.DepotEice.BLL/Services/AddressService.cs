@@ -19,8 +19,6 @@ namespace Web.DepotEice.BLL.Services
         private readonly HttpClient _httpClient;
         private readonly ISyncLocalStorageService _localStorageService;
 
-        private readonly string _token;
-
         public AddressService(ILogger<AddressService> logger, HttpClient httpClient, ISyncLocalStorageService localStorageService)
         {
             if (logger is null)
@@ -42,12 +40,12 @@ namespace Web.DepotEice.BLL.Services
             _httpClient = httpClient;
             _localStorageService = localStorageService;
 
-            _token = _localStorageService.GetItemAsString("token");
+            string token = _localStorageService.GetItemAsString("token");
 
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
         public async Task<ResultModel<AddressModel>> CreateAddressAsync(AddressCreateModel addressCreate)

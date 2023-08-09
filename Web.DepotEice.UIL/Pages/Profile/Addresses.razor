@@ -9,6 +9,8 @@
 @inject IAddressService AddressService;
 @inject PreloadService PreloadService;
 
+<PageTitle>EICE - Adresses</PageTitle>
+
 <Preload />
 
 <h2 class="text-center my-5">Adresses</h2>
@@ -33,10 +35,12 @@
                 @if (address.Id != 0)
                 {
                     <InputRadio Value="address.Id" class="mx-1" @onclick="OnPrimaryAddressChanged" />
+                    <span>Adresse principale</span>
+                    <hr />
                 }
 
                 <AddressFormComponent Address="address" Index="AddressFormComponentIndex" OnDelete="OnDeleteAsync"
-                                      OnSaveChanges="OnSaveAsync" IsPrimaryChanged="OnIsPrimaryChanged" />
+                                      OnSaveChanges="OnSaveAsync" />
             </div>
 
             AddressFormComponentIndex++;
@@ -289,35 +293,6 @@
         {
             Logger.LogError($"An unknown exception was thrown on {nameof(OnDeleteAsync)}");
             throw;
-        }
-    }
-
-    private void OnIsPrimaryChanged(int index)
-    {
-        if (index < 0 || index >= _addresses.Count)
-        {
-            throw new IndexOutOfRangeException($"{nameof(index)} in {nameof(OnIsPrimaryChanged)} is out of range : \"{index}\"");
-        }
-
-        AddressForm address = _addresses[index];
-
-        if (address is null)
-        {
-            Logger.LogError($"The address at index {index} is null");
-            return;
-        }
-
-        if (address.IsPrimary)
-        {
-            var primaryAddresses = _addresses.Where(a => a.IsPrimary);
-
-            foreach (var primaryAddress in primaryAddresses)
-            {
-                if (_addresses.IndexOf(primaryAddress) != index)
-                {
-                    address.IsPrimary = false;
-                }
-            }
         }
     }
 

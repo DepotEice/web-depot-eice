@@ -116,7 +116,7 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<ResultModel<AddressModel>> SetPrimaryAddress(int id)
+        public async Task<ResultModel<AddressModel>> SetPrimaryAddressAsync(int id)
         {
             if (id <= 0)
             {

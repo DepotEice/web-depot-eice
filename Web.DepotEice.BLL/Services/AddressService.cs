@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,18 +9,25 @@ using System.Text;
 using System.Threading.Tasks;
 using Web.DepotEice.BLL.IServices;
 using Web.DepotEice.BLL.Models;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Web.DepotEice.BLL.Services
 {
     public class AddressService : IAddressService
     {
+        private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
         private readonly ISyncLocalStorageService _localStorageService;
 
         private readonly string _token;
 
-        public AddressService(HttpClient httpClient, ISyncLocalStorageService localStorageService)
+        public AddressService(ILogger<AddressService> logger, HttpClient httpClient, ISyncLocalStorageService localStorageService)
         {
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             if (httpClient is null)
             {
                 throw new ArgumentNullException(nameof(httpClient));
@@ -30,6 +38,7 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(localStorageService));
             }
 
+            _logger = logger;
             _httpClient = httpClient;
             _localStorageService = localStorageService;
 
@@ -129,9 +138,19 @@ namespace Web.DepotEice.BLL.Services
             {
                 Code = response.StatusCode,
                 Message = await response.Content.ReadAsStringAsync(),
-                Data = await response.Content.ReadFromJsonAsync<AddressModel>(),
                 Success = response.IsSuccessStatusCode
             };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<AddressModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(SetPrimaryAddressAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = null;
+            }
 
             return result;
         }

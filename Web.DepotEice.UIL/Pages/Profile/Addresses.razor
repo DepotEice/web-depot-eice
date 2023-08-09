@@ -7,6 +7,9 @@
 @inject ILogger<Addresses> Logger;
 @inject IMapper Mapper;
 @inject IAddressService AddressService;
+@inject PreloadService PreloadService;
+
+<Preload />
 
 <h2 class="text-center my-5">Adresses</h2>
 
@@ -83,11 +86,15 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        PreloadService.Show(SpinnerColor.Dark);
+
         var addressesFromRepo = await GetAddressesAsync();
 
         _addresses = Mapper.Map<List<AddressForm>>(addressesFromRepo.OrderByDescending(a => a.IsPrimary == true));
 
         primaryAddressId = _addresses.SingleOrDefault(a => a.IsPrimary)?.Id;
+
+        PreloadService.Hide();
     }
 
     /// <summary>
@@ -112,28 +119,41 @@
     /// </summary>
     private async Task OnSetPrimaryClicked()
     {
-        if (!primaryAddressId.HasValue)
+        try
         {
-            ShowMessage(ToastType.Warning, "Address principale", "Aucune addresse n'est sélectionnée", true);
-            return;
+            PreloadService.Show(SpinnerColor.Dark);
+
+            if (!primaryAddressId.HasValue)
+            {
+                ShowMessage(ToastType.Warning, "Address principale", "Aucune addresse n'est sélectionnée", true);
+                return;
+            }
+
+            ResultModel<AddressModel> resultModel = await AddressService.SetPrimaryAddressAsync(primaryAddressId.Value);
+
+            if (!resultModel.Success)
+            {
+                ShowMessage(
+                    ToastType.Danger,
+                    "Address principale",
+                    $"Une erreur est survenue lors de la mise à jour de l'addresse principale. {resultModel.Message}",
+                    true);
+
+                return;
+            }
+
+            ShowMessage(ToastType.Success, "Address principale", "L'addresse principale a été mise à jour", true);
+
+            _addresses = Mapper.Map<List<AddressForm>>((await GetAddressesAsync()).OrderByDescending(a => a.IsPrimary == true));
         }
-
-        ResultModel<AddressModel> resultModel = await AddressService.SetPrimaryAddressAsync(primaryAddressId.Value);
-
-        if (!resultModel.Success)
+        catch (Exception e)
         {
-            ShowMessage(
-                ToastType.Danger,
-                "Address principale",
-                $"Une erreur est survenue lors de la mise à jour de l'addresse principale. {resultModel.Message}",
-                true);
-
-            return;
+            Logger.LogError("An exception was thrown while trying to set the primary address", e);
         }
-
-        ShowMessage(ToastType.Success, "Address principale", "L'addresse principale a été mise à jour", true);
-
-        _addresses = Mapper.Map<List<AddressForm>>((await GetAddressesAsync()).OrderByDescending(a => a.IsPrimary == true));
+        finally
+        {
+            PreloadService.Hide();
+        }
     }
 
     /// <summary>

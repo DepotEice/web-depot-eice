@@ -47,6 +47,28 @@ namespace Web.DepotEice.BLL.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
+        public async Task<dynamic> GetProfilePictureAsync(string? userId = null)
+        {
+            try
+            {
+                string requestUri = string.IsNullOrEmpty(userId)
+                    ? "Users/ProfilePicture"
+                    : $"Users/ProfilePicture?id={userId}";
+
+                HttpResponseMessage response = await _httpClient.GetAsync(requestUri);
+
+                var result = await response.Content.ReadAsStringAsync();
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"${nameof(GetProfilePictureAsync)}: exception was thrown.\n${e.Message}");
+
+                throw;
+            }
+        }
+
         /// <summary>
         /// Retrieves a collection of teacher users asynchronously.
         /// </summary>

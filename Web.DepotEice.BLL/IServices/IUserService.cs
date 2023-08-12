@@ -20,5 +20,6 @@ namespace Web.DepotEice.BLL.IServices
         Task<UserModel?> GetUserAsync(string? id);
         Task<UserModel?> GetUserAsync();
         Task<UserModel?> UpdateUserAsync(UserUpdateModel userUpdateModel);
+        Task<dynamic> GetProfilePictureAsync(string? userId = null);
     }
 }

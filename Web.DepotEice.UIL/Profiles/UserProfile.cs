@@ -22,6 +22,8 @@ namespace Web.DepotEice.UIL.Profiles
             CreateMap<ProfileUpdateForm, UserUpdateModel>();
 
             CreateMap<PasswordUpdateForm, PasswordUpdateModel>();
+
+            CreateMap<UserModel, UserUpdateModel>();
         }
     }
 }

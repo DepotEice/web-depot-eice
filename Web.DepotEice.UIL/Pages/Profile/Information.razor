@@ -14,11 +14,11 @@
 
 <div class="container">
 
-    <EditForm Model="profileUpdate">
+    <EditForm Model="ProfileUpdate">
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
         <div class="mb-3">
-            <ImageUploader />
+            <ImageUploader ImageSource="@ProfileUpdate.ProfilePictureUrl" />
         </div>
 
         <div class="mb-3 d-flex flex-lg-row justify-content-between">
@@ -27,16 +27,16 @@
                     Prénom
                 </label>
                 <InputText id="firstName" class="form-control" aria-describedby="firstName"
-                @bind-Value="@profileUpdate.FirstName" disabled />
-                <ValidationMessage class="text-danger" For="(() => profileUpdate.FirstName)"></ValidationMessage>
+                @bind-Value="@ProfileUpdate.FirstName" disabled />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.FirstName)"></ValidationMessage>
             </div>
             <div class="ms-1 col-lg">
                 <label for="lastName" class="form-label">
                     Nom de famille
                 </label>
                 <InputText id="lastName" class="form-control" aria-describedby="lastName"
-                @bind-Value="@profileUpdate.LastName" disabled />
-                <ValidationMessage class="text-danger" For="(() => profileUpdate.LastName)"></ValidationMessage>
+                @bind-Value="@ProfileUpdate.LastName" disabled />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.LastName)"></ValidationMessage>
             </div>
         </div>
 
@@ -45,8 +45,8 @@
                 Adresse email
             </label>
             <InputText id="emailAddress" class="form-control" aria-describedby="emailAddress"
-            @bind-Value="@profileUpdate.Email" disabled />
-            <ValidationMessage class="text-danger" For="(() => profileUpdate.Email)"></ValidationMessage>
+            @bind-Value="@ProfileUpdate.Email" disabled />
+            <ValidationMessage class="text-danger" For="(() => ProfileUpdate.Email)"></ValidationMessage>
         </div>
 
         <div class="mb-3">
@@ -54,8 +54,8 @@
                 Addresse email de l'école
             </label>
             <InputText id="schoolEmailAddress" class="form-control" aria-describedby="schoolEmailAddress"
-            @bind-Value="profileUpdate.SchoolEmail" disabled />
-            <ValidationMessage class="text-danger" For="(() => profileUpdate.SchoolEmail)"></ValidationMessage>
+            @bind-Value="ProfileUpdate.SchoolEmail" disabled />
+            <ValidationMessage class="text-danger" For="(() => ProfileUpdate.SchoolEmail)"></ValidationMessage>
         </div>
 
         <div class="mb-3 d-flex flex-lg-row justify-content-between">
@@ -65,7 +65,7 @@
                 </label>
 
                 <div class="d-flex flex-row justify-content-between" style="width: 50%;">
-                    <InputRadioGroup @bind-Value="profileUpdate.Gender">
+                    <InputRadioGroup @bind-Value="ProfileUpdate.Gender">
                         <div class="">
                             <InputRadio Value="@("Homme")" class="mx-1" /> Homme
                         </div>
@@ -86,8 +86,8 @@
                     Date de naissance
                 </label>
                 <InputDate id="birthDate" class="form-control" aria-describedby="birthDate"
-                @bind-Value="profileUpdate.BirthDate" />
-                <ValidationMessage class="text-danger" For="(() => profileUpdate.BirthDate)"></ValidationMessage>
+                @bind-Value="ProfileUpdate.BirthDate" />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.BirthDate)"></ValidationMessage>
             </div>
         </div>
 
@@ -97,9 +97,8 @@
                     Mobile
                 </label>
                 <InputText id="mobileNumber" class="form-control" aria-describedby="mobileNumber"
-                @bind-Value="profileUpdate.MobileNumber"
-                           oninput="@(() => ValidatePhoneInput(profileUpdate.MobileNumber))" />
-                <ValidationMessage class="text-danger" For="(() => profileUpdate.MobileNumber)"></ValidationMessage>
+                @bind-Value="ProfileUpdate.MobileNumber" />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.MobileNumber)"></ValidationMessage>
             </div>
 
             <div class="ms-1 col-lg">
@@ -107,9 +106,8 @@
                     Téléphone
                 </label>
                 <InputText id="phoneNumber" class="form-control" aria-describedby="phoneNumber"
-                @bind-Value="profileUpdate.PhoneNumber"
-                           oninput="@(() => ValidatePhoneInput(profileUpdate.PhoneNumber))" />
-                <ValidationMessage class="text-danger" For="(() => profileUpdate.PhoneNumber)"></ValidationMessage>
+                @bind-Value="ProfileUpdate.PhoneNumber" />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.PhoneNumber)"></ValidationMessage>
             </div>
         </div>
 
@@ -126,9 +124,20 @@
 </div>
 
 @code {
-    private ProfileUpdateForm profileUpdate = new();
-    private string[] options = new string[] { "Homme", "Femme", "Autre" };
+    /// <summary>
+    /// The profile update form
+    /// </summary>
+    public ProfileUpdateForm? ProfileUpdate { get; set; } = new ProfileUpdateForm();
 
+    /// <summary>
+    /// The different gender options
+    /// </summary>
+    public string[] Options { get; set; } = new string[] { "Homme", "Femme", "Autre" };
+
+    /// <summary>
+    /// Initialize the component
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
         UserModel? userModel = await UserService.GetUserAsync();
@@ -139,14 +148,17 @@
             return;
         }
 
-        profileUpdate = Mapper.Map<ProfileUpdateForm>(userModel);
+        ProfileUpdate = Mapper.Map<ProfileUpdateForm>(userModel);
     }
 
+    /// <summary>
+    /// Submit event handler
+    /// </summary>
     private void OnSubmitClicked()
     {
         Logger.LogInformation($"{DateTime.Now} - The user clicked on the submit button");
 
-        if (profileUpdate is null)
+        if (ProfileUpdate is null)
         {
             Logger.LogError($"{DateTime.Now} - The profile update form is null");
             return;
@@ -154,13 +166,8 @@
 
         Logger.LogInformation($"{DateTime.Now} - The profile update form is valid");
 
-        UserUpdateModel userModel = Mapper.Map<UserUpdateModel>(profileUpdate);
+        UserUpdateModel userModel = Mapper.Map<UserUpdateModel>(ProfileUpdate);
 
         UserService.UpdateUserAsync(userModel);
-    }
-
-    private void ValidatePhoneInput(string phone)
-    {
-
     }
 }

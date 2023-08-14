@@ -18,7 +18,7 @@
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
         <div class="mb-3">
-            <ImageUploader ImageSource="@ProfileUpdate.ProfilePictureUrl" />
+            <ImageUploader ImageSource="@ProfileUpdate.ProfilePictureUrl" ProfilePictureUpdate="HandleProfilePictureUpdate" />
         </div>
 
         <div class="mb-3 d-flex flex-lg-row justify-content-between">
@@ -169,5 +169,18 @@
         UserUpdateModel userModel = Mapper.Map<UserUpdateModel>(ProfileUpdate);
 
         UserService.UpdateUserAsync(userModel);
+    }
+
+    private async Task HandleProfilePictureUpdate(byte[] bytes, string contentType)
+    {
+        if (bytes is null)
+        {
+            Logger.LogError($"{DateTime.Now} - The profile picture bytes are null");
+            return;
+        }
+
+        Logger.LogInformation($"{DateTime.Now} - The profile picture bytes are valid");
+
+        await UserService.UpdateProfilePictureAsync(bytes, contentType);
     }
 }

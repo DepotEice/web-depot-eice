@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Web.DepotEice.BLL.Models
 {
-    public class ResultModel<T> where T : class
+    public class ResultModel<T>
     {
         public bool Success { get; set; }
         public T? Data { get; set; }

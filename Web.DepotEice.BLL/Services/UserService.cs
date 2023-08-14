@@ -47,23 +47,65 @@ namespace Web.DepotEice.BLL.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        public async Task<dynamic> GetProfilePictureAsync(string? userId = null)
+        /// <summary>
+        /// Update the user profile picture
+        /// </summary>
+        /// <param name="imageContent">byte content of the image</param>
+        /// <param name="contentType">content type</param>
+        /// <returns><see cref="ResultModel{UserModel?}"/></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        public async Task<ResultModel<Stream?>> UpdateProfilePictureAsync(byte[] imageContent, string contentType)
         {
+            _logger.LogInformation($"{nameof(UpdateProfilePictureAsync)}");
+
+            if (imageContent is null)
+            {
+                throw new ArgumentNullException(nameof(imageContent));
+            }
+
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(contentType));
+            }
+
             try
             {
-                string requestUri = string.IsNullOrEmpty(userId)
-                    ? "Users/ProfilePicture"
-                    : $"Users/ProfilePicture?id={userId}";
+                using MultipartFormDataContent content = new MultipartFormDataContent();
 
-                HttpResponseMessage response = await _httpClient.GetAsync(requestUri);
+                using MemoryStream memoryStream = new MemoryStream(imageContent);
 
-                var result = await response.Content.ReadAsStringAsync();
+                StreamContent streamContent = new StreamContent(memoryStream);
+
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+                content.Add(content: streamContent, name: "image", fileName: "profilePicture");
+
+                HttpResponseMessage response = await _httpClient.PostAsync("Users/UpdateProfilePicture", content);
+
+                ResultModel<Stream?> result = new ResultModel<Stream?>()
+                {
+                    Code = response.StatusCode,
+                    Message = await response.Content.ReadAsStringAsync(),
+                    Success = response.IsSuccessStatusCode
+                };
+
+                try
+                {
+                    result.Data = await response.Content.ReadAsStreamAsync();
+                }
+                catch (Exception e)
+                {
+                    _logger.LogInformation($"{nameof(UpdateProfilePictureAsync)}: An exception was thrown, cannot " +
+                        $"read the result as json.\n{e.Message}");
+                }
 
                 return result;
             }
             catch (Exception e)
             {
-                _logger.LogError($"${nameof(GetProfilePictureAsync)}: exception was thrown.\n${e.Message}");
+                _logger.LogWarning($"{nameof(UpdateProfilePictureAsync)}: An exception was thrown when trying " +
+                    $"to upload profile picture to the server.\n{e.Message}");
 
                 throw;
             }

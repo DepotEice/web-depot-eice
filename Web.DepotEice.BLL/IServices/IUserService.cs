@@ -20,6 +20,15 @@ namespace Web.DepotEice.BLL.IServices
         Task<UserModel?> GetUserAsync(string? id);
         Task<UserModel?> GetUserAsync();
         Task<UserModel?> UpdateUserAsync(UserUpdateModel userUpdateModel);
-        Task<dynamic> GetProfilePictureAsync(string? userId = null);
+
+        /// <summary>
+        /// Update the user profile picture
+        /// </summary>
+        /// <param name="imageContent">byte content of the image</param>
+        /// <param name="contentType">content type</param>
+        /// <returns><see cref="ResultModel{UserModel?}"/></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        Task<ResultModel<Stream?>> UpdateProfilePictureAsync(byte[] imageContent, string contentType);
     }
 }

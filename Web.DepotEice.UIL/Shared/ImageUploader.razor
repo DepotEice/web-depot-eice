@@ -151,7 +151,7 @@
     public byte[]? ImageBytes { get; set; }
 
     [Parameter]
-    public EventCallback<byte[]> ProfilePictureUpdate { get; set; }
+    public Func<byte[], string, Task>? ProfilePictureUpdate { get; set; }
 
     /// <summary>
     /// The new image to display after the user has selected a new image
@@ -197,6 +197,11 @@
     /// The format of the image
     /// </summary>
     public ImageFormat? ImageFormat { get; set; }
+
+    /// <summary>
+    /// The content type of the image
+    /// </summary>
+    public string ContentType { get; set; } = string.Empty;
 
     //// <summary>
     /// The list of error messages
@@ -369,9 +374,9 @@
 
         OnResetClicked();
 
-        await ProfilePictureUpdate.InvokeAsync();
-
         PreloadService?.Hide();
+
+        ProfilePictureUpdate?.Invoke(bytes, ContentType);
     }
 
     /// <summary>
@@ -402,9 +407,9 @@
 
         IBrowserFile file = args.File;
 
-        string contentType = file.ContentType;
+        ContentType = file.ContentType;
 
-        switch (contentType)
+        switch (ContentType)
         {
             case "image/jpg":
                 ImageFormat = Helpers.ImageFormat.JPG;
@@ -457,27 +462,7 @@
 
     private void SetImage()
     {
-        string contentType = string.Empty;
-
-        switch (ImageFormat)
-        {
-            case Helpers.ImageFormat.JPG:
-                contentType = "image/jpg";
-                break;
-            case Helpers.ImageFormat.JPEG:
-                contentType = "image/jpeg";
-                break;
-            case Helpers.ImageFormat.PNG:
-                contentType = "image/png";
-                break;
-            case Helpers.ImageFormat.GIF:
-                contentType = "image/gif";
-                break;
-            default:
-                break;
-        }
-
-        if (string.IsNullOrEmpty(contentType))
+        if (string.IsNullOrEmpty(ContentType))
         {
             Logger.LogError("The image format could not be defined.");
             return;
@@ -496,6 +481,6 @@
         }
 
         string base64string = Convert.ToBase64String(ImageBytes);
-        ImageSource = $"data:{contentType};base64,{base64string}";
+        ImageSource = $"data:{ContentType};base64,{base64string}";
     }
 }

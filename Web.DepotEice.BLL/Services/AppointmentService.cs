@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,9 +15,11 @@ namespace Web.DepotEice.BLL.Services
     public class AppointmentService : IAppointmentService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILocalStorageService _localStorageService;
+        private readonly ISyncLocalStorageService _localStorageService;
+        private readonly ILogger<AppointmentService> _logger;
 
-        public AppointmentService(ILocalStorageService localStorageService, HttpClient httpClient)
+        public AppointmentService(ISyncLocalStorageService localStorageService, HttpClient httpClient,
+            ILogger<AppointmentService> logger)
         {
             if (localStorageService is null)
             {
@@ -28,14 +31,32 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(httpClient));
             }
 
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             _localStorageService = localStorageService;
             _httpClient = httpClient;
+            _logger = logger;
+
+            string token = _localStorageService.GetItemAsString("token");
 
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        public async Task<bool> CreateAppointmentAsync(AppointmentCreateModel appointmentCreate)
+        /// <summary>
+        /// Create an appointment by sending a POST request to the API
+        /// </summary>
+        /// <param name="appointmentCreate">The model to send to the API</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="AppointmentModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<AppointmentModel>> CreateAppointmentAsync(AppointmentCreateModel appointmentCreate)
         {
             if (appointmentCreate is null)
             {
@@ -45,18 +66,28 @@ namespace Web.DepotEice.BLL.Services
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync("Appointments", appointmentCreate);
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<AppointmentModel> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            return true;
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<AppointmentModel>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"{nameof(CreateAppointmentAsync)}: An exception was thrown, cannot " +
+                                                           $"read the result as json.\n{e.Message}");
+            }
+
+            return result;
         }
 
         public async Task<AppointmentModel?> GetAppointmentAsync(int id)
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
             HttpResponseMessage response = await _httpClient.GetAsync($"Appointments/{id}");
 
             var result = await response.Content.ReadFromJsonAsync<AppointmentModel>();
@@ -64,22 +95,32 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<IEnumerable<AppointmentModel>> GetAppointmentsAsync()
+        public async Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(DateTime? date = null)
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
+            string queryUri = "Appointments";
 
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
-            HttpResponseMessage response = await _httpClient.GetAsync("Appointments");
-
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<IEnumerable<AppointmentModel>>();
-
-            if (result is null)
+            if (date.HasValue)
             {
-                return Enumerable.Empty<AppointmentModel>();
+                queryUri += $"?date={date.Value:s}";
+            }
+
+            HttpResponseMessage response = await _httpClient.GetAsync(queryUri);
+
+            ResultModel<IEnumerable<AppointmentModel>> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<AppointmentModel>>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"{nameof(GetAppointmentsAsync)}: An exception was thrown, cannot " +
+                        $"read the result as json.\n{e.Message}");
             }
 
             return result;

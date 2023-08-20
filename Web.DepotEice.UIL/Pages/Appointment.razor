@@ -13,6 +13,7 @@
 @inject UserManager UserManager;
 @inject IAppointmentService AppointmentService;
 @inject IMapper Mapper;
+@inject NavigationManager NavigationManager;
 
 <PageTitle>Rendez-vous</PageTitle>
 
@@ -21,42 +22,42 @@
 <div class="container my-5 py-5 bg-light border border-1">
     <div class="d-flex flex-column align-items-center justify-content-center mt-2">
 
-        <EditForm class="mt-3" Model="@_appointmentForm" OnValidSubmit="@OnValidationSubmit" style="width: 50%">
+        <EditForm class="mt-3" Model="@AppointmentForm" OnValidSubmit="@OnValidationSubmit" style="width: 50%">
             <DataAnnotationsValidator></DataAnnotationsValidator>
 
             <div class="mb-3">
                 <label for="date" class="form-label">Date</label>
-                <RadzenDatePicker TValue="DateTime?" Inline="true"
-                                  DateRender="@DateRenderOpenDates"
-                                  Change="@(args => OnChange(args, "Calendar", "MM/dd/yyyy"))"
-                                  Value="_appointmentForm.From" />
-                <ValidationMessage class="text-danger" For="@(() => _appointmentForm.From)" />
+                <RadzenDatePicker TValue="DateTime?" Inline="true" DateRender="@DateRenderOpenDates"
+                                  Change="@(args => OnChange(args, "Calendar", "dd/MM/yyyy"))"
+                                  Value="AppointmentForm.From" CurrentDateChanged="@OnCurrentDateChanged"
+                                  InitialViewDate="AppointmentForm.From" />
+                <ValidationMessage class="text-danger" For="@(() => AppointmentForm.From)" />
             </div>
 
             <div class="d-flex flex-wrap justify-content-center">
 
-                @for (int i = 0; i < _availableTimes.Count; i++)
+                @for (int i = 0; i < AvailableTimes.Count; i++)
                 {
                     int x = i;
 
-                    <button class="btn btn-outline-secondary m-1 @(_selectedIndex == x ? "active" : "")" type="button"
-                        @onclick="(() => SelectIndex(x))">
+                    <button class="btn btn-outline-secondary m-1 @(SelectedIndex == x ? "active" : "")" type="button"
+                    @onclick="(() => SelectIndex(x))">
 
-                        @_availableTimes[i].ToString("HH:mm")
+                        @AvailableTimes[i].ToString("HH:mm")
                         -
-                        @_availableTimes[i].AddMinutes(30).ToString("HH:mm")
+                        @AvailableTimes[i].AddMinutes(30).ToString("HH:mm")
                     </button>
                 }
 
             </div>
 
             <div class="mb-3">
-                <span class="text-danger">@_validationMessage</span>
+                <span class="text-danger">@ValidationMessage</span>
             </div>
             <div class="mb-3">
                 @if (UserManager.IsConnected)
                 {
-                    <button @onclick="OnValidationSubmit" type="submit" class="btn btn-outline-primary mx-auto">
+                    <button type="submit" class="btn btn-outline-primary mx-auto">
                         Prendre rendez-vous
                     </button>
                 }
@@ -73,59 +74,145 @@
     </div>
 </div>
 
+<Modal @ref="ResultModal" Title="Rendez-vous crée">
+    <BodyTemplate>
+
+        <div class="row">
+            <p>Votre rendez-vous a correctement été crée, vous allez être rediriger vers les détails du rendez-vous</p>
+        </div>
+
+        <div class="d-inline-flex">
+            <b class="mx-2">@AppointmentForm.From.ToString("D")</b> à <b class="mx-2">@SelectedTime.ToString()</b>
+        </div>
+
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="OnCloseModalAsync">Fermer</Button>
+    </FooterTemplate>
+</Modal>
+
 @code {
-    private AppointmentForm _appointmentForm = new();
-    private IEnumerable<OpeningHoursModel> _openingHours = new List<OpeningHoursModel>();
-    private List<TimeOnly> _availableTimes = new List<TimeOnly>();
-    private int _selectedIndex = -1;
-    private TimeOnly _selectedTime;
-    private DateTime _minimumDateTime = DateTime.Now;
-    private string _validationMessage = string.Empty;
+    /// <summary>
+    /// The result modal
+    /// </summary>
+    public Modal ResultModal { get; private set; } = new();
+
+    /// <summary>
+    /// The appointment form.
+    /// </summary>
+    public AppointmentForm AppointmentForm { get; private set; } = new();
+
+    /// <summary>
+    /// The opening hours.
+    /// </summary>
+    public IEnumerable<OpeningHoursModel> OpeningHours { get; private set; } = new List<OpeningHoursModel>();
+
+    /// <summary>
+    /// The available time spans
+    /// </summary>
+    public List<TimeOnly> AvailableTimes { get; private set; } = new List<TimeOnly>();
+
+    /// <summary>
+    /// The selected index of the available times
+    /// </summary>
+    public int SelectedIndex { get; private set; } = -1;
+
+    /// <summary>
+    /// The selected time span
+    /// </summary>
+    public TimeOnly SelectedTime { get; private set; }
+
+    /// <summary>
+    /// The minimum date time
+    /// </summary>
+    public DateTime MinimumDateTime { get; private set; } = DateTime.Now;
+
+    /// <summary>
+    /// The validation message
+    /// </summary>
+    public string ValidationMessage { get; private set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        _openingHours = await OpeningHoursService.GetOpeningHoursAsync();
-        await LoadAvailableTimeSpans();
+        ResultModel<IEnumerable<OpeningHoursModel>> result =
+            await OpeningHoursService.GetOpeningHoursAsync(month: AppointmentForm.From.Month, year: AppointmentForm.From.Year);
+
+        if (result.Success)
+        {
+            if (result.Data is null)
+            {
+                Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+                return;
+            }
+
+            OpeningHours = result.Data;
+        }
+        else
+        {
+            Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+            return;
+        }
+
+        await LoadAvailableTimeSpansAsync();
     }
 
     private void SelectIndex(int index)
     {
-        _selectedIndex = index;
+        SelectedIndex = index;
 
-        _selectedTime = _availableTimes[index];
+        SelectedTime = AvailableTimes[index];
 
         Logger.LogInformation($"{DateTime.Now} - Selected index \"{index}\"");
     }
 
-    private async Task LoadAvailableTimeSpans()
+    /// <summary>
+    /// Load the available time spans for the selected date in the calendar
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadAvailableTimeSpansAsync()
     {
         try
         {
-            Logger.LogInformation($"{DateTime.Now} - {_appointmentForm.From.Date}");
+            Logger.LogInformation($"{DateTime.Now} - {AppointmentForm.From.Date}");
 
-            OpeningHoursModel? openingHours = _openingHours.FirstOrDefault(oh =>
-               oh.OpenAt.Year == _appointmentForm.From.Year &&
-               oh.OpenAt.Month == _appointmentForm.From.Month &&
-               oh.OpenAt.Day == _appointmentForm.From.Day);
+            List<TimeOnly> availableTimeSpans = Enumerable.Empty<TimeOnly>().ToList();
+
+            OpeningHoursModel? openingHours = OpeningHours.SingleOrDefault(oh =>
+               oh.OpenAt.Year == AppointmentForm.From.Year &&
+               oh.OpenAt.Month == AppointmentForm.From.Month &&
+               oh.OpenAt.Day == AppointmentForm.From.Day);
 
             if (openingHours is null)
             {
                 return;
             }
 
-            List<TimeOnly> availableTimeSpans = new();
-
             TimeSpan startTime = openingHours.OpenAt.TimeOfDay;
             TimeSpan endTime = openingHours.CloseAt.TimeOfDay;
 
-            var appointments = (await AppointmentService.GetAppointmentsAsync())
-                .Where(a => a.StartAt.Year == _appointmentForm.From.Year &&
-                            a.StartAt.Month == _appointmentForm.From.Month &&
-                            a.StartAt.Day == _appointmentForm.From.Day);
+            var appointmentsResult = await AppointmentService.GetAppointmentsAsync(AppointmentForm.From);
+
+            if (!appointmentsResult.Success)
+            {
+                Logger.LogError($"{DateTime.Now} - {appointmentsResult.Message}");
+
+                return;
+            }
+
+            IEnumerable<AppointmentModel>? appointments = appointmentsResult.Data;
+
+            if (appointments is null)
+            {
+                Logger.LogError($"{DateTime.Now} - {appointmentsResult.Message}");
+
+                return;
+            }
 
             for (TimeSpan ts = startTime; ts <= endTime.Subtract(new TimeSpan(0, 30, 0)); ts = ts.Add(new TimeSpan(0, 30, 0)))
             {
-                if (!appointments.Any(a => a.StartAt.TimeOfDay == ts) && ts < DateTime.Now.TimeOfDay)
+                if (!appointments.Any(a => a.StartAt.TimeOfDay == ts))
                 {
                     availableTimeSpans.Add(new TimeOnly(ts.Hours, ts.Minutes, ts.Seconds));
                 }
@@ -133,7 +220,7 @@
 
             Logger.LogInformation($"{DateTime.Now} - Availabel timespans contains {availableTimeSpans.Count} elements");
 
-            _availableTimes = availableTimeSpans;
+            AvailableTimes = availableTimeSpans;
 
             StateHasChanged();
         }
@@ -143,6 +230,10 @@
         }
     }
 
+    /// <summary>
+    /// Event handler for the <see cref="RadzenDatePicker.DateRender"/> event.
+    /// </summary>
+    /// <param name="args"></param>
     private void DateRenderOpenDates(DateRenderEventArgs args)
     {
         try
@@ -150,7 +241,7 @@
             args.Disabled = args.Disabled ||
                             args.Date.DayOfWeek == DayOfWeek.Sunday ||
                             args.Date < DateTime.Now ||
-                            !_openingHours.Any(oh => oh.OpenAt.Year == args.Date.Year &&
+                            !OpeningHours.Any(oh => oh.OpenAt.Year == args.Date.Year &&
                                                 oh.OpenAt.Month == args.Date.Month &&
                                                 oh.OpenAt.Day == args.Date.Day);
         }
@@ -160,12 +251,16 @@
         }
     }
 
+    /// <summary>
+    /// Event handler for the <see cref="RadzenDatePicker.DateRender"/> event.
+    /// </summary>
+    /// <param name="args"></param>
     private void DateRenderOpenDateTimes(DateRenderEventArgs args)
     {
         try
         {
             args.Disabled = args.Disabled ||
-                        !_openingHours.Any(oh => oh.OpenAt.Year == args.Date.Year &&
+                        !OpeningHours.Any(oh => oh.OpenAt.Year == args.Date.Year &&
                                                 oh.OpenAt.Month == args.Date.Month &&
                                                 oh.OpenAt.Day == args.Date.Day &&
                                                 args.Date.TimeOfDay >= oh.OpenAt.TimeOfDay &&
@@ -177,29 +272,73 @@
         }
     }
 
+    /// <summary>
+    /// Event handler for the <see cref="RadzenDatePicker.ValueChanged"/> event.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="name"></param>
+    /// <param name="format"></param>
     private async void OnChange(DateTime? value, string name, string format)
     {
         if (value is not null)
         {
-            _appointmentForm.From = value.Value;
+            AppointmentForm.From = value.Value;
 
 
-            await LoadAvailableTimeSpans();
-            _selectedIndex = -1;
+            await LoadAvailableTimeSpansAsync();
+            SelectedIndex = -1;
             // Logger.LogInformation(_appointmentForm.From.ToString());
             Logger.LogInformation($"{name} value changed to {value?.ToString(format)}");
         }
     }
 
+    /// <summary>
+    /// Event handler for the <see cref="RadzenDatePicker.CurrentDateChanged"/> event.
+    /// </summary>
+    /// <param name="date"></param>
+    private async void OnCurrentDateChanged(DateTime date)
+    {
+        Logger.LogInformation($"{nameof(OnCurrentDateChanged)} - {date.ToString()}");
+
+        AppointmentForm.From = date;
+
+        ResultModel<IEnumerable<OpeningHoursModel>> result =
+            await OpeningHoursService.GetOpeningHoursAsync(month: AppointmentForm.From.Month, year: AppointmentForm.From.Year);
+
+        if (result.Success)
+        {
+            if (result.Data is null)
+            {
+                Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+                return;
+            }
+
+            OpeningHours = result.Data;
+        }
+        else
+        {
+            Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+            return;
+        }
+
+        await LoadAvailableTimeSpansAsync();
+    }
+
+    /// <summary>
+    /// Event handler when the user submit a valid form
+    /// </summary>
+    /// <returns></returns>
     public async Task OnValidationSubmit()
     {
         DateTime startDate = new DateTime(
-            _appointmentForm.From.Year,
-            _appointmentForm.From.Month,
-            _appointmentForm.From.Day,
-            _selectedTime.Hour,
-            _selectedTime.Minute,
-            _selectedTime.Second);
+            AppointmentForm.From.Year,
+            AppointmentForm.From.Month,
+            AppointmentForm.From.Day,
+            SelectedTime.Hour,
+            SelectedTime.Minute,
+            SelectedTime.Second);
 
         AppointmentCreateModel appointment = new()
             {
@@ -209,13 +348,30 @@
 
         appointment.EndAt = appointment.StartAt.AddMinutes(30);
 
-        if (await AppointmentService.CreateAppointmentAsync(appointment))
+        ResultModel<AppointmentModel> result = await AppointmentService.CreateAppointmentAsync(appointment);
+
+        if (!result.Success)
         {
-            Logger.LogInformation($"{DateTime.Now} - Appointment created");
+            Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+            ValidationMessage = $"Votre rendez-vous n'a pas pu être enregistré";
+
+            return;
         }
-        else
-        {
-            Logger.LogWarning($"{DateTime.Now} - Appointment creation failed");
-        }
+
+        Logger.LogInformation($"{DateTime.Now} - Successfully created: {result.Message}");
+
+        await ResultModal.ShowAsync();
+    }
+
+    /// <summary>
+    /// Event handler when the user click on the close button of the modal
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnCloseModalAsync()
+    {
+        await ResultModal.HideAsync();
+
+        NavigationManager.NavigateTo("profile/appointments");
     }
 }

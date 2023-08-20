@@ -9,8 +9,8 @@ namespace Web.DepotEice.BLL.IServices
 {
     public interface IAppointmentService
     {
-        Task<bool> CreateAppointmentAsync(AppointmentCreateModel appointmentCreate);
-        Task<IEnumerable<AppointmentModel>> GetAppointmentsAsync();
+        Task<ResultModel<AppointmentModel>> CreateAppointmentAsync(AppointmentCreateModel appointmentCreate);
+        Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(DateTime? date = null);
         Task<AppointmentModel?> GetAppointmentAsync(int id);
     }
 }

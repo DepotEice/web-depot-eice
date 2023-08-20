@@ -12,89 +12,100 @@
 @inject UserManager UserManager;
 @inject NavigationManager NavigationManager;
 
-<h3 class="text-center my-5">Gérer les heures d'ouvertures</h3>
+<Authorize Role="@UserManager.DIRECTION_ROLE">
+    <Authorized>
+        <h3 class="text-center my-5">Gérer les heures d'ouvertures</h3>
 
-<div class="container">
+        <div class="container">
 
-    <EditForm Model="viewModel" OnValidSubmit="SubmitForm">
+            <EditForm Model="viewModel" OnValidSubmit="SubmitForm">
 
-        <div class="row border-bottom pb-3">
-            <div class="mb-3">
-                <label class="form-label">Date du premier jour d'ouverture</label>
-                <InputDate class="form-control" @bind-Value="viewModel.StartDate" />
-            </div>
-            <div class="mb-3">
-                <label for="" class="form-label">Date du dernier jour d'ouverture</label>
-                <InputDate class="form-control" @bind-Value="viewModel.EndDate" />
-            </div>
-        </div>
-
-        <div class="d-lg-inline-flex w-100 my-4 pb-3 border-bottom">
-
-            @foreach (var item in viewModel.DayTimeSelectors)
-            {
-                <div class="col-lg-2 mb-4">
-                    <DayTimeSelector DayTimeSelectorModel="item" Disabled="false" />
+                <div class="row border-bottom pb-3">
+                    <div class="mb-3">
+                        <label class="form-label">Date du premier jour d'ouverture</label>
+                        <InputDate class="form-control" @bind-Value="viewModel.StartDate" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="" class="form-label">Date du dernier jour d'ouverture</label>
+                        <InputDate class="form-control" @bind-Value="viewModel.EndDate" />
+                    </div>
                 </div>
-            }
 
-        </div>
+                <div class="d-lg-inline-flex w-100 my-4 pb-3 border-bottom">
 
-        <div class="my-4 border-bottom">
-            <div class="row border-bottom pb-3">
-                <div class="col-10 ">
-                    <h4 class="text-center align-bottom">Fermeture exceptionnelle</h4>
+                    @foreach (var item in viewModel.DayTimeSelectors)
+                    {
+                        <div class="col-lg-2 mb-4">
+                            <DayTimeSelector DayTimeSelectorModel="item" Disabled="false" />
+                        </div>
+                    }
+
                 </div>
-                <div class="col-2">
-                    <button class="btn btn-outline-secondary float-end" type="button" @onclick="AddExceptionalClose">+</button>
-                </div>
-            </div>
 
-            @foreach (var item in viewModel.ExceptionalCloses)
-            {
-                <div class="row my-3">
-                    <div class="col-lg-5 mx-2 my-1">
-                        <div class="d-inline-flex w-100">
-                            <label class="col-form-label col-3 me-3">A partir du :</label>
-                            <div class="col-sm-9">
-                                <InputDate class="form-control" @bind-Value="item.From" />
-                            </div>
+                <div class="my-4 border-bottom">
+                    <div class="row border-bottom pb-3">
+                        <div class="col-10 ">
+                            <h4 class="text-center align-bottom">Fermeture exceptionnelle</h4>
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-outline-secondary float-end" type="button" @onclick="AddExceptionalClose">+</button>
                         </div>
                     </div>
-                    <div class="col-lg-5 mx-2 my-1">
-                        <div class="d-inline-flex w-100">
-                            <label class="col-form-label col-3 me-3">Jusqu'au :</label>
-                            <div class="col-sm-9">
-                                <InputDate class="form-control" @bind-Value="item.To" />
+
+                    @foreach (var item in viewModel.ExceptionalCloses)
+                    {
+                        <div class="row my-3">
+                            <div class="col-lg-5 mx-2 my-1">
+                                <div class="d-inline-flex w-100">
+                                    <label class="col-form-label col-3 me-3">A partir du :</label>
+                                    <div class="col-sm-9">
+                                        <InputDate class="form-control" @bind-Value="item.From" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-5 mx-2 my-1">
+                                <div class="d-inline-flex w-100">
+                                    <label class="col-form-label col-3 me-3">Jusqu'au :</label>
+                                    <div class="col-sm-9">
+                                        <InputDate class="form-control" @bind-Value="item.To" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-1 mx-2 my-1">
+                                <button class="btn btn-outline-danger" @onclick="@(() => RemoveExceptionalClose(item.Id))">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-lg-1 mx-2 my-1">
-                        <button class="btn btn-outline-danger" @onclick="@(() => RemoveExceptionalClose(item.Id))">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
+                    }
+
                 </div>
-            }
 
+                <button class="btn btn-outline-primary float-end">Enregistrer</button>
+
+            </EditForm>
         </div>
-
-        <button class="btn btn-outline-primary float-end">Enregistrer</button>
-
-    </EditForm>
-</div>
+    </Authorized>
+    <Unauthorized>
+        <h3 class="my-5 text-center">Vous n'êtes pas autorisé à accéder à cette page</h3>
+    </Unauthorized>
+</Authorize>
 
 @code {
     private CreateOpeningHoursViewModel viewModel = new();
 
     protected override async Task OnInitializedAsync()
-    {
-        if (!await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE))
+    { 
+        ResultModel<IEnumerable<OpeningHoursModel>> openingHoursResult = await OpeningHoursService.GetOpeningHoursAsync();
+
+        var openingHoursfromRepo = openingHoursResult.Data;
+
+        if (openingHoursfromRepo is null)
         {
-            NavigationManager.NavigateTo("unauthorized");
+            Logger.LogError("Impossible de récupérer les heures d'ouvertures");
+
             return;
         }
-        var openingHoursfromRepo = await OpeningHoursService.GetOpeningHoursAsync();
 
         var firstDay = openingHoursfromRepo.First().OpenAt;
         var lastDay = openingHoursfromRepo.Last().CloseAt;
@@ -160,9 +171,7 @@
                     {
                         From = closedFrom,
                         To = closedTo,
-                        Id = viewModel.ExceptionalCloses.Count == 0
-                                    ? 0
-                                    : viewModel.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
+                        Id = viewModel.ExceptionalCloses.Count == 0 ? 0 : viewModel.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
                     });
 
                 Logger.LogInformation(viewModel.ExceptionalCloses.Count.ToString());
@@ -208,7 +217,15 @@
             Logger.LogInformation("{item}", item);
         }
 
-        var openingHoursFromRepo = await OpeningHoursService.GetOpeningHoursAsync();
+        ResultModel<IEnumerable<OpeningHoursModel>> openingHoursResult = await OpeningHoursService.GetOpeningHoursAsync();
+
+        var openingHoursFromRepo = openingHoursResult.Data;
+
+        if (openingHoursFromRepo is null)
+        {
+            Logger.LogError("Impossible de récupérer les heures d'ouvertures");
+            return;
+        }
 
         try
         {
@@ -252,20 +269,8 @@
             {
                 openingHoursToCreate.Add(new OpeningHoursCreateModel()
                     {
-                        OpenAt = new DateTime(
-                                                    dti.Year,
-                                                    dti.Month,
-                                                    dti.Day,
-                                                    daySelector.From.Hour,
-                                                    daySelector.From.Minute,
-                                                    0),
-                        CloseAt = new DateTime(
-                                                    dti.Year,
-                                                    dti.Month,
-                                                    dti.Day,
-                                                    daySelector.To.Hour,
-                                                    daySelector.To.Minute,
-                                                    0)
+                        OpenAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelector.From.Hour, daySelector.From.Minute, 0),
+                        CloseAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelector.To.Hour, daySelector.To.Minute, 0)
                     });
             }
         }

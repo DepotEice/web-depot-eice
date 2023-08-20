@@ -60,27 +60,6 @@
 
         <div class="mb-3 d-flex flex-lg-row justify-content-between">
             <div class="me-1 col-lg">
-                <label for="mobileNumber" class="form-label">
-                    Mobile
-                </label>
-                <InputText id="mobileNumber" class="form-control" aria-describedby="mobileNumber"
-                           @bind-Value="_profileUpdate.MobileNumber"
-                           oninput="@(() => ValidatePhoneInput(_profileUpdate.MobileNumber))" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.MobileNumber)"></ValidationMessage>
-            </div>
-
-            <div class="ms-1 col-lg">
-                <label for="phoneNumber" class="form-label">
-                    Téléphone
-                </label>
-                <InputText id="phoneNumber" class="form-control" aria-describedby="phoneNumber"
-                           @bind-Value="_profileUpdate.PhoneNumber"
-                           oninput="@(() => ValidatePhoneInput(_profileUpdate.PhoneNumber))" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.PhoneNumber)"></ValidationMessage>
-            </div>
-        </div>
-
-        <div class="mb-3 row">
                 <label for="gender" class="form-label">
                     Genre
                 </label>
@@ -100,24 +79,6 @@
                         </div>
                     </InputRadioGroup>
                 </div>
-            </div>
-
-        <div class="mb-3">
-            <label for="street" class="form-label">
-                Rue
-            </label>
-            <InputText id="street" class="form-control" aria-describedby="street" @bind-Value="_profileUpdate.Street" />
-            <ValidationMessage class="text-danger" For="(() => _profileUpdate.Street)"></ValidationMessage>
-        </div>
-
-        <div class="mb-3 d-flex flex-lg-row justify-content-between">
-            <div class="me-1 col-lg">
-                <label for="houseNumber" class="form-label">
-                    Numéro
-                </label>
-                <InputText id="houseNumber" class="form-control" aria-describedby="houseNumber"
-                           @bind-Value="_profileUpdate.HouseNumber" />
-                <ValidationMessage class="text-danger" For="(() => _profileUpdate.HouseNumber)"></ValidationMessage>
             </div>
 
             <div class="ms-1 col-lg">

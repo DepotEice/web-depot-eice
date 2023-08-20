@@ -21,26 +21,13 @@
 
 <div class="container my-5 py-5 bg-light border border-1">
 
-    <AppointmentSelector AppointmentForm="AppointmentForm" AppointmentCreated="OnAppointmentCreated" SelectedTime="SelectedTime" />
+    <AppointmentSelector AppointmentForm="AppointmentForm" ValidSubmit="OnValidationSubmit" />
 
 </div>
 
-<Modal @ref="ResultModal" Title="Rendez-vous crée">
-    <BodyTemplate>
+<Modal @ref="ResultModal" />
 
-        <div class="row">
-            <p>Votre rendez-vous a correctement été crée, vous allez être rediriger vers les détails du rendez-vous</p>
-        </div>
-
-        <div class="d-inline-flex">
-            <b class="mx-2">@AppointmentForm.From.ToString("D")</b> à <b class="mx-2">@SelectedTime.ToString()</b>
-        </div>
-
-    </BodyTemplate>
-    <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="OnCloseModalAsync">Fermer</Button>
-    </FooterTemplate>
-</Modal>
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 
 @code {
     /// <summary>
@@ -49,19 +36,85 @@
     public Modal ResultModal { get; private set; } = new();
 
     /// <summary>
+    /// The list of Toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
     /// The appointment form.
     /// </summary>
     public AppointmentForm AppointmentForm { get; private set; } = new();
 
     /// <summary>
-    /// The selected time span
+    /// The appointment returned by the API
     /// </summary>
-    public TimeOnly SelectedTime { get; private set; }
+    public AppointmentModel CreatedAppointment { get; set; } = new();
 
-
-    private async Task OnAppointmentCreated()
+    /// <summary>
+    /// Event handler when the user submit a valid form
+    /// </summary>
+    /// <returns></returns>
+    public async Task OnValidationSubmit(DateTime startDate)
     {
-        await ResultModal.ShowAsync();
+        AppointmentCreateModel appointment = new()
+            {
+                StartAt = startDate,
+                EndAt = startDate.AddMinutes(30)
+            };
+
+        appointment.EndAt = appointment.StartAt.AddMinutes(30);
+
+        ResultModel<AppointmentModel> result = await AppointmentService.CreateAppointmentAsync(appointment);
+
+        if (!result.Success)
+        {
+            Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+            string title = "Échec";
+            string body = "La prise de rendez-vous a échouée, veuillez recharger la page ou contacter l'administration";
+
+            ShowMessage(ToastType.Danger, title, body, false);
+
+            return;
+        }
+
+        Logger.LogInformation($"{DateTime.Now} - Successfully created: {result.Message}");
+
+        if (result.Data is null)
+        {
+            Logger.LogWarning("The returned appointment is null");
+        }
+        else
+        {
+            Dictionary<string, object> parameters = new()
+        {
+            { "Appointment", result.Data },
+            { "OnCloseCallback", EventCallback.Factory.Create(this, OnCloseModalAsync) }
+        };
+
+            await ResultModal.ShowAsync<AppointmentCreated>(title: "Rendez-vous crée", parameters: parameters);
+        }
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 
     /// <summary>

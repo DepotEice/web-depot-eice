@@ -17,47 +17,36 @@
                     <i class="bi bi-journal fs-2"></i>
                 </NavLink>
             </li>
-            @if (_isDirection)
+            @if (IsDirection)
             {
                 <li>
                     <NavLink href="/depot/users" class="d-block p-2 link-dark text-decoration-none" title="" data-bs-toggle="tooltip"
-                         data-bs-placement="right" data-bs-original-title="Icon-only">
+                             data-bs-placement="right" data-bs-original-title="Icon-only">
                         <i class="bi bi-people fs-2"></i>
                     </NavLink>
                 </li>
                 <li>
                     <NavLink href="depot/manageopeninghours" class="nav-link py-3 px-2 link-dark" title=""
-                         data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Orders">
+                             data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Orders">
                         <i class="bi bi-clock fs-2"></i>
                     </NavLink>
                 </li>
                 <li class="nav-item">
                     <NavLink href="/depot/articles" class="nav-link py-2 px-3 link-dark" title=""
-                         data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Home">
+                             data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Home">
                         <i class="bi bi-newspaper fs-2"></i>
                     </NavLink>
                 </li>
             }
         </ul>
-        @*<div class="dropdown">
-        <a href="#" class="d-flex align-items-center justify-content-center p-3 link-dark text-decoration-none dropdown-toggle"
-        id="dropdownUser3" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="bi-person-circle h2"></i>
-        </a>
-        <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser3">
-        <li><a class="dropdown-item" href="#">New project...</a></li>
-        <li><a class="dropdown-item" href="#">Settings</a></li>
-        <li><a class="dropdown-item" href="#">Profile</a></li>
-        </ul>
-        </div>*@
     </div>
 </div>
 
 @code {
-    private bool _isDirection = false;
+    public bool IsDirection { get; private set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
-        _isDirection = await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE);
+        IsDirection = await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE);
     }
 }

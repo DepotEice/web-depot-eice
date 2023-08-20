@@ -12,7 +12,7 @@
         <div class="collapse navbar-collapse" id="navbarNavDropdown">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <NavLink class="nav-link" aria-current="page" href="/Index">Accueil</NavLink>
+                    <NavLink class="nav-link" aria-current="page" href="">Accueil</NavLink>
                 </li>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="blog">Blog</NavLink>
@@ -34,7 +34,7 @@
             }
 
             <div class="dropdown m-1">
-                
+
                 <a class="dropbox-toggle text-dark" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown"
                    aria-expanded="false" style="text-decoration:none;">
                     <i class="bi bi-person" style="font-size: 1.5em;">
@@ -47,7 +47,7 @@
                     @if (UserManager.IsConnected)
                     {
                         <li>
-                            <NavLink class="dropdown-item text-dark" href="profile">Profile</NavLink>
+                            <NavLink class="dropdown-item text-dark" href="/Profile/Information">Profile</NavLink>
                         </li>
                         <li>
                             <NavLink class="dropdown-item text-dark" href="depot">Depot</NavLink>

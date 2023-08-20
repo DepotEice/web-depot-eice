@@ -18,7 +18,7 @@
 
             <div class="mb-3">
                 <label for="email" class="form-label">Adresse Email</label>
-                <InputText type="email" class="form-control" id="email" aria-describedby="aide email"
+                <InputText class="form-control" id="email" aria-describedby="aide email"
                            @bind-Value="_signInForm.Email" />
                 <ValidationMessage class="text-danger" For="@(() => _signInForm.Email)" />
                 <div id="email-helper" class="form-text">

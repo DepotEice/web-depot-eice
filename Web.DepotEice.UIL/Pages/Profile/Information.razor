@@ -1,0 +1,186 @@
+﻿@page "/Profile/Information"
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Managers;
+@using Web.DepotEice.UIL.Models.Forms;
+
+@inject IUserService UserService;
+@inject ILogger<Information> Logger;
+@inject IMapper Mapper;
+@inject UserManager UserManager;
+
+<h3 class="text-center my-5">Informations générales</h3>
+
+<div class="container">
+
+    <EditForm Model="ProfileUpdate">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+
+        <div class="mb-3">
+            <ImageUploader ImageSource="@ProfileUpdate.ProfilePictureUrl" ProfilePictureUpdate="HandleProfilePictureUpdate" />
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg">
+                <label for="firstName" class="form-label">
+                    Prénom
+                </label>
+                <InputText id="firstName" class="form-control" aria-describedby="firstName"
+                @bind-Value="@ProfileUpdate.FirstName" disabled />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.FirstName)"></ValidationMessage>
+            </div>
+            <div class="ms-1 col-lg">
+                <label for="lastName" class="form-label">
+                    Nom de famille
+                </label>
+                <InputText id="lastName" class="form-control" aria-describedby="lastName"
+                @bind-Value="@ProfileUpdate.LastName" disabled />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.LastName)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">
+                Adresse email
+            </label>
+            <InputText id="emailAddress" class="form-control" aria-describedby="emailAddress"
+            @bind-Value="@ProfileUpdate.Email" disabled />
+            <ValidationMessage class="text-danger" For="(() => ProfileUpdate.Email)"></ValidationMessage>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">
+                Addresse email de l'école
+            </label>
+            <InputText id="schoolEmailAddress" class="form-control" aria-describedby="schoolEmailAddress"
+            @bind-Value="ProfileUpdate.SchoolEmail" disabled />
+            <ValidationMessage class="text-danger" For="(() => ProfileUpdate.SchoolEmail)"></ValidationMessage>
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg">
+                <label for="gender" class="form-label">
+                    Genre
+                </label>
+
+                <div class="d-flex flex-row justify-content-between" style="width: 50%;">
+                    <InputRadioGroup @bind-Value="ProfileUpdate.Gender">
+                        <div class="">
+                            <InputRadio Value="@("Homme")" class="mx-1" /> Homme
+                        </div>
+
+                        <div class="">
+                            <InputRadio Value="@("Femme")" class="mx-1" /> Femme
+                        </div>
+
+                        <div class="">
+                            <InputRadio Value="@("Autre")" class="mx-1" /> Autre
+                        </div>
+                    </InputRadioGroup>
+                </div>
+            </div>
+
+            <div class="ms-1 col-lg">
+                <label for="birthDate" class="form-label">
+                    Date de naissance
+                </label>
+                <InputDate id="birthDate" class="form-control" aria-describedby="birthDate"
+                @bind-Value="ProfileUpdate.BirthDate" />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.BirthDate)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg">
+                <label for="mobileNumber" class="form-label">
+                    Mobile
+                </label>
+                <InputText id="mobileNumber" class="form-control" aria-describedby="mobileNumber"
+                @bind-Value="ProfileUpdate.MobileNumber" />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.MobileNumber)"></ValidationMessage>
+            </div>
+
+            <div class="ms-1 col-lg">
+                <label for="phoneNumber" class="form-label">
+                    Téléphone
+                </label>
+                <InputText id="phoneNumber" class="form-control" aria-describedby="phoneNumber"
+                @bind-Value="ProfileUpdate.PhoneNumber" />
+                <ValidationMessage class="text-danger" For="(() => ProfileUpdate.PhoneNumber)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-outline-primary mx-auto" @onclick="OnSubmitClicked">
+                Enregistrer
+            </button>
+            <button type="button" class="btn btn-light mx-auto">
+                Réinitialiser
+            </button>
+        </div>
+    </EditForm>
+
+</div>
+
+@code {
+    /// <summary>
+    /// The profile update form
+    /// </summary>
+    public ProfileUpdateForm ProfileUpdate { get; set; } = new ProfileUpdateForm();
+
+    /// <summary>
+    /// The different gender options
+    /// </summary>
+    public string[] Options { get; set; } = new string[] { "Homme", "Femme", "Autre" };
+
+    /// <summary>
+    /// Initialize the component
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        UserModel? userModel = await UserService.GetUserAsync();
+
+        if (userModel is null)
+        {
+            Logger.LogError($"{DateTime.Now} - The current user couldn't be retrieved from the API");
+            return;
+        }
+
+        ProfileUpdate = Mapper.Map<ProfileUpdateForm>(userModel);
+    }
+
+    /// <summary>
+    /// Submit event handler
+    /// </summary>
+    private void OnSubmitClicked()
+    {
+        Logger.LogInformation($"{DateTime.Now} - The user clicked on the submit button");
+
+        if (ProfileUpdate is null)
+        {
+            Logger.LogError($"{DateTime.Now} - The profile update form is null");
+            return;
+        }
+
+        Logger.LogInformation($"{DateTime.Now} - The profile update form is valid");
+
+        UserUpdateModel userModel = Mapper.Map<UserUpdateModel>(ProfileUpdate);
+
+        UserService.UpdateUserAsync(userModel);
+    }
+
+    private async Task HandleProfilePictureUpdate(byte[] bytes, string contentType)
+    {
+        if (bytes is null)
+        {
+            Logger.LogError($"{DateTime.Now} - The profile picture bytes are null");
+            return;
+        }
+
+        Logger.LogInformation($"{DateTime.Now} - The profile picture bytes are valid");
+
+        await UserService.UpdateProfilePictureAsync(bytes, contentType);
+    }
+}

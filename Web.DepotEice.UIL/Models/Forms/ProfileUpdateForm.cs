@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Components.Forms;
 
-namespace Web.DepotEice.BLL.Models
+namespace Web.DepotEice.UIL.Models.Forms
 {
-    public class UserModel
+    public class ProfileUpdateForm
     {
         /// <summary>
         /// User id

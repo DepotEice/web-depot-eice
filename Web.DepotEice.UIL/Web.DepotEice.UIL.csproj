@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>27b54816-56df-4e65-9be4-2650b906ad1d</UserSecretsId>
@@ -12,13 +12,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="12.0.0" />
-    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.10" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.10" PrivateAssets="all" />
-    <PackageReference Include="Radzen.Blazor" Version="4.2.2" />
-    <PackageReference Include="Syncfusion.Blazor" Version="20.3.0.56" />
-    <PackageReference Include="Syncfusion.Blazor.Themes" Version="20.3.0.57" />
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="Blazor.Bootstrap" Version="1.9.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.7" PrivateAssets="all" />
+    <PackageReference Include="Radzen.Blazor" Version="4.13.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
+    <PackageReference Include="Syncfusion.Blazor" Version="21.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="21.2.10" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,6 @@
-﻿@page "/depot/modulerequests"
+﻿// TODO: Change the SyncFusion grid with the Bootstrap grid
+
+@page "/depot/modulerequests"
 
 @using AutoMapper;
 @using Syncfusion.Blazor.Grids
@@ -14,7 +16,7 @@
 <h3 class="text-center my-5">Demande d'acceptation</h3>
 
 <div class="container">
-    <SfGrid DataSource="@_users" EnableHeaderFocus="true" EnableAdaptiveUI="true" AllowFiltering="true"
+    @*<SfGrid DataSource="@_users" EnableHeaderFocus="true" EnableAdaptiveUI="true" AllowFiltering="true"
             AllowSorting="true">
 
         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
@@ -32,7 +34,7 @@
             <GridColumn Field="Nom Module" HeaderText="Nom Module"></GridColumn>
         </GridColumns>
 
-    </SfGrid>
+    </SfGrid>*@
 
     <div class="row mb-3">
         <button type="button" class="btn btn-outline-danger my-2">Refuser la sélection</button>

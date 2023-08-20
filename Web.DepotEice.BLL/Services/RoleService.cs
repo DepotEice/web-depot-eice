@@ -8,6 +8,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 using Web.DepotEice.BLL.IServices;
+using Web.DepotEice.BLL.Models;
 
 namespace Web.DepotEice.BLL.Services
 {
@@ -15,9 +16,9 @@ namespace Web.DepotEice.BLL.Services
     {
         private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
-        private readonly ILocalStorageService _localStorageService;
+        private readonly ISyncLocalStorageService _localStorageService;
 
-        public RoleService(ILogger<RoleService> logger, ILocalStorageService localStorageService, HttpClient httpClient)
+        public RoleService(ILogger<RoleService> logger, ISyncLocalStorageService localStorageService, HttpClient httpClient)
         {
             if (logger is null)
             {
@@ -38,8 +39,47 @@ namespace Web.DepotEice.BLL.Services
             _localStorageService = localStorageService;
             _httpClient = httpClient;
 
+            string token = _localStorageService.GetItemAsString("token");
+
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        /// <summary>
+        /// Get all the roles of the current user if the id is not provided or get the roles of the user with the provided id
+        /// </summary>
+        /// <param name="userId">The id</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{RoleModel}"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<RoleModel>>> GetRolesAsync(string? userId = null)
+        {
+            string queryUrl = string.IsNullOrEmpty(userId)
+                ? "Roles/me"
+                : $"Users/{userId}/Roles";
+
+            HttpResponseMessage response = await _httpClient.GetAsync(queryUrl);
+
+            ResultModel<IEnumerable<RoleModel>> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<RoleModel>>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"{nameof(GetRolesAsync)}: An exception was thrown, cannot read the " +
+                    $"result as json.\n{e.Message}");
+            }
+
+            return result;
         }
 
         public async Task<bool> UserHasRoleAsync(string role)
@@ -48,15 +88,6 @@ namespace Web.DepotEice.BLL.Services
             {
                 throw new ArgumentNullException(nameof(role));
             }
-
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new Exception("User is not authenticated!");
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Roles/HasRole/{role}");
 
@@ -83,15 +114,6 @@ namespace Web.DepotEice.BLL.Services
             {
                 throw new ArgumentNullException(nameof(role));
             }
-
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new Exception("User is not authenticated!");
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Roles/HasRole/{userId}/{role}");
 

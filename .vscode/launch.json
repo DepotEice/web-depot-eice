@@ -1,11 +1,29 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Launch and Debug Standalone Blazor WebAssembly App",
-            "type": "blazorwasm",
-            "request": "launch",
-            "cwd": "${workspaceFolder}/Web.DepotEice.UIL"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch and Debug Standalone Blazor WebAssembly App",
+      "type": "blazorwasm",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/Web.DepotEice.UIL"
+    },
+    {
+      "name": "dotnet watch",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "watch",
+      "program": "${workspaceFolder}/Web.DepotEice.UIL/bin/Debug/net6.0/Web.DepotEice.UIL.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Web.DepotEice.UIL",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "1"
+      }
+    }
+  ]
 }

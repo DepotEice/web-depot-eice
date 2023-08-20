@@ -171,6 +171,16 @@ namespace Web.DepotEice.UIL.Managers
             return await _authService.Activate(userId, token);
         }
 
+        /// <summary>
+        /// Verify if the current user is in the role
+        /// </summary>
+        /// <param name="role">
+        /// The name of the role
+        /// </param>
+        /// <returns>
+        /// <c>true</c> If the user has the role, <c>false</c> Otherwise
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public async Task<bool> IsInRoleAsync(string role)
         {
             if (string.IsNullOrEmpty(role))
@@ -178,7 +188,23 @@ namespace Web.DepotEice.UIL.Managers
                 throw new ArgumentNullException(nameof(role));
             }
 
-            bool result = await _roleService.UserHasRoleAsync(role);
+            var resultModel = await _roleService.GetRolesAsync();
+
+            if (!resultModel.Success)
+            {
+                _logger.LogError($"Getting current user's role failed");
+
+                return false;
+            }
+
+            if (resultModel.Data is null)
+            {
+                _logger.LogError($"Current user's roles data is null");
+
+                return false;
+            }
+
+            bool result = resultModel.Data.Any(r => r.Name.Equals(role));
 
             return result;
         }

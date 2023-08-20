@@ -91,7 +91,6 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/SignUp", signUpModel);
 
-            // TODO : Change NoContent in API to OK()
             if (response.StatusCode != System.Net.HttpStatusCode.NoContent)
             {
                 return false;
@@ -139,6 +138,43 @@ namespace Web.DepotEice.BLL.Services
             response.EnsureSuccessStatusCode();
 
             return true;
+        }
+
+        /// <summary>
+        /// Validate the current token
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>
+        /// </returns>
+        /// <exception cref="NullReferenceException"></exception>
+        public async Task<ResultModel<bool>> AuthorizeAsync()
+        {
+            string? token = _localStorageService.GetItem<string>("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new NullReferenceException(nameof(token));
+            }
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Auth/Authorize/{token}");
+
+            ResultModel<bool> result = new ResultModel<bool>()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(AuthorizeAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+            }
+
+            return result;
         }
     }
 }

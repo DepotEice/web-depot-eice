@@ -1,0 +1,15 @@
+﻿@page "/Profile/Appointments/{Id:int}"
+
+<Authorize>
+    <Authorized>
+
+    </Authorized>
+    <Unauthorized>
+        <h3 class="my-5 text-center">Vous n'êtes pas autorisé à accéder à cette page</h3>
+    </Unauthorized>
+</Authorize>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+}

@@ -101,9 +101,19 @@ namespace Web.DepotEice.BLL.Services
             {
                 Code = response.StatusCode,
                 Message = await response.Content.ReadAsStringAsync(),
-                Data = await response.Content.ReadFromJsonAsync<AddressModel>(),
                 Success = response.IsSuccessStatusCode
             };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<AddressModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(GetAddressAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = null;
+            }
 
             return result;
         }

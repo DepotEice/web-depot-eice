@@ -30,5 +30,6 @@ namespace Web.DepotEice.BLL.IServices
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
         Task<ResultModel<Stream?>> UpdateProfilePictureAsync(byte[] imageContent, string contentType);
+        Task<ResultModel<bool>> DeleteUserAsync(string? userId = null);
     }
 }

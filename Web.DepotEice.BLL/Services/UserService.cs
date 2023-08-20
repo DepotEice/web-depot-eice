@@ -215,5 +215,31 @@ namespace Web.DepotEice.BLL.Services
 
             return await responseMessage.Content.ReadFromJsonAsync<UserModel>();
         }
+
+        public async Task<ResultModel<bool>> DeleteUserAsync(string? userId = null)
+        {
+            string url = string.IsNullOrEmpty(userId) ? "Users" : $"Users?id={userId}";
+
+            HttpResponseMessage response = await _httpClient.DeleteAsync(url);
+
+            ResultModel<bool> result = new ResultModel<bool>()
+            {
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Success = response.IsSuccessStatusCode
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning($"{nameof(DeleteUserAsync)}: An exception was thrown when trying to " +
+                                       $"read from json.\n{e.Message}");
+            }
+
+            return result;
+        }
     }
 }

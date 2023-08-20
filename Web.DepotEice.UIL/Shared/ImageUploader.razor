@@ -1,0 +1,486 @@
+﻿@using SixLabors.ImageSharp.Formats.Gif;
+@using SixLabors.ImageSharp.Formats.Jpeg;
+@using SixLabors.ImageSharp.Formats;
+@using SixLabors.ImageSharp.Formats.Png;
+@using Web.DepotEice.UIL.Helpers;
+
+@inject ILogger<ImageUploader> Logger;
+@inject IJSRuntime JsRuntime;
+
+@*TODO: Improve this component, it's not working as expected*@
+
+<div id="img-container" class="img-container" style="">
+    <div id="img-wrapper" class="wrapper">
+
+        @if (!IsVisible)
+        {
+            <img class="img-full" src="@ImageSource" alt="Profile picture" />
+
+            <div class="overlay">
+                <label for="file-upload" class="btn btn-outline-light">Choisir</label>
+                <InputFile id="file-upload" OnChange="@OnFileChanged" />
+            </div>
+        }
+
+        @if (IsVisible)
+        {
+            <img id="img-overlay" class="img-overlay" src="@NewImage" alt="new picture" />
+        }
+    </div>
+
+    @if (IsVisible)
+    {
+        <span @onmousemove="OnMouseMove" @ondragstart:preventDefault=true @ondragstart:stopPropagation=true>
+            <div class="img-overlay-capture" @onmousedown="OnMouseDown" @onmouseup="OnMouseUp"></div>
+        </span>
+    }
+</div>
+
+
+@if (IsVisible)
+{
+    <div id="buttons" class="d-flex justify-content-center my-4">
+        <button class="btn btn-outline-primary mx-2" @onclick="OnSaveClicked">Sauvegarder</button>
+        <button class="btn btn-outline-secondary mx-2" @onclick="OnResetClicked">Réinitialiser</button>
+    </div>
+}
+
+<div class="row">
+    @foreach (string errorMessage in ErrorMessages)
+    {
+        <span class="text-danger">@errorMessage</span>
+    }
+</div>
+
+<style>
+    .img-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-width: 25rem;
+        min-height: 25rem;
+        max-height: 25rem;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .wrapper {
+        position: relative;
+        display: inline-block;
+        -moz-border-radius: 50%;
+        -webkit-border-radius: 50%;
+        border-radius: 50%;
+        width: 25rem;
+        height: 25rem;
+        overflow: hidden;
+        border: 1px solid black;
+    }
+
+    .img-full {
+        position: absolute;
+        left: 0;
+        top: 0;
+        min-width: 100%;
+        min-height: 100%;
+        object-position: center center;
+    }
+
+    .overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .img-overlay {
+        position: absolute;
+        left: @($"{ImagePositionX}px");
+        top: @($"{ImagePositionY}px");
+        cursor: pointer;
+        min-width: 100%;
+        min-height: 100%;
+        object-position: center center;
+        transition: transform 1s ease-in-out;
+        pointer-events: none;
+        overflow: visible;
+    }
+
+    .img-overlay-capture {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        opacity: 0;
+        z-index: 1;
+    }
+
+    .wrapper:hover .overlay {
+        visibility: visible;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    label[for="file-upload"] {
+        cursor: pointer;
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
+
+    /// <summary>
+    /// The URL of the image to display on initialization of the component
+    /// </summary>
+    [Parameter]
+    public string ImageSource { get; set; } = "https://www.autoscout24.be/cms-content-assets/7DJdOP1KapFbuQulSMKCsz-cbb2a2f3959e64af8120e1760e734d89-Kia_EV6_Rijtest_4-1100.jpg";
+
+    /// <summary>
+    /// The content of the image in bytes to display on initialization of the component
+    /// </summary>
+    [Parameter]
+    public byte[]? ImageBytes { get; set; }
+
+    [Parameter]
+    public Func<byte[], string, Task>? ProfilePictureUpdate { get; set; }
+
+    /// <summary>
+    /// The new image to display after the user has selected a new image
+    /// </summary>
+    public string NewImage { get; set; } = "";
+
+    /// <summary>
+    /// Specify if the modifier is visible or not
+    /// </summary>
+    public bool IsVisible { get; set; } = false;
+
+    /// <summary>
+    /// Specify if the image is dragable or not
+    /// </summary>
+    public bool IsDragable { get; set; } = false;
+
+    /// <summary>
+    /// Position X of the image
+    /// </summary>
+    public double ImagePositionX { get; set; } = 0;
+
+    /// <summary>
+    /// Position Y of the image
+    /// </summary>
+    public double ImagePositionY { get; set; } = 0;
+
+    /// <summary>
+    /// The drag offset of the image on the X axis
+    /// </summary>
+    public double DragOffsetX { get; set; } = 0;
+
+    /// <summary>
+    /// The drag offset of the image on the Y axis
+    /// </summary>
+    public double DragOffsetY { get; set; } = 0;
+
+    /// <summary>
+    /// The original image on initialization
+    /// </summary>
+    public Image? OriginalImage { get; set; }
+
+    /// <summary>
+    /// The format of the image
+    /// </summary>
+    public ImageFormat? ImageFormat { get; set; }
+
+    /// <summary>
+    /// The content type of the image
+    /// </summary>
+    public string ContentType { get; set; } = string.Empty;
+
+    //// <summary>
+    /// The list of error messages
+    /// </summary>
+    public List<string> ErrorMessages { get; set; } = new List<string>();
+
+    /// <summary>
+    /// Record for the position of the image
+    /// </summary>
+    internal record Position
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+
+        public override string ToString()
+        {
+            return $"Position X : {X} | Position Y : {Y}";
+        }
+    }
+
+    /// <summary>
+    /// Record for the size of the image
+    /// </summary>
+    internal record Size
+    {
+        public double Height { get; set; }
+        public double Width { get; set; }
+
+        public override string ToString()
+        {
+            return $"Height : {Height} | Width : {Width}";
+        }
+    }
+
+    /// <summary>
+    /// Event handler on mouse down event on the image
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    private async Task OnMouseDown(MouseEventArgs args)
+    {
+        IsDragable = true;
+
+        var imgOverlayWrapperPosition = await JsRuntime.InvokeAsync<Position>("getDOMElementPosition", "img-overlay-wrapper");
+
+        DragOffsetX = args.ClientX - imgOverlayWrapperPosition.X - ImagePositionX;
+        DragOffsetY = args.ClientY - imgOverlayWrapperPosition.Y - ImagePositionY;
+    }
+
+    /// <summary>
+    /// Event handler on mouse up event on the image
+    /// </summary>
+    /// <param name="args"></param>
+    private void OnMouseUp(MouseEventArgs args)
+    {
+        IsDragable = false;
+    }
+
+    /// <summary>
+    /// Event handler on mouse move event on the image
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    private async Task OnMouseMove(MouseEventArgs args)
+    {
+        if (IsDragable)
+        {
+            Position imgOverlayWrapperPosition = await JsRuntime.InvokeAsync<Position>("getDOMElementPosition", "img-overlay-wrapper");
+            Position wrapperPosition = await JsRuntime.InvokeAsync<Position>("getDOMElementPosition", "img-wrapper");
+            Size wrapperSize = await JsRuntime.InvokeAsync<Size>("getDOMElementSize", "img-wrapper");
+            Size imgSize = await JsRuntime.InvokeAsync<Size>("getDOMElementSize", "img-overlay");
+
+            var mouseX = args.ClientX - imgOverlayWrapperPosition.X;
+            var mouseY = args.ClientY - imgOverlayWrapperPosition.Y;
+
+            var newImageX = mouseX - DragOffsetX;
+            var newImageY = mouseY - DragOffsetY;
+
+            var delta = 0.8;
+
+            double toAddPosX = (newImageX - ImagePositionX) * delta;
+            double toAddPosY = (newImageY - ImagePositionY) * delta;
+
+            double newPosX = ImagePositionX + toAddPosX;
+            double newPosY = ImagePositionY + toAddPosY;
+
+            if (newPosX <= 0 && Math.Abs(newPosX) <= Math.Abs(imgSize.Width - wrapperSize.Width))
+            {
+                ImagePositionX = newPosX;
+            }
+
+            if (newPosY <= 0 && newPosY + imgSize.Height >= imgSize.Height)
+            {
+                ImagePositionY = newPosY;
+            }
+
+            await JsRuntime.InvokeVoidAsync("setElementPosition", "img-overlay", ImagePositionX, ImagePositionY);
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Event handler on save button click
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnSaveClicked()
+    {
+        PreloadService?.Show();
+
+        if (ImageFormat is null)
+        {
+            ErrorMessages.Add("The image format could not be defined. Reset and try again");
+
+            PreloadService?.Hide();
+            return;
+        }
+
+        if (OriginalImage is null)
+        {
+            ErrorMessages.Add("The original image could not be loaded. Reset and try again");
+
+            PreloadService?.Hide();
+            return;
+        }
+
+        var imgWrapperPosition = await JsRuntime.InvokeAsync<Position>("getDOMElementPosition", "img-wrapper");
+        var imgWrapperSize = await JsRuntime.InvokeAsync<Size>("getDOMElementSize", "img-wrapper");
+        var imgPosition = await JsRuntime.InvokeAsync<Position>("getDOMElementPosition", "img-overlay");
+        var imgSize = await JsRuntime.InvokeAsync<Size>("getDOMElementSize", "img-overlay");
+
+        var scalingFactor = (double)imgSize.Width / (double)OriginalImage.Width;
+
+        bool originalImageIsBigger = (imgSize.Width >= OriginalImage.Width) && (imgSize.Height >= OriginalImage.Height);
+
+        var cropX = originalImageIsBigger
+            ? (int)Math.Round((imgPosition.X - imgWrapperPosition.X) / scalingFactor)
+            : (int)Math.Round((imgPosition.X - imgWrapperPosition.X) * scalingFactor);
+
+        var cropY = originalImageIsBigger
+            ? (int)Math.Round((imgPosition.Y - imgWrapperPosition.Y) / scalingFactor)
+            : (int)Math.Round((imgPosition.Y - imgWrapperPosition.Y) * scalingFactor);
+
+        int cropWidth = originalImageIsBigger
+            ? (int)Math.Round(imgWrapperSize.Width / scalingFactor)
+            : (int)Math.Round(imgWrapperSize.Width * scalingFactor);
+
+        if (cropWidth > OriginalImage.Width)
+        {
+            cropWidth = OriginalImage.Width;
+        }
+
+        int cropHeight = originalImageIsBigger
+            ? (int)Math.Round(imgWrapperSize.Height / scalingFactor)
+            : (int)Math.Round(imgWrapperSize.Height * scalingFactor);
+
+        if (cropHeight > OriginalImage.Height)
+        {
+            cropHeight = OriginalImage.Height;
+        }
+
+        byte[] bytes = ImageHelper.GetBytes(OriginalImage, ImageFormat.Value);
+
+        Image image = ImageHelper.Crop(bytes, Math.Abs(cropX), Math.Abs(cropY), cropWidth, cropHeight);
+
+        ImageBytes = ImageHelper.GetBytes(image, ImageFormat.Value);
+
+        ErrorMessages = Enumerable.Empty<string>().ToList();
+
+        SetImage();
+
+        OnResetClicked();
+
+        PreloadService?.Hide();
+
+        ProfilePictureUpdate?.Invoke(bytes, ContentType);
+    }
+
+    /// <summary>
+    /// Set everything back to the default values
+    /// </summary>
+    private void OnResetClicked()
+    {
+        ImageBytes = new byte[0];
+        NewImage = string.Empty;
+        IsVisible = false;
+        OriginalImage?.Dispose();
+        OriginalImage = null;
+        ImageFormat = null;
+        ImagePositionX = 0;
+        ImagePositionY = 0;
+        DragOffsetX = 0;
+        DragOffsetY = 0;
+        ErrorMessages = Enumerable.Empty<string>().ToList();
+    }
+
+    /// <summary>
+    /// Event handler on file changed
+    /// </summary>
+    /// <param name="args"></param>
+    private async void OnFileChanged(InputFileChangeEventArgs args)
+    {
+        PreloadService?.Show();
+
+        IBrowserFile file = args.File;
+
+        ContentType = file.ContentType;
+
+        switch (ContentType)
+        {
+            case "image/jpg":
+                ImageFormat = Helpers.ImageFormat.JPG;
+                break;
+            case "image/jpeg":
+                ImageFormat = Helpers.ImageFormat.JPEG;
+                break;
+            case "image/png":
+                ImageFormat = Helpers.ImageFormat.PNG;
+                break;
+            case "image/gif":
+                ImageFormat = Helpers.ImageFormat.GIF;
+                break;
+            default:
+                ErrorMessages.Add($"The format {file.ContentType} is not authorized. Please use one of the following " +
+                    $"format : jpeg, jpg, png, gif");
+
+                PreloadService?.Hide();
+                return;
+        }
+
+        if (file.Size > 512000)
+        {
+            ErrorMessages.Add("The image maximum size is 512 kb");
+            return;
+        }
+
+        using (MemoryStream memoryStream = new MemoryStream())
+        {
+            await file.OpenReadStream().CopyToAsync(memoryStream);
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            string base64string = Convert.ToBase64String(memoryStream.ToArray());
+
+            NewImage = $"data:{args.File.ContentType};base64,{base64string}";
+
+            IsVisible = true;
+
+            using (Image image = Image.Load(memoryStream))
+            {
+                OriginalImage = image.Clone(ctx => { });
+            }
+        }
+
+        StateHasChanged();
+
+        PreloadService?.Hide();
+    }
+
+    private void SetImage()
+    {
+        if (string.IsNullOrEmpty(ContentType))
+        {
+            Logger.LogError("The image format could not be defined.");
+            return;
+        }
+
+        if (ImageBytes is null)
+        {
+            Logger.LogError("The image bytes could not be defined.");
+            return;
+        }
+
+        if (ImageBytes.Length <= 0)
+        {
+            Logger.LogError("The image content is empty.");
+            return;
+        }
+
+        string base64string = Convert.ToBase64String(ImageBytes);
+        ImageSource = $"data:{ContentType};base64,{base64string}";
+    }
+}

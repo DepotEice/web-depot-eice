@@ -13,5 +13,6 @@ namespace Web.DepotEice.BLL.IServices
         Task<bool> SignUpAsync(SignUpModel signUpModel);
         Task<bool> RequestNewPassword(string email);
         Task<bool> Activate(string userId, string token);
+        Task<bool> ResetPassword(PasswordResetModel passwordResetModel, string token);
     }
 }

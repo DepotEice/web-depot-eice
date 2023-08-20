@@ -1,0 +1,138 @@
+﻿@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models.Forms;
+
+@inject ILogger<AddressFormComponent> Logger;
+
+@if (Address is not null)
+{
+
+
+
+    <EditForm id="@($"address-{Index}")" Model="Address" OnValidSubmit="OnSaveClicked">
+
+
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <ValidationSummary></ValidationSummary>
+
+        <div class="mb-3">
+            <label for="@($"street-{Index}")" class="form-label">
+                Rue
+            </label>
+            <InputText id="@($"street-{Index}")" class="form-control" aria-describedby="street" @bind-Value="Address.Street" />
+            <ValidationMessage class="text-danger" For="(() => Address.Street)"></ValidationMessage>
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg">
+                <label for="@($"houseNumber-{Index}")" class="form-label">
+                    Numéro
+                </label>
+                <InputText id="@($"houseNumber-{Index}")" class="form-control" aria-describedby="houseNumber"
+                @bind-Value="Address.HouseNumber" />
+                <ValidationMessage class="text-danger" For="(() => Address.HouseNumber)"></ValidationMessage>
+            </div>
+
+            <div class="ms-1 col-lg">
+                <label for="@($"appartment-{Index}")" class="form-label" aria-describedby="appartment">
+                    Appartement <em>(opt.)</em>
+                </label>
+                <InputText id="@($"appartment-{Index}")" class="form-control" aria-describedby="appartment" @bind-Value="Address.Appartment" />
+                <ValidationMessage class="text-danger" For="(() => Address.Appartment)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3 d-flex flex-lg-row justify-content-between">
+            <div class="me-1 col-lg-3">
+                <label for="@($"zipCode-{Index}")" class="form-label">
+                    Code postal
+                </label>
+                <InputText id="@($"zipCode-{Index}")" class="form-control" aria-describedby="zipCode" @bind-Value="Address.Zipcode" />
+                <ValidationMessage class="text-danger" For="(() => Address.Zipcode)"></ValidationMessage>
+            </div>
+
+            <div class="ms-1 col-lg">
+                <label for="@($"city-{Index}")" class="form-label">
+                    Ville
+                </label>
+                <InputText id="@($"city-{Index}")" class="form-control" aria-describedby="city" @bind-Value="Address.City" />
+                <ValidationMessage class="text-danger" For="(() => Address.City)"></ValidationMessage>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="@($"state-{Index}")" class="form-label">
+                Etat / Province / Région <em>(opt.)</em>
+            </label>
+            <InputText id="@($"state-{Index}")" class="form-control" aria-describedby="state" @bind-Value="Address.State" />
+            <ValidationMessage class="text-danger" For="(() => Address.State)"></ValidationMessage>
+        </div>
+
+        <div class="mb-3">
+            <label for="@($"country-{Index}")" class="form-label">
+                Pays
+            </label>
+            <InputText id="@($"country-{Index}")" class="form-control" aria-describedby="country" @bind-Value="Address.Country" />
+            <ValidationMessage class="text-danger" For="(() => Address.Country)"></ValidationMessage>
+        </div>
+
+        <div class="d-flex justify-content-start mt-2">
+            <button class="btn btn-outline-primary" type="submit">Enregistrer</button>
+
+            <button class="btn btn-outline-danger ms-2" type="button" style="width:2.5rem; height:2.5rem;" @onclick="OnDeleteClicked">
+                <i class="bi bi-trash3"></i>
+            </button>
+        </div>
+    </EditForm>
+}
+else
+{
+    <h1 class="text-danger">The address object is null !</h1>
+}
+
+@code {
+    /// <summary>
+    /// The address model to edit.
+    /// </summary>
+    [Parameter]
+    [EditorRequired]
+    public AddressForm Address { get; set; } = default!;
+
+    /// <summary>
+    /// The index of the address in the list.
+    /// </summary>
+    [Parameter]
+    [EditorRequired]
+    public int Index { get; set; }
+
+    /// <summary>
+    /// The event to execute when the delete button is clicked.
+    /// </summary>
+    [Parameter]
+    [EditorRequired]
+    public EventCallback<int> OnDelete { get; set; }
+
+    /// <summary>
+    /// The event to execute when the save button is clicked.
+    /// </summary>
+    [Parameter]
+    [EditorRequired]
+    public EventCallback<int> OnSaveChanges { get; set; }
+
+    /// <summary>
+    /// Event handler for the save button. Execute the OnSaveChanges event.
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnSaveClicked()
+    {
+        await OnSaveChanges.InvokeAsync(Index);
+    }
+
+    /// <summary>
+    /// Event handler for the delete button. Execute the OnDelete event.
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnDeleteClicked()
+    {
+        await OnDelete.InvokeAsync(Index);
+    }
+}

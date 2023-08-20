@@ -1,0 +1,429 @@
+﻿@page "/Profile/Addresses"
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models.Forms;
+
+@inject ILogger<Addresses> Logger;
+@inject IMapper Mapper;
+@inject IAddressService AddressService;
+
+<PageTitle>EICE - Adresses</PageTitle>
+
+<Preload />
+
+<h2 class="text-center my-5">Adresses</h2>
+
+<div class="mb-3 d-flex justify-content-lg-end">
+    <button class="@_disabled" @onclick="OnSetPrimaryClicked" disabled="@(_primaryAddressId is null)">
+        Définir comme addresse principale
+    </button>
+    <button class="btn btn-outline-primary" @onclick="OnAddClicked">Ajouter</button>
+</div>
+
+
+@if (_addresses is not null)
+{
+    int AddressFormComponentIndex = 0;
+
+    <InputRadioGroup @bind-Value="_primaryAddressId">
+        @foreach (AddressForm address in _addresses)
+        {
+            <div class="@(address.IsPrimary ? _primaryAddressClass : _addressClass)" style="border-radius: 10px;">
+
+                @if (address.Id != 0)
+                {
+                    <InputRadio Value="address.Id" class="mx-1" @onclick="OnPrimaryAddressChanged" />
+                    <span>Adresse principale</span>
+                    <hr />
+                }
+
+                <AddressFormComponent Address="address" Index="AddressFormComponentIndex" OnDelete="OnDeleteAsync"
+                                      OnSaveChanges="OnSaveAsync" />
+            </div>
+
+            AddressFormComponentIndex++;
+        }
+    </InputRadioGroup>
+}
+
+<Modal @ref="_modal" Title="@_errorMessage.title">
+    <BodyTemplate>
+        <p>@_errorMessage.body</p>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="OnHideModalClickAsync">Fermer</Button>
+    </FooterTemplate>
+</Modal>
+
+<Toasts Class="p-3" Messages="_toastMessages" Delay="5000" />
+
+<ConfirmDialog @ref="_dialog" />
+
+@code {
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
+
+    /// <summary>
+    /// A record (object) to display an error message
+    /// </summary>
+    /// <param name="title">The title of the message</param>
+    /// <param name="body">The content/body of the message</param>
+    private record ErrorMessage(string title = "", string body = "");
+
+    /// <summary>
+    /// The list of addresses
+    /// </summary>
+    private List<AddressForm> _addresses = new List<AddressForm>();
+
+    /// <summary>
+    /// The modal component
+    /// </summary>
+    private Modal _modal = new Modal();
+
+    /// <summary>
+    /// The list of toast messages to display (Components)
+    /// </summary>
+    private List<ToastMessage> _toastMessages = new List<ToastMessage>();
+
+    /// <summary>
+    /// The confirm dialog component
+    /// </summary>
+    private ConfirmDialog _dialog = new ConfirmDialog();
+
+    /// <summary>
+    /// The id of the currently selected primary address. If null, no address is selected
+    /// </summary>
+    private int? _primaryAddressId = null;
+
+    /// <summary>
+    /// The error message to display in the modal
+    /// </summary>
+    private ErrorMessage _errorMessage = new ErrorMessage("", "");
+
+
+    /// <summary>
+    /// Applied class to the address div if the address is not primary.
+    /// </summary>
+    private string _addressClass = "border border-1 p-3 my-3";
+
+    /// <summary>
+    /// Applied class to the address div if the address is primary.
+    /// </summary>
+    private string _primaryAddressClass = "border border-2 p-3 my-3";
+
+    /// <summary>
+    /// Bootstrap css class "disabled" to disable an input
+    /// </summary>
+    private string _disabled = "btn btn-outline-secondary mx-1 disabled";
+
+    /// <summary>
+    /// Initialize the page
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            PreloadService?.Show(SpinnerColor.Dark);
+
+            var addressesFromRepo = await GetAddressesAsync();
+
+            _addresses = Mapper.Map<List<AddressForm>>(addressesFromRepo.OrderByDescending(a => a.IsPrimary == true));
+
+            _primaryAddressId = _addresses.SingleOrDefault(a => a.IsPrimary)?.Id;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"An exception was thrown during initialization of the page.\n{e.Message}");
+        }
+        finally
+        {
+            PreloadService?.Hide();
+        }
+
+    }
+
+    /// <summary>
+    /// Get addresses from the API and order them by the IsPrimary property
+    /// </summary>
+    /// <returns></returns>
+    private async Task<IEnumerable<AddressModel>> GetAddressesAsync()
+    {
+        PreloadService?.Show(SpinnerColor.Dark);
+
+        ResultModel<IEnumerable<AddressModel>> result = await AddressService.GetAddressesAsync();
+
+        if (result.Data is null)
+        {
+            return new List<AddressModel>();
+        }
+
+        PreloadService?.Hide();
+
+        return result.Data;
+    }
+
+    /// <summary>
+    /// Event handler for Input radio button onclicked event. Set the <<see cref="_disabled"/> string to _disable if
+    /// <see cref="_primaryAddressId"/> is not null, if it is null, set to empty string
+    /// </summary>
+    private async Task OnSetPrimaryClicked()
+    {
+        try
+        {
+            PreloadService?.Show(SpinnerColor.Dark);
+
+            if (!_primaryAddressId.HasValue)
+            {
+                ShowMessage(ToastType.Warning, "Address principale", "Aucune addresse n'est sélectionnée", true);
+                return;
+            }
+
+            ResultModel<AddressModel> resultModel = await AddressService.SetPrimaryAddressAsync(_primaryAddressId.Value);
+
+            if (!resultModel.Success)
+            {
+                ShowMessage(
+                    ToastType.Danger,
+                    "Address principale",
+                    $"Une erreur est survenue lors de la mise à jour de l'addresse principale. {resultModel.Message}",
+                    true);
+
+                return;
+            }
+
+            ShowMessage(ToastType.Success, "Address principale", "L'addresse principale a été mise à jour", true);
+
+            _addresses = Mapper.Map<List<AddressForm>>((await GetAddressesAsync()).OrderByDescending(a => a.IsPrimary == true));
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("An exception was thrown while trying to set the primary address", e);
+        }
+        finally
+        {
+            PreloadService?.Hide();
+        }
+    }
+
+    /// <summary>
+    /// Add a new empty address model in the list
+    /// </summary>
+    private void OnAddClicked()
+    {
+        _addresses.Add(new AddressForm());
+
+        ShowMessage(ToastType.Info, "Nouvelle addresse", "Une nouvelle addresse a été ajoutée à la liste", true);
+    }
+
+    /// <summary>
+    /// Event handler for the InputRadio
+    /// </summary>
+    /// <param name="e"></param>
+    private void OnPrimaryAddressChanged(EventArgs e)
+    {
+        Logger.LogInformation($"{nameof(OnPrimaryAddressChanged)} triggered. Selected ID is {_primaryAddressId}. Disabled is {_disabled}");
+
+        if (_primaryAddressId is null)
+        {
+            _disabled = "btn btn-outline-secondary mx-1 disabled";
+        }
+
+        _disabled = "btn btn-outline-secondary mx-1";
+    }
+
+    /// <summary>
+    /// Save the address in the backend. If the retrieved address id is 0, creates a new addres, otherwise,
+    /// update existing one
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    private async Task OnSaveAsync(int index)
+    {
+        Logger.LogInformation($"{nameof(OnSaveAsync)} executed for address at index {index}");
+
+        AddressForm? address = _addresses[index];
+
+        if (address is null)
+        {
+            Logger.LogError($"The address with id {index} was not found");
+
+            return;
+        }
+
+        ResultModel<AddressModel>? addressResult = null;
+
+        if (address.Id == 0)
+        {
+            AddressCreateModel addressCreate = Mapper.Map<AddressCreateModel>(address);
+
+            addressResult = await AddressService.CreateAddressAsync(addressCreate);
+
+            Logger.LogInformation($"Le résultat de la création de l'adresse est le suivant : " +
+                $"\nStatus : {addressResult.Code}" +
+                $"\nMessage : {addressResult.Message}");
+        }
+        else
+        {
+            AddressUpdateModel addressUpdateModel = Mapper.Map<AddressUpdateModel>(address);
+
+            addressResult = await AddressService.UpdateAddressAsync(addressUpdateModel);
+
+            Logger.LogInformation($"Le résultat de la mise à jour de l'adresse est le suivant : " +
+                $"\nStatus : {addressResult.Code}" +
+                $"\nMessage : {addressResult.Message}");
+        }
+
+        if (!addressResult.Success)
+        {
+            ShowMessage(ToastType.Danger, "Sauvegarde", $"La sauvegarde de l'adresse a échouée avec le " +
+                $"message suivant :\n{addressResult.Message}", false);
+        }
+
+        if (addressResult.Data is null)
+        {
+            Logger.LogWarning($"L'adresse retournée par l'API est null");
+            return;
+        }
+
+        ShowMessage(ToastType.Success, "Sauvegarde", "L'adresse a correctement été sauvegardée", true);
+
+        AddressForm createdAddress = Mapper.Map<AddressForm>(addressResult.Data);
+
+        _addresses[index] = createdAddress;
+    }
+
+    /// <summary>
+    /// Delete the address. If the address exist, use the address ID, otherwise use the index in the list of addresses
+    /// </summary>
+    /// <param name="index">The ID of the address to delete</param>
+    /// <param name="addressExist">Specify if the address exist</param>
+    /// <returns></returns>
+    private async Task OnDeleteAsync(int index)
+    {
+        try
+        {
+            bool confirmation = await _dialog.ShowAsync(
+                "Supprimer une addresse",
+                "Êtes-vous sûre de vouloir supprimer cette addressse ? Une fois supprimée, elle ne pourra pas être récupérée",
+                new ConfirmDialogOptions()
+                    {
+                        YesButtonText = "Supprimer",
+                        YesButtonColor = ButtonColor.Danger,
+                        NoButtonText = "Annuler"
+                    }
+            );
+
+            if (!confirmation)
+            {
+                Logger.LogInformation($"{OnDeleteAsync}: La suppression a été annulée");
+                return;
+            }
+
+            AddressForm address = _addresses[index];
+
+            if (address is null)
+            {
+                Logger.LogError($"The address with id {index} was not found");
+                await ShowModalAsync("Suppression", $"L'addresse {index} n'a pas été trouvée");
+                return;
+            }
+
+            if (address.Id != 0)
+            {
+                ResultModel<AddressModel> deleteResult = await AddressService.DeleteAddressAsync(address.Id);
+
+                if (!deleteResult.Success)
+                {
+                    ShowMessage(ToastType.Danger, "Suppression", $"La suprression de l'adresse a échouée avec le " +
+                        $"message suivant :\n{deleteResult.Message}", false);
+                }
+                else
+                {
+                    ShowMessage(ToastType.Success, "Suppression", "L'addresse a correctement été supprimée", true);
+                }
+            }
+
+            _addresses.Remove(address);
+        }
+        catch (IndexOutOfRangeException)
+        {
+            Logger.LogError($"{nameof(OnDeleteAsync)}. The index is out of range." +
+                $"\nIndex: \"{index}\".\nNumber of element in the list: \"{_addresses.Count}\"");
+            throw;
+        }
+        catch (Exception)
+        {
+            Logger.LogError($"An unknown exception was thrown on {nameof(OnDeleteAsync)}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        _toastMessages.Add(toastMessage);
+    }
+
+    /// <summary>
+    /// Show the modal
+    /// </summary>
+    /// <param name="title">The title displayed in the header</param>
+    /// <param name="body">The body of the modal</param>
+    /// <returns></returns>
+    private async Task ShowModalAsync(string title, string body)
+    {
+        if (_modal is null)
+        {
+            Logger.LogError("The modal is not initialized");
+
+            _modal = new Modal();
+        }
+
+        if (string.IsNullOrEmpty(title))
+        {
+            Logger.LogError("The modal title is null or empty");
+            title = "Erreur";
+        }
+
+        if (string.IsNullOrEmpty(body))
+        {
+            Logger.LogError("The modal body is null or empty");
+            body = "Une erreur est survenue";
+        }
+
+        _errorMessage = new ErrorMessage(title, body);
+
+        await _modal.ShowAsync();
+    }
+
+    /// <summary>
+    /// Hide the modal
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnHideModalClickAsync()
+    {
+        await _modal.HideAsync();
+
+        _errorMessage = new ErrorMessage();
+    }
+}

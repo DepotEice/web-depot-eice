@@ -10,21 +10,26 @@
 
 @inject AppointmentManager AppointmentManager;
 @inject ILogger<ManageAppointments> Logger;
+@inject DialogService DialogService;
 
 <Authorize Role="@UserManager.DIRECTION_ROLE">
     <Authorized>
         <h3 class="text-center my-5">Rendez-vous</h3>
 
         <div class="container">
+
             <RadzenScheduler @ref="@Scheduler" style="height: 768px;" SlotRender="OnSlotRender"
                              TItem="AppointmentDisplayModel" Data="Appointments" StartProperty="StartTime"
-                             EndProperty="EndTime" TextProperty="UserFullName" SelectedIndex="2"
+                             EndProperty="EndTime" TextProperty="UserFullName" SelectedIndex="ViewIndex"
                              AppointmentRender="OnAppointmentRender" Culture="System.Globalization.CultureInfo.CurrentCulture"
-                             TodayText="Aujourd'hui">
-                <RadzenDayView StartTime="new TimeSpan(8,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Jour" TimeFormat="HH:mm" />
-                <RadzenWeekView StartTime="new TimeSpan(8,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Semaine" TimeFormat="HH:mm" />
+                             TodayText="Aujourd'hui" AppointmentSelect="OnAppointmentSelected">
+
+                <RadzenDayView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Jour" TimeFormat="HH:mm" />
+                <RadzenWeekView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Semaine" TimeFormat="HH:mm" />
                 <RadzenMonthView Text="Mois" />
+
             </RadzenScheduler>
+
         </div>
     </Authorized>
     <Unauthorized>
@@ -33,23 +38,15 @@
 </Authorize>
 
 @code {
-    public RadzenScheduler<AppointmentDisplayModel> Scheduler { get; set; } = new();
     /// <summary>
-    /// Record that handle the schedule view type
+    /// The Radzen Scheduler reference
     /// </summary>
-    /// <param name="ID">The ID of the view</param>
-    /// <param name="Text">The name of the view</param>
-    public record CalendarView(View ID, string Text);
+    public RadzenScheduler<AppointmentDisplayModel> Scheduler { get; set; } = new();
 
     /// <summary>
     /// The current view index
     /// </summary>
-    public int? ViewIndex { get; private set; } = 1;
-
-    /// <summary>
-    /// The current view
-    /// </summary>
-    public View CurrentView { get; private set; } = View.Week;
+    public int ViewIndex { get; private set; } = 0;
 
     /// <summary>
     /// Selected date time
@@ -61,21 +58,16 @@
     /// </summary>
     public List<AppointmentDisplayModel> Appointments { get; private set; } = new List<AppointmentDisplayModel>();
 
-    /// <summary>
-    /// The list of available calendar views
-    /// </summary>
-    public List<CalendarView> CalendarViews { get; private set; } = new List<CalendarView>()
-    {
-        new CalendarView(View.Day, "Jour"),
-        new CalendarView(View.Week, "Semaine"),
-        new CalendarView(View.Month, "Mois")
-    };
-
     protected override async Task OnInitializedAsync()
     {
         await LoadAppointmentsAsync(DateRange.Week);
     }
 
+    /// <summary>
+    /// Load the appointments for the selected date time
+    /// </summary>
+    /// <param name="range">The range</param>
+    /// <returns></returns>
     private async Task LoadAppointmentsAsync(DateRange range)
     {
         Appointments = (await AppointmentManager.GetDisplayAppointmentsAsync(SelectedDateTime, range)).ToList();
@@ -83,12 +75,20 @@
         Logger.LogInformation(Appointments.Count.ToString());
     }
 
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.AppointmentRender"/>se when the Appointments are rendered
+    /// </summary>
+    /// <param name="args"></param>
     private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<AppointmentDisplayModel> args)
     {
-        
+
         args.Attributes["style"] = $"background: {args.Data.RGBColor}";
     }
 
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.SlotRender"/>se when the Slots are rendered
+    /// </summary>
+    /// <param name="args"></param>
     private void OnSlotRender(SchedulerSlotRenderEventArgs args)
     {
         // Highlight today in month view
@@ -98,9 +98,17 @@
         }
 
         // Highlight working hours (9-18)
-        if ((args.View.Text == "Semaine" || args.View.Text == "Jour") && args.Start.Hour > 8 && args.Start.Hour < 19)
+        if ((args.View.Text == "Semaine" || args.View.Text == "Jour") && args.Start.Hour >= 8 && args.Start.Hour < 22)
         {
             args.Attributes["style"] = "background: rgba(255,220,40,.2);";
         }
+    }
+
+    private async Task OnAppointmentSelected(SchedulerAppointmentSelectEventArgs<AppointmentDisplayModel> args)
+    {
+        Logger.LogInformation("test");
+        await DialogService.OpenAsync<ManageAppointment>("Gérer", new Dictionary<string, object>() { { "Appointment", args.Data } });
+
+        await Scheduler.Reload();
     }
 }

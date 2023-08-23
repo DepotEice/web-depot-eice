@@ -61,5 +61,13 @@ namespace Web.DepotEice.BLL.IServices
         /// <returns></returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         Task<ResultModel<bool>> DeleteAppointmentAsync(int id);
+
+        /// <summary>
+        /// Accept an appointment by sending a PUT request to the API
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<bool>> AcceptAppointmentAsync(int id);
     }
 }

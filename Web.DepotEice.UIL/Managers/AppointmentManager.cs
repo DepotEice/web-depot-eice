@@ -86,6 +86,9 @@ namespace Web.DepotEice.UIL.Managers
                 }
 
                 appointment.UserFullName = $"{userFromService.LastName.ToUpperInvariant()} {userFromService.FirstName}";
+                appointment.Email = userFromService.Email;
+                appointment.Phone = userFromService.PhoneNumber;
+                appointment.MobilePhone = userFromService.MobileNumber;
             }
 
             return appointments;

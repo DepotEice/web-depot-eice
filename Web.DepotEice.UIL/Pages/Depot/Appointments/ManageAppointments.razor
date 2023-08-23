@@ -46,7 +46,7 @@
     /// <summary>
     /// The current view index
     /// </summary>
-    public int ViewIndex { get; private set; } = 0;
+    public int ViewIndex { get; private set; } = 1;
 
     /// <summary>
     /// Selected date time
@@ -60,7 +60,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAppointmentsAsync(DateRange.Week);
+        await LoadAppointmentsAsync((DateRange)ViewIndex);
     }
 
     /// <summary>
@@ -107,7 +107,12 @@
     private async Task OnAppointmentSelected(SchedulerAppointmentSelectEventArgs<AppointmentDisplayModel> args)
     {
         Logger.LogInformation("test");
-        await DialogService.OpenAsync<ManageAppointment>("Gérer", new Dictionary<string, object>() { { "Appointment", args.Data } });
+        bool result = await DialogService.OpenAsync<ManageAppointment>("Gérer", new Dictionary<string, object>() { { "Appointment", args.Data } });
+
+        if (result)
+        {
+            await LoadAppointmentsAsync((DateRange)ViewIndex);
+        }
 
         await Scheduler.Reload();
     }

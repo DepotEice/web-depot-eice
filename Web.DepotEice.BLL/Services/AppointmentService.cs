@@ -255,5 +255,40 @@ namespace Web.DepotEice.BLL.Services
 
             return result;
         }
+
+        /// <summary>
+        /// Accept an appointment by sending a PUT request to the API
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<bool>> AcceptAppointmentAsync(int id)
+        {
+            if (id <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
+            HttpResponseMessage response = await _httpClient.PutAsync($"Appointments/{id}/accept", null);
+
+            ResultModel<bool> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"{nameof(AcceptAppointmentAsync)}: An exception was thrown, cannot " +
+                    $"read the result as json.\n{e.Message}");
+            }
+
+            return result;
+        }
     }
 }

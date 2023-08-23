@@ -11,24 +11,28 @@
 
 <PageTitle>Articles</PageTitle>
 
-<h3 class="p-3">Articles</h3>
+<h2 class="text-center my-5">Articles du blog</h2>
 
 <div class="container">
     <EditForm Model="_viewModel" OnValidSubmit="FilterSelectionAsync">
         <div class="row py-3 border-bottom">
-            <div class="input-group mb-3">
-                <button class="btn btn-outline-secondary" type="button" id="clear" @onclick="ClearFiltersAsync">Clear</button>
-                <input type="text" class="form-control" placeholder="Texte de recherche" aria-label="texte de recherche"
-                       aria-describedby="recherche" />
-                <button class="btn btn-outline-secondary" type="submit" id="recherche">Recherche</button>
-            </div>
+            <div class="row">
+                <div class="input-group mb-3">
+                    <button class="btn btn-outline-secondary" type="button" id="clear" @onclick="ClearFiltersAsync">Clear</button>
+                    <input type="text" class="form-control" placeholder="Texte de recherche" aria-label="texte de recherche"
+                           aria-describedby="recherche" />
+                    <button class="btn btn-outline-secondary" type="submit" id="recherche">Recherche</button>
+                </div>
 
-            <div class="row mb-3">
                 <div class="mb-3 col-lg-3">
                     <label class="form-label">Inclure les articles supprimés</label>
                     <InputCheckbox placeholder="Inclure les articles effacés" aria-label="article supprimés"
-                                   @bind-Value="_viewModel.SelectDeleted" />
+                    @bind-Value="_viewModel.SelectDeleted" />
                 </div>
+            </div>
+
+            <div class="row mb-3">
+
 
                 <div class="mb-3 col-lg-4">
                     <label class="form-label">A partir de :</label>
@@ -44,7 +48,7 @@
                 <div class="col-lg-3 form-groups">
                     <label class="form-label">Nombre d'articles à afficher</label>
                     <InputSelect @bind-Value="_viewModel.ArticlesToDisplay" class="form-control float-end"
-                                 @onchange="NumberOfArticlesToDisplayChangedAsync">
+                    @onchange="NumberOfArticlesToDisplayChangedAsync">
                         <option value="10">10</option>
                         <option value="20">20</option>
                         <option value="50">50</option>

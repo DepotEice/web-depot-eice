@@ -38,10 +38,11 @@ namespace Web.DepotEice.BLL.IServices
         /// Get all appointments by sending a GET request to the API
         /// </summary>
         /// <param name="date">The datetime</param>
+        /// <param name="dateRange">The range to select</param>
         /// <returns>
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{AppointmentModel}"/> where T is <see cref="AppointmentModel"/>
         /// </returns>
-        Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(DateTime? date = null);
+        Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(DateTime? date = null, int? dateRange = null);
 
         /// <summary>
         /// Get an appointment by sending a GET request to the API

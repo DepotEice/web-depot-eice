@@ -181,16 +181,22 @@ namespace Web.DepotEice.BLL.Services
         /// Get all appointments by sending a GET request to the API
         /// </summary>
         /// <param name="date">The datetime</param>
+        /// <param name="dateRange">The range to select</param>
         /// <returns>
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{AppointmentModel}"/> where T is <see cref="AppointmentModel"/>
         /// </returns>
-        public async Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(DateTime? date = null)
+        public async Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(DateTime? date = null, int? dateRange = null)
         {
             string queryUri = "Appointments";
 
             if (date.HasValue)
             {
                 queryUri += $"?date={date.Value:s}";
+
+                if (dateRange.HasValue)
+                {
+                    queryUri += $"&range={dateRange.Value}";
+                }
             }
 
             HttpResponseMessage response = await _httpClient.GetAsync(queryUri);

@@ -3,6 +3,7 @@ using BlazorBootstrap;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Radzen;
 using Syncfusion.Blazor;
 using Syncfusion.Licensing;
 using Web.DepotEice.BLL.IServices;
@@ -59,6 +60,12 @@ namespace Company.WebApplication1
             builder.Services.AddScoped<IRoleService, RoleService>();
 
             builder.Services.AddScoped<UserManager>();
+            builder.Services.AddScoped<AppointmentManager>();
+
+            builder.Services.AddScoped<DialogService>();
+            builder.Services.AddScoped<NotificationService>();
+            builder.Services.AddScoped<TooltipService>();
+            builder.Services.AddScoped<ContextMenuService>();
 
             var host = builder.Build();
 

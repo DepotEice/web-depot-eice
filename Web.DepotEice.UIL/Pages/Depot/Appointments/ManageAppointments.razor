@@ -1,0 +1,106 @@
+﻿@page "/depot/manage-appointments"
+
+@using Web.DepotEice.UIL.Managers;
+@using Syncfusion.Blazor.Schedule;
+@using Syncfusion.Blazor.Navigations;
+@using Syncfusion.Blazor.DropDowns;
+@using Syncfusion.Blazor.Calendars;
+@using Web.DepotEice.UIL.Models;
+@using static Web.DepotEice.UIL.Helpers.Utils;
+
+@inject AppointmentManager AppointmentManager;
+@inject ILogger<ManageAppointments> Logger;
+
+<Authorize Role="@UserManager.DIRECTION_ROLE">
+    <Authorized>
+        <h3 class="text-center my-5">Rendez-vous</h3>
+
+        <div class="container">
+            <RadzenScheduler @ref="@Scheduler" style="height: 768px;" SlotRender="OnSlotRender"
+                             TItem="AppointmentDisplayModel" Data="Appointments" StartProperty="StartTime"
+                             EndProperty="EndTime" TextProperty="UserFullName" SelectedIndex="2"
+                             AppointmentRender="OnAppointmentRender" Culture="System.Globalization.CultureInfo.CurrentCulture"
+                             TodayText="Aujourd'hui">
+                <RadzenDayView StartTime="new TimeSpan(8,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Jour" TimeFormat="HH:mm" />
+                <RadzenWeekView StartTime="new TimeSpan(8,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Semaine" TimeFormat="HH:mm" />
+                <RadzenMonthView Text="Mois" />
+            </RadzenScheduler>
+        </div>
+    </Authorized>
+    <Unauthorized>
+        <h3 class="my-5 text-center">Vous n'êtes pas autorisé à accéder à cette page</h3>
+    </Unauthorized>
+</Authorize>
+
+@code {
+    public RadzenScheduler<AppointmentDisplayModel> Scheduler { get; set; } = new();
+    /// <summary>
+    /// Record that handle the schedule view type
+    /// </summary>
+    /// <param name="ID">The ID of the view</param>
+    /// <param name="Text">The name of the view</param>
+    public record CalendarView(View ID, string Text);
+
+    /// <summary>
+    /// The current view index
+    /// </summary>
+    public int? ViewIndex { get; private set; } = 1;
+
+    /// <summary>
+    /// The current view
+    /// </summary>
+    public View CurrentView { get; private set; } = View.Week;
+
+    /// <summary>
+    /// Selected date time
+    /// </summary>
+    public DateTime SelectedDateTime { get; private set; } = DateTime.Now;
+
+    /// <summary>
+    /// The list of appointments
+    /// </summary>
+    public List<AppointmentDisplayModel> Appointments { get; private set; } = new List<AppointmentDisplayModel>();
+
+    /// <summary>
+    /// The list of available calendar views
+    /// </summary>
+    public List<CalendarView> CalendarViews { get; private set; } = new List<CalendarView>()
+    {
+        new CalendarView(View.Day, "Jour"),
+        new CalendarView(View.Week, "Semaine"),
+        new CalendarView(View.Month, "Mois")
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAppointmentsAsync(DateRange.Week);
+    }
+
+    private async Task LoadAppointmentsAsync(DateRange range)
+    {
+        Appointments = (await AppointmentManager.GetDisplayAppointmentsAsync(SelectedDateTime, range)).ToList();
+
+        Logger.LogInformation(Appointments.Count.ToString());
+    }
+
+    private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<AppointmentDisplayModel> args)
+    {
+        
+        args.Attributes["style"] = $"background: {args.Data.RGBColor}";
+    }
+
+    private void OnSlotRender(SchedulerSlotRenderEventArgs args)
+    {
+        // Highlight today in month view
+        if (args.View.Text == "Mois" && args.Start.Date == DateTime.Today)
+        {
+            args.Attributes["style"] = "background: rgba(255,220,40,.2);";
+        }
+
+        // Highlight working hours (9-18)
+        if ((args.View.Text == "Semaine" || args.View.Text == "Jour") && args.Start.Hour > 8 && args.Start.Hour < 19)
+        {
+            args.Attributes["style"] = "background: rgba(255,220,40,.2);";
+        }
+    }
+}

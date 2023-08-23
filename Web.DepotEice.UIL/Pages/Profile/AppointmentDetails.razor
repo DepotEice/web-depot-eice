@@ -13,7 +13,7 @@
 
         <h4 class="text-center my-5">Rendez-vous le @(AppointmentForm.From.ToString("F")). @StatusMessage</h4>
 
-        <AppointmentSelector AppointmentForm="AppointmentForm" ValidSubmit="OnValidSubmitAsync" Update="true"
+        <AppointmentSelector AppointmentForm="AppointmentForm" ValidSubmit="OnValidSubmitAsync" Updatable="Updatable"
                              CancelAppointment="OnCancelAppointmentPressed" Modifiable="Modifiable" />
 
     </Authorized>
@@ -43,7 +43,12 @@
     /// <summary>
     /// If the appointment is modifiable
     /// </summary>
-    public bool Modifiable { get; set; } = true;
+    public bool Modifiable { get; private set; } = true;
+
+    /// <summary>
+    /// If the appointment is cancelable
+    /// </summary>
+    public bool Updatable { get; private set; } = true;
 
     /// <summary>
     /// The status message
@@ -107,6 +112,8 @@
         if (result.Data.IsAccepted)
         {
             StatusMessage = "Accepté.";
+
+            Updatable = false;
         }
         else
         {

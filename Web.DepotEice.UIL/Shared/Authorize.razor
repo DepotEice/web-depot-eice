@@ -16,20 +16,43 @@ else
 }
 
 @code {
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
+
+    /// <summary>
+    /// The role to check
+    /// </summary>
     [Parameter]
     public string? Role { get; set; }
 
+    /// <summary>
+    /// The fragment rendered if the user is authorized
+    /// </summary>
     [Parameter]
     public RenderFragment? Authorized { get; set; }
 
+    /// <summary>
+    /// The fragment rendered if the user is not authorized
+    /// </summary>
     [Parameter]
     public RenderFragment? Unauthorized { get; set; }
 
+    /// <summary>
+    /// Verify if the user is authorized
+    /// </summary>
     public bool IsAuthorized { get; private set; } = false;
 
-
+    /// <summary>
+    /// Initialize
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        PreloadService?.Show(SpinnerColor.Dark);
+
         Logger.LogInformation($"{DateTime.Now} - Requesting authorization for role \"{Role}\"");
 
         if (string.IsNullOrEmpty(Role))
@@ -51,6 +74,8 @@ else
         {
             IsAuthorized = await UserManager.IsInRoleAsync(Role);
         }
+
+        PreloadService?.Hide();
 
         StateHasChanged();
     }

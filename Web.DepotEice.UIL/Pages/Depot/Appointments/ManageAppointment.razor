@@ -1,83 +1,98 @@
 ﻿@using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
 
 @inject ILogger<ManageAppointment> Logger;
 @inject DialogService DialogService;
 @inject IAppointmentService AppointmentService;
+@inject UserManager UserManager;
 
-<EditForm Model="Appointment" OnValidSubmit="OnValidSubmitAsync">
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-md-3 d-flex align-items-end">
-            <label class="form-label" for="user-input">Utilisateur</label>
-        </div>
-        <div class="col-8">
-            <InputText id="user-input" @bind-Value="Appointment.UserFullName" type="text" class="form-control-plaintext" readonly />
-            <ValidationMessage For="@(() => Appointment.UserFullName)" />
-        </div>
-    </div>
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-md-3 d-flex align-items-end">
-            <label class="form-label" for="user-email">Email</label>
-        </div>
-        <div class="col-8">
-            <a href="mailto:@Appointment.Email" id="user-email" class="form-control-plaintext">
-                @Appointment.Email
-            </a>
-        </div>
-    </div>
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-md-3 d-flex align-items-end">
-            <label class="form-label" for="user-phone">Téléphone</label>
-        </div>
-        <div class="col-8">
-            <a id="user-phone" href="tel:@Appointment.Phone" class="form-control-plaintext">
-                @Appointment.Phone
-            </a>
-        </div>
-    </div>
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-md-3 d-flex align-items-end">
-            <label class="form-label" for="user-mobile-phone">GSM</label>
-        </div>
-        <div class="col-8">
-            <a id="user-phone" href="tel:@Appointment.MobilePhone" class="form-control-plaintext">
-                @Appointment.MobilePhone
-            </a>
-        </div>
-    </div>
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-md-3 d-flex align-items-end">
-            <label class="form-label" for="start-date-input">Début</label>
-        </div>
-        <div class="col">
-            <RadzenDatePicker id="start-date-input" @bind-Value="@Appointment.StartTime" Name="Début" ShowTime="true"
-                              Culture="System.Globalization.CultureInfo.CurrentUICulture" CurrentDateChanged="OnCurrentDateChanged" />
-            <ValidationMessage For="@(() => Appointment.StartTime)" />
-        </div>
-    </div>
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-md-3 d-flex align-items-end">
-            <label class="form-label" for="end-date-input">Fin</label>
-        </div>
-        <div class="col">
-            <RadzenDatePicker id="end-date-input" @bind-Value="Appointment.EndTime" Name="Fin" ShowTime="true" ReadOnly="true"
-                              Culture="System.Globalization.CultureInfo.CurrentUICulture" />
-            <ValidationMessage For="@(() => Appointment.EndTime)" />
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-3"></div>
-        <div class="col">
-            <button class="btn btn-danger" type="button" @onclick="OnCancelAppointmentAsync">Annuler</button>
+<Authorize Role="@UserManager.DIRECTION_ROLE">
+    <Authorized>
 
-            @if (!Appointment.IsAccepted)
-            {
-                <button class="btn btn-primary mx-2" type="submit">Confirmer</button>
-            }
-        </div>
-    </div>
-</EditForm>
+        <EditForm Model="Appointment" OnValidSubmit="OnValidSubmitAsync">
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="user-input">Utilisateur</label>
+                </div>
+                <div class="col-8">
+                    <InputText id="user-input" @bind-Value="Appointment.UserFullName" type="text" class="form-control-plaintext" readonly />
+                    <ValidationMessage For="@(() => Appointment.UserFullName)" />
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="user-email">Email</label>
+                </div>
+                <div class="col-8">
+                    <a href="mailto:@Appointment.Email" id="user-email" class="form-control-plaintext">
+                        @Appointment.Email
+                    </a>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="user-phone">Téléphone</label>
+                </div>
+                <div class="col-8">
+                    <a id="user-phone" href="tel:@Appointment.Phone" class="form-control-plaintext">
+                        @Appointment.Phone
+                    </a>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="user-mobile-phone">GSM</label>
+                </div>
+                <div class="col-8">
+                    <a id="user-phone" href="tel:@Appointment.MobilePhone" class="form-control-plaintext">
+                        @Appointment.MobilePhone
+                    </a>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="start-date-input">Début</label>
+                </div>
+                <div class="col">
+                    <RadzenDatePicker id="start-date-input" @bind-Value="@Appointment.StartTime" Name="Début" ShowTime="true"
+                                      Culture="System.Globalization.CultureInfo.CurrentUICulture" CurrentDateChanged="OnCurrentDateChanged" />
+                    <ValidationMessage For="@(() => Appointment.StartTime)" />
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="end-date-input">Fin</label>
+                </div>
+                <div class="col">
+                    <RadzenDatePicker id="end-date-input" @bind-Value="Appointment.EndTime" Name="Fin" ShowTime="true" ReadOnly="true"
+                                      Culture="System.Globalization.CultureInfo.CurrentUICulture" />
+                    <ValidationMessage For="@(() => Appointment.EndTime)" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col">
+                    <button class="btn btn-danger" type="button" @onclick="OnCancelAppointmentAsync">Annuler</button>
+
+                    @if (!Appointment.IsAccepted)
+                    {
+                        <button class="btn btn-primary mx-2" type="submit">Confirmer</button>
+                    }
+                </div>
+            </div>
+        </EditForm>
+
+    </Authorized>
+
+    <Unauthorized>
+        <h2 class="text-center my-5">Accès non autorisé</h2>
+        <p class="text-center">Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
+    </Unauthorized>
+</Authorize>
+
+
 
 <Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 @code {

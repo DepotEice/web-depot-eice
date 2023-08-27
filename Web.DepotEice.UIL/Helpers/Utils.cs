@@ -1,4 +1,6 @@
-﻿namespace Web.DepotEice.UIL.Helpers
+﻿using System.Text.RegularExpressions;
+
+namespace Web.DepotEice.UIL.Helpers
 {
     /// <summary>
     /// Static class of utilities
@@ -30,5 +32,19 @@
             /// </summary>
             Year
         }
+
+        /// <summary>
+        /// Regex to detect the HTML <img> node
+        /// </summary>
+        /// <returns></returns>
+        public static readonly Regex HTMLImgRegex = new(@"<img[^>]+>");
+
+        public static readonly Regex HtmlEntityRemovalRegex = new(@"&nbsp;|&lt;|&gt;|&amp;|&euro;|&pound;|&quot;");
+
+        /// <summary>
+        /// API Base url
+        /// </summary>
+        public static string API_BASE_URL = Environment.GetEnvironmentVariable("API_BASE_URL")
+            ?? "https://localhost:7205/api";
     }
 }

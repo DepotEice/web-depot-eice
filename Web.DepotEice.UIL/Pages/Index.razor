@@ -22,39 +22,51 @@
 <div class="container-fluid body-content">
 
     <div class="row py-5 mx-1">
-        <div class="col-lg-8 border-end">
-            @foreach (var article in articles)
-            {
-                <div class="row justify-content-between p-2 mb-4 border-bottom me-2" style="">
-                    <div class="">
-                        <h1 class="display-4 fst-italic"><a class="link-dark " href="">@article.Title</a></h1>
-                        <p class="lead my-3">@((MarkupString)article.BodyNoHTML)</p>
-                        <p class="lead mb-0 align-bottom pb-4"><a href="#" class="fw-bold">Continuer à lire...</a></p>
+        @if (Articles is not null)
+        {
+            string colLg = PinnedArticles is not null && PinnedArticles.Count() > 0 ? "col-lg-8 border-end" : "col-lg";
+
+            <div class="@colLg">
+
+                @foreach (var article in Articles)
+                {
+                    <div class="row justify-content-between p-2 mb-4 border-bottom me-2" style="">
+                        <div class="">
+                            <h1 class="display-4 fst-italic">
+                                <a class="link-dark " href="@($"/blog/article/{article.Id}")">
+                                    @article.Title
+                                </a>
+                            </h1>
+                            <p class="lead my-3">@((MarkupString)article.BodyNoHTML)</p>
+                            <p class="lead mb-0 align-bottom pb-4">
+                                <a href="@($"/blog/article/{article.Id}")" class="fw-bold">
+                                    Continuer à lire...
+                                </a>
+                            </p>
+                        </div>
                     </div>
-                </div>
-            }
+                }
 
-            @* <div class="p-4 p-md-5 mb-4 text-white rounded bg-dark" style="">
-            <div class="col-6 px-0">
-            <h1 class="display-4 fst-italic">Title of a longer featured blog post</h1>
-            <p class="lead mb-0"><a href="#" class="text-white fw-bold">Continue reading...</a></p>
             </div>
+        }
 
-            <div class="col-6 px-0">
-            <img src="" />
+        @if (PinnedArticles is not null && PinnedArticles.Count() > 0)
+        {
+            <div class="col-lg-4 mt-3">
+                <h3 class="text-center">À ne pas rater</h3>
+
+                @foreach (var article in PinnedArticles)
+                {
+                    <div class="row justify-content-between p-2 my-4 mx-2">
+                        <h5 class="fst-italic">
+                            <a class="link-secondary" href="@($"/blog/article/{article.Id}")">
+                                 @article.Title
+                            </a>
+                        </h5>
+                    </div>
+                }
             </div>
-            </div> *@
-        </div>
-        <div class="col-lg-4 mt-3">
-            <h3 class="text-center">À ne pas rater</h3>
-
-            @foreach (var article in articles)
-            {
-                <div class="row justify-content-between p-2 my-4 mx-2">
-                    <h5 class="fst-italic"><a class="link-secondary" href="#"> @article.Title</a></h5>
-                </div>
-            }
-        </div>
+        }
     </div>
 
     <div class="">
@@ -108,14 +120,77 @@
 </div>
 
 @code {
-    List<ArticleIndexModel> articles = new List<ArticleIndexModel>();
+    /// <summary>
+    /// List of articles
+    /// </summary>
+    public IEnumerable<ArticleIndexModel>? Articles { get; set; }
 
+    /// <summary>
+    /// List of pinned articles
+    /// </summary>
+    public IEnumerable<ArticleIndexModel>? PinnedArticles { get; set; }
+
+    /// <summary>
+    /// Initialization
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        var art = (await ArticleService.GetArticlesAsync());
+        Articles = await GetArticlesAsync();
+        PinnedArticles = await GetPinnedArticlesAsync();
+    }
 
-        articles = Mapper.Map<List<ArticleIndexModel>>(art);
+    /// <summary>
+    /// Load the last 10 articles
+    /// </summary>
+    /// <returns>
+    ///  <see cref="IEnumerable{T}"/> where T is <see cref="ArticleIndexModel"/>
+    ///  <returns>
+    private async Task<IEnumerable<ArticleIndexModel>> GetArticlesAsync()
+    {
+        var result = await ArticleService.GetArticlesAsync(false, 0, 10);
 
-        articles = articles.OrderBy(a => a.UpdatedAt).ThenBy(a => a.CreatedAt).ToList();
+        if (!result.Success)
+        {
+            Logger.LogError($"Loading the articles failed with status code \"{result.Code}\".\n{result.Message}");
+
+            return Enumerable.Empty<ArticleIndexModel>();
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError($"The loaded data from the API is null.\n{result.Message}");
+
+            return Enumerable.Empty<ArticleIndexModel>();
+        }
+
+        return Mapper.Map<IEnumerable<ArticleIndexModel>>(result.Data);
+    }
+
+    /// <summary>
+    /// Load the pinned articles
+    /// </summary>
+    /// <returns>
+    ///  <see cref="IEnumerable{T}"/> where T is <see cref="ArticleIndexModel"/>
+    ///  <returns>
+    private async Task<IEnumerable<ArticleIndexModel>> GetPinnedArticlesAsync()
+    {
+        var result = await ArticleService.GetArticlesAsync(true, 0);
+
+        if (!result.Success)
+        {
+            Logger.LogError($"Loading the articles failed with status code \"{result.Code}\".\n{result.Message}");
+
+            return Enumerable.Empty<ArticleIndexModel>();
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError($"The loaded data from the API is null.\n{result.Message}");
+
+            return Enumerable.Empty<ArticleIndexModel>();
+        }
+
+        return Mapper.Map<IEnumerable<ArticleIndexModel>>(result.Data);
     }
 }

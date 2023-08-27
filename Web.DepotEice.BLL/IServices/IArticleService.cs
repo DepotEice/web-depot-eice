@@ -9,7 +9,18 @@ namespace Web.DepotEice.BLL.IServices
 {
     public interface IArticleService
     {
-        Task<IEnumerable<ArticleModel>> GetArticlesAsync();
+        /// <summary>
+        /// Get articles by sending a GET request to the API
+        /// </summary>
+        /// <param name="pinned">Specify if only the pinned articles must be retrieved</param>
+        /// <param name="skip">The number of elements to skip</param>
+        /// <param name="top">The number of elements to keep</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ArticleModel"/>
+        /// </returns>
+        Task<ResultModel<IEnumerable<ArticleModel>>> GetArticlesAsync(bool pinned = false, int skip = 0, int top = 100,
+            bool descending = false);
+
         Task<ArticleModel?> GetArticleAsync(int id);
         Task<bool> CanPinArticleAsync();
         Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate);

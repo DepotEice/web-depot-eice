@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,20 +15,37 @@ namespace Web.DepotEice.BLL.Services
     public class ArticleService : IArticleService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILocalStorageService _localStorageService;
+        private readonly ISyncLocalStorageService _localStorageService;
+        private readonly ILogger _logger;
 
-        public ArticleService(ILocalStorageService localStorageService, HttpClient httpClient)
+        public ArticleService(ISyncLocalStorageService localStorageService, HttpClient httpClient,
+            ILogger<ArticleService> logger)
         {
             if (localStorageService is null)
             {
                 throw new ArgumentNullException(nameof(localStorageService));
             }
 
+            if (httpClient is null)
+            {
+                throw new ArgumentNullException(nameof(httpClient));
+            }
+
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             _localStorageService = localStorageService;
-            _httpClient= httpClient;
+            _httpClient = httpClient;
+            _logger = logger;
+
+            string token = _localStorageService.GetItemAsString("token");
 
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
         public async Task<ArticleModel?> GetArticleAsync(int id)
@@ -46,25 +64,61 @@ namespace Web.DepotEice.BLL.Services
             return article;
         }
 
-        public async Task<IEnumerable<ArticleModel>> GetArticlesAsync()
+        /// <summary>
+        /// Get articles by sending a GET request to the API
+        /// </summary>
+        /// <param name="pinned">Specify if only the pinned articles must be retrieved</param>
+        /// <param name="skip">The number of elements to skip</param>
+        /// <param name="top">The number of elements to keep</param>
+        /// <param name="descending">The descending order</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ArticleModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<ArticleModel>>> GetArticlesAsync(bool pinned = false, int skip = 0,
+            int top = 100, bool descending = false)
         {
-            HttpResponseMessage response = await _httpClient.GetAsync("Articles");
+            string queryUri = $"Articles?onlyPinned={pinned}&skip={skip}&top={top}&descending={descending}";
 
-            response.EnsureSuccessStatusCode();
+            HttpResponseMessage response = await _httpClient.GetAsync(queryUri);
 
-            IEnumerable<ArticleModel>? articles = await response.Content.ReadFromJsonAsync<IEnumerable<ArticleModel>>();
-
-            if (articles is null)
+            ResultModel<IEnumerable<ArticleModel>> result = new ResultModel<IEnumerable<ArticleModel>>()
             {
-                return Enumerable.Empty<ArticleModel>();
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<ArticleModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(GetArticlesAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = Enumerable.Empty<ArticleModel>();
             }
 
-            return articles;
+            return result;
         }
 
         public async Task<bool> CanPinArticleAsync()
         {
-            IEnumerable<ArticleModel> articlesFromApi = await GetArticlesAsync();
+            var result = await GetArticlesAsync(pinned: true);
+
+            if (!result.Success)
+            {
+                _logger.LogError("Getting articles failed");
+
+                return false;
+            }
+
+            IEnumerable<ArticleModel>? articlesFromApi = result.Data;
+
+            if (articlesFromApi is null)
+            {
+                return true;
+            }
 
             return articlesFromApi.Count(a => a.IsPinned) < 12;
         }
@@ -75,9 +129,6 @@ namespace Web.DepotEice.BLL.Services
             {
                 throw new ArgumentNullException(nameof(articleCreate));
             }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Articles", articleCreate);
 
@@ -90,9 +141,6 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<bool> DeleteArticleAsync(int id)
         {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
-
             HttpResponseMessage response = await _httpClient.DeleteAsync($"Articles/{id}");
 
             return response.IsSuccessStatusCode;
@@ -100,8 +148,7 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<bool> RestoreArticleAsync(int id)
         {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
+
 
             HttpResponseMessage response = await _httpClient.PutAsync($"Articles/restore/{id}", null);
 
@@ -114,9 +161,6 @@ namespace Web.DepotEice.BLL.Services
             {
                 throw new ArgumentNullException(nameof(articleUpdate));
             }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
 
             HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"Articles/{id}", articleUpdate);
 

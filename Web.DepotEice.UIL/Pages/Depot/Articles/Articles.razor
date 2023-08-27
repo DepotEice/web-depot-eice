@@ -159,15 +159,31 @@
 
     private async Task<IEnumerable<ArticleModel>> FilterArticlesAsync()
     {
-        return (await ArticleService.GetArticlesAsync())
+        var result = await ArticleService.GetArticlesAsync(
+            skip: _viewModel.ActualPage - 1 * 10,
+            top: _viewModel.ArticlesToDisplay);
+
+        if (!result.Success)
+        {
+            Logger.LogError($"Retrieving the articles from the API failed.\n{result.Message}");
+
+            return Enumerable.Empty<ArticleModel>();
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError($"The retrieved data is null.\n{result.Message}");
+
+            return Enumerable.Empty<ArticleModel>();
+        }
+
+        return result.Data
             .Where(a => (a.Title.Contains(_viewModel.Search, StringComparison.OrdinalIgnoreCase) ||
                         a.Body.Contains(_viewModel.Search, StringComparison.OrdinalIgnoreCase)) &&
                         (_viewModel.SelectDeleted
                             ? a.DeletedAt is not null || a.DeletedAt is null
                             : a.DeletedAt is null) &&
                         a.CreatedAt >= _viewModel.From && a.CreatedAt <= _viewModel.To)
-            .Skip(_viewModel.ActualPage - 1 * 10)
-            .Take(_viewModel.ArticlesToDisplay)
             .OrderByDescending(a => a.CreatedAt);
     }
 

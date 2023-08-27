@@ -176,18 +176,41 @@ namespace Web.DepotEice.BLL.Services
             }
         }
 
-        public async Task<UserModel?> GetUserAsync(string? userId)
+        /// <summary>
+        /// Get the user by sending a GET request to the API and by providing the user ID
+        /// </summary>
+        /// <param name="userId">The ID of the user</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<UserModel>> GetUserAsync(string? userId)
         {
             if (string.IsNullOrEmpty(userId))
             {
-                return null;
+                throw new ArgumentNullException(nameof(userId));
             }
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Users/{userId}");
 
-            response.EnsureSuccessStatusCode();
+            var result = new ResultModel<UserModel>()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            return await response.Content.ReadFromJsonAsync<UserModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<UserModel>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"{nameof(GetUserAsync)}: An exception was thrown, cannot " +
+                    $"read the result as json.\n{e.Message}");
+            }
+
+            return result;
         }
 
         public async Task<UserModel?> GetUserAsync()

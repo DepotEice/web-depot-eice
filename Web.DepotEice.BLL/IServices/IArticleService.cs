@@ -21,7 +21,16 @@ namespace Web.DepotEice.BLL.IServices
         Task<ResultModel<IEnumerable<ArticleModel>>> GetArticlesAsync(bool pinned = false, int skip = 0, int top = 100,
             bool descending = false);
 
-        Task<ArticleModel?> GetArticleAsync(int id);
+        /// <summary>
+        /// Get the article by sending a GET requesting to the API
+        /// </summary>
+        /// <param name="id">The id of the article</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ArticleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<ArticleModel>> GetArticleAsync(int id);
+
         Task<bool> CanPinArticleAsync();
         Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate);
         Task<ArticleModel?> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate);

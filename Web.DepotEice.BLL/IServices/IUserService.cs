@@ -17,7 +17,16 @@ namespace Web.DepotEice.BLL.IServices
         Task<ResultModel<UserModel>> UpdatePasswordAsync(PasswordUpdateModel passwordUpdate);
         Task<IEnumerable<UserModel>> GetTeachersAsync();
 
-        Task<UserModel?> GetUserAsync(string? id);
+        /// <summary>
+        /// Get the user by sending a GET request to the API and by providing the user ID
+        /// </summary>
+        /// <param name="userId">The ID of the user</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<UserModel>> GetUserAsync(string? userId);
+
         Task<UserModel?> GetUserAsync();
         Task<UserModel?> UpdateUserAsync(UserUpdateModel userUpdateModel);
 

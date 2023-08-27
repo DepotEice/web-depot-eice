@@ -103,7 +103,24 @@
             UIL.Models.ScheduleModel scheduleModel = Mapper.Map<UIL.Models.ScheduleModel>(schedule);
 
             var module = await ModuleService.GetModuleAsync(schedule.ModuleId);
-            var user = await UserService.GetUserAsync(module.TeacherId);
+
+            var userResult = await UserService.GetUserAsync(module.TeacherId);
+
+            if (!userResult.Success)
+            {
+                Logger.LogError($"The request of the user has failed with status code \"{userResult.Code}\".\n{userResult.Message}");
+
+                return;
+            }
+
+            if (userResult.Data is null)
+            {
+                Logger.LogError($"The requested user data is null.\n{userResult.Message}");
+
+                return;
+            }
+
+            var user = userResult.Data;
 
             if (user is not null)
             {

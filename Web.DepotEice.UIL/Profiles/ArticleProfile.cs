@@ -11,8 +11,6 @@ namespace Web.DepotEice.UIL.Profiles
     {
         public ArticleProfile()
         {
-            //string apiBaseUrl = _configuration["API_BASE_URL"] ?? "";
-
             CreateMap<ArticleModel, ArticleForm>().
                 ForMember(
                     dest => dest.Pinned,
@@ -30,6 +28,8 @@ namespace Web.DepotEice.UIL.Profiles
                     dest => dest.BodyNoHTML,
                     opt => opt.MapFrom(
                         src => LimitCharacters(RemoveParasitesFromBody(src.Body), 255)));
+
+            CreateMap<ArticleModel, ArticleDetailsModel>();
         }
 
         private string RemoveParasitesFromBody(string body)

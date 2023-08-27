@@ -87,7 +87,23 @@ else
 
         try
         {
-            var teacher = (await UserService.GetUserAsync(moduleFromRepo.TeacherId));
+            var result = await UserService.GetUserAsync(moduleFromRepo.TeacherId);
+
+            if (!result.Success)
+            {
+                Logger.LogError($"The request of the user has failed with status code \"{result.Code}\".\n{result.Message}");
+
+                return;
+            }
+
+            if (result.Data is null)
+            {
+                Logger.LogError($"The requested user data is null.\n{result.Message}");
+
+                return;
+            }
+
+            var teacher = result.Data;
 
             if (teacher is not null)
             {

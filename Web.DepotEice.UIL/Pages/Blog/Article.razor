@@ -1,8 +1,103 @@
 ﻿@page "/blog/article/{Id:int}"
 
-<h3>Article</h3>
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models;
+
+@inject IMapper Mapper;
+@inject ILogger<Article> Logger;
+@inject IArticleService ArticleService;
+@inject IUserService UserService;
+
+<div class="container-lg py-5">
+
+    <img src="@ArticleDetails.ImageUrl" alt="@ArticleDetails.Title" style="min-width: 100%" />
+
+    <h3 class="display-4 fst-italic">@ArticleDetails.Title</h3>
+
+    <p class="blog-post-meta">
+        @(ArticleDetails.UpdatedAt is not null
+            ? ArticleDetails.UpdatedAt.Value.ToString("F")
+            : ArticleDetails.CreatedAt.ToString("F"))
+        by @ArticleDetails.Author
+    </p>
+
+    @((MarkupString)ArticleDetails.Body)
+</div>
 
 @code {
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
+
+    /// <summary>
+    /// The ID of the article
+    /// </summary>
     [Parameter]
     public int Id { get; set; }
+
+    /// <summary>
+    /// The article details model
+    /// </summary>
+    public ArticleDetailsModel ArticleDetails { get; set; } = new();
+
+    /// <summary>
+    /// Initialization
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        PreloadService?.Show();
+
+        var result = await ArticleService.GetArticleAsync(Id);
+
+        if (!result.Success)
+        {
+            Logger.LogError($"The request failed with status code \"{result.Code}\".\n{result.Message}");
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError($"The data of the request is null.\n{result.Message}");
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        ArticleModel article = result.Data;
+
+        ArticleDetails = Mapper.Map<ArticleDetailsModel>(article);
+
+        var userResult = await UserService.GetUserAsync(article.UserId);
+
+        if (!result.Success)
+        {
+            Logger.LogError($"The request of the article author has failed with status code \"{result.Code}\".\n{result.Message}");
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (userResult.Data is null)
+        {
+            Logger.LogError($"The requested user data is null.\n{result.Message}");
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        ArticleDetails.Author = $"{userResult.Data.LastName}, {userResult.Data.FirstName}";
+
+        PreloadService?.Hide();
+    }
 }

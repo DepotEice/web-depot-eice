@@ -76,14 +76,23 @@ namespace Web.DepotEice.UIL.Managers
 
             foreach (var appointment in appointments)
             {
-                var userFromService = await _userService.GetUserAsync(appointment.UserId);
+                var userResult = await _userService.GetUserAsync(appointment.UserId);
 
-                if (userFromService is null)
+                if (!userResult.Success)
                 {
-                    _logger.LogError("The user for this appointment is null");
+                    _logger.LogError($"The request of the user has failed with status code \"{userResult.Code}\".\n{userResult.Message}");
 
                     continue;
                 }
+
+                if (userResult.Data is null)
+                {
+                    _logger.LogError($"The requested user data is null.\n{userResult.Message}");
+
+                    continue;
+                }
+
+                var userFromService = userResult.Data;
 
                 appointment.UserFullName = $"{userFromService.LastName.ToUpperInvariant()} {userFromService.FirstName}";
                 appointment.Email = userFromService.Email;

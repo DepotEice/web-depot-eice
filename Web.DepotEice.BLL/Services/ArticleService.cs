@@ -48,20 +48,42 @@ namespace Web.DepotEice.BLL.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        public async Task<ArticleModel?> GetArticleAsync(int id)
+        /// <summary>
+        /// Get the article by sending a GET requesting to the API
+        /// </summary>
+        /// <param name="id">The id of the article</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ArticleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<ArticleModel>> GetArticleAsync(int id)
         {
-            if (id == 0)
+            if (id <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(id));
             }
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Articles/{id}");
 
-            response.EnsureSuccessStatusCode();
+            var result = new ResultModel<ArticleModel>()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            ArticleModel? article = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(GetArticlesAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = null;
+            }
 
-            return article;
+            return result;
         }
 
         /// <summary>

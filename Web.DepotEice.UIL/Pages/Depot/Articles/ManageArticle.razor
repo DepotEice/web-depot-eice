@@ -113,7 +113,23 @@
 
         if (ArticleId is not null)
         {
-            ArticleModel? articleFromRepo = await ArticleService.GetArticleAsync(ArticleId.Value);
+            var result = await ArticleService.GetArticleAsync(ArticleId.Value);
+
+            if (!result.Success)
+            {
+                Logger.LogError($"The request has failed with status code \"{result.Code}\".\n{result.Message}");
+
+                return;
+            }
+
+            if (result.Data is null)
+            {
+                Logger.LogError($"The data returned by the request is null.\n{result.Message}");
+
+                return;
+            }
+
+            ArticleModel? articleFromRepo = result.Data;
 
             if (articleFromRepo is not null)
             {

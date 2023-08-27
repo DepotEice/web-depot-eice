@@ -1,4 +1,4 @@
-﻿@page "/depot/managearticle/{ArticleId:int?}"
+﻿@page "/depot/manage-article/{ArticleId:int?}"
 
 @using AutoMapper;
 @using Blazored.LocalStorage;
@@ -8,72 +8,108 @@
 @using Web.DepotEice.UIL.Models.Forms;
 @using Syncfusion.Blazor.RichTextEditor;
 
-@inject NavigationManager NavigationManager;
 @inject ILogger<ManageArticle> Logger;
 @inject IArticleService ArticleService;
 @inject IMapper Mapper;
 @inject ILocalStorageService LocalStorageService;
 @inject UserManager UserManager;
+@inject IFileService FileService;
+@inject NavigationManager NavigationManager;
 
-<PageTitle>Gestion d'article</PageTitle>
+<PageTitle>
+    EICE - @(string.IsNullOrEmpty(Article.Title) ? "Rédaction d'un article" : Article.Title)
+</PageTitle>
 
-<EditForm Model="_article" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator></DataAnnotationsValidator>
+<Authorize Role="@UserManager.DIRECTION_ROLE">
+    <Authorized>
+        <h2 class="text-center my-5">Article du blog</h2>
 
-    <div class="row border-bottom pb-3">
         <div class="mb-3">
-            <label class="form-label">Titre</label>
-            <InputText class="form-control" @bind-Value="_article.Title" />
+
+            @if (Article.MainImageId.HasValue)
+            {
+                <img class="img-fluid mb-3" src="@($"{ApiBaseAddress}/Files/ById/{Article.MainImageId}")"
+                     alt="Article illustration" style="object-fit: fill;" />
+            }
+
+            <InputFile class="form-control" OnChange="OnFileChanged" />
         </div>
 
-        <div class="">
-            <label class="form-label">Epingler l'article</label>
-            <InputCheckbox @bind-Value="_article.Pinned">Epingler l'article'</InputCheckbox>
-        </div>
-    </div>
+        <EditForm Model="Article" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator></DataAnnotationsValidator>
 
-    <div class="row my-3">
-        <div class="mb-3">
-            <SfRichTextEditor Height="35rem" @bind-Value="_article.Body">
+            <div class="row border-bottom">
+                <div class="mb-3">
+                    <label class="form-label">Titre</label>
+                    <InputText class="form-control" @bind-Value="Article.Title" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Epingler l'article</label>
+                    <InputCheckbox @bind-Value="Article.Pinned">Epingler l'article'</InputCheckbox>
+                </div>
+            </div>
+
+            <div class="row my-3">
+
+                @*                 <SfRichTextEditor Height="35rem" @bind-Value="Article.Body">
                 <RichTextEditorEvents BeforeUploadImage="BeforeUploadAsync" />
 
-                <RichTextEditorImageSettings Path="@($"{GetAPIRoute()}/")" SaveUrl="@GetAPIRoute()" />
-            </SfRichTextEditor>
-        </div>
-    </div>
+                <RichTextEditorImageSettings Path="@GetFileRoute" SaveUrl="@($"{ApiBaseAddress}/Files")" />
+                </SfRichTextEditor>
+                *@
+                <RadzenHtmlEditor @bind-Value=@Article.Body style="height: 300px;" UploadUrl="@($"{ApiBaseAddress}/Files/Article")"
+                                  Culture="System.Globalization.CultureInfo.CurrentUICulture" UploadHeaders="@Headers">
 
-    <span class="text-danger">@_resultMessage</span>
+                </RadzenHtmlEditor>
 
-    <button type="submit" class="btn btn-outline-primary">Enregistrer</button>
 
-</EditForm>
+            </div>
+
+            <button type="submit" class="btn btn-outline-primary">Enregistrer</button>
+        </EditForm>
+    </Authorized>
+
+    <Unauthorized>
+
+    </Unauthorized>
+</Authorize>
+
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 
 @code {
+    [Inject]
+    PreloadService? PreloadService { get; set; }
+
     [Parameter]
     public int? ArticleId { get; set; }
 
-    private ArticleForm _article = new();
+    public Dictionary<string, string> Headers { get; private set; } = new Dictionary<string, string>();
 
-    private string _resultMessage = string.Empty;
+    public ArticleForm Article { get; private set; } = new();
+
+    public List<ToastMessage> ToastMessages { get; private set; } = new();
 
 #if DEBUG
-    private string _apiBaseAddress = "https://localhost:7205/api/";
+    private string ApiBaseAddress = "https://localhost:7205/api";
 #else
-    private string _apiBaseAddress = "https://api-depot-eice.azurewebsites.net/api/";
+    private string ApiBaseAddress = "https://api-depot-eice.azurewebsites.net/api";
 #endif
 
-    private string GetAPIRoute()
-    {
-        return $"{_apiBaseAddress}Images";
-    }
+    public string GetFileRoute { get; private set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        if (!await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE))
+        string? token = await LocalStorageService.GetItemAsync<string>("token");
+
+        if (string.IsNullOrEmpty(token))
         {
-            NavigationManager.NavigateTo("/unauthorized");
+            NavigationManager.NavigateTo("/login");
+
             return;
         }
+
+        Headers.Add("Authorization", $"Bearer {token}");
 
         if (ArticleId is not null)
         {
@@ -81,9 +117,82 @@
 
             if (articleFromRepo is not null)
             {
-                _article = Mapper.Map<ArticleForm>(articleFromRepo);
+                Article = Mapper.Map<ArticleForm>(articleFromRepo);
             }
         }
+    }
+
+    /// <summary>
+    /// Event handler on file changed
+    /// </summary>
+    /// <param name="args"></param>
+    private async void OnFileChanged(InputFileChangeEventArgs args)
+    {
+        PreloadService?.Show();
+
+        IBrowserFile file = args.File;
+
+        if (args.File.ContentType is not "image/jpeg" and not "image/png" and not "image/jpg" and not "image/gif")
+        {
+            PreloadService?.Hide();
+
+            ShowMessage(ToastType.Warning, "Format de fichier non supporté", "Le format de fichier n'est pas supporté.", false);
+
+            return;
+        }
+
+        if (file.Size > 1024 * 1024 * 15)
+        {
+            PreloadService?.Hide();
+
+            ShowMessage(
+                ToastType.Warning,
+                "Fichier trop volumineux",
+                "Le fichier est trop volumineux. La taille maximale est de 15MB",
+                false);
+
+            return;
+        }
+
+        string fileName = file.Name;
+        string contentType = file.ContentType;
+        Stream stream = file.OpenReadStream(file.Size);
+
+        ResultModel<IEnumerable<int>?> result = await FileService.UploadFileAsync(fileName, contentType, stream);
+
+        if (!result.Success)
+        {
+            PreloadService?.Hide();
+
+            ShowMessage(
+                ToastType.Danger,
+                "Erreur lors de l'upload",
+                $"Une erreur est survenue lors de l'upload de l'image. Veuillez réessayer.\n{result.Message}",
+                false);
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            PreloadService?.Hide();
+
+            ShowMessage(
+                ToastType.Danger,
+                "Erreur lors de l'upload",
+                $"L'image ne peut pas être récupérée. Veuillez réessayer.\n{result.Message}",
+                false);
+
+            return;
+        }
+
+        Article.MainImageId = result.Data.SingleOrDefault();
+
+        ShowMessage(ToastType.Info, fileName, "L'image a été sauvegardée avec succès", true);
+
+        PreloadService?.Hide();
+
+        StateHasChanged();
     }
 
     // TODO : Update when ID is provided
@@ -91,11 +200,10 @@
     {
         if (!await ArticleService.CanPinArticleAsync())
         {
-            _resultMessage = "Vous avez dépassé le nombre d'article maximum qu'il est possible d'épingler";
             return;
         }
 
-        ArticleCreateModel articleModel = Mapper.Map<ArticleCreateModel>(_article);
+        ArticleCreateModel articleModel = Mapper.Map<ArticleCreateModel>(Article);
 
         try
         {
@@ -117,8 +225,6 @@
                     Logger.LogError($"{DateTime.Now} - Article with ID \"{ArticleId}\" couldn't be updated");
                 }
             }
-
-            NavigationManager.NavigateTo("depot/articles");
         }
         catch (Exception e)
         {
@@ -130,5 +236,26 @@
     {
         string token = await LocalStorageService.GetItemAsStringAsync("token");
         args.CurrentRequest = new List<Object> { new { Authorization = $"Bearer {token}" } };
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

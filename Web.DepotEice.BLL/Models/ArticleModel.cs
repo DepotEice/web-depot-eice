@@ -9,6 +9,7 @@ namespace Web.DepotEice.BLL.Models
     public class ArticleModel
     {
         public int Id { get; set; }
+        public int MainImageId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Body { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
@@ -21,7 +22,7 @@ namespace Web.DepotEice.BLL.Models
         {
             get
             {
-                return $"depot/managearticle/{Id}";
+                return $"depot/manage-article/{Id}";
             }
         }
     }

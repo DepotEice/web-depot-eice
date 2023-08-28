@@ -7,6 +7,9 @@ using Web.DepotEice.BLL.Models;
 
 namespace Web.DepotEice.BLL.IServices
 {
+    /// <summary>
+    /// The article service interface
+    /// </summary>
     public interface IArticleService
     {
         /// <summary>
@@ -42,7 +45,18 @@ namespace Web.DepotEice.BLL.IServices
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
         Task<ResultModel<ArticleModel>> CreateArticleAsync(ArticleCreateModel articleCreate);
-        Task<ArticleModel?> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate);
+
+        /// <summary>
+        /// Update an article by sending a PUT request with the article ID and the form with the new article
+        /// </summary>
+        /// <param name="id">The id of the article</param>
+        /// <param name="articleUpdate">The form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ArticleModel"/> 
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<ArticleModel>> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate);
         Task<bool> DeleteArticleAsync(int id);
         Task<bool> RestoreArticleAsync(int id);
     }

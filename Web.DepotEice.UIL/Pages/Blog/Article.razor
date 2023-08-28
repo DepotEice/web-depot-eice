@@ -10,18 +10,20 @@
 @inject IArticleService ArticleService;
 @inject IUserService UserService;
 
-<div class="container-lg py-5">
+<div class="container-fluid py-5">
 
-    <img src="@ArticleDetails.ImageUrl" alt="@ArticleDetails.Title" style="min-width: 100%" />
+    <img class="img-fluid mb-3" src="@ArticleDetails.ImageUrl" alt="@ArticleDetails.Title" style="min-width: 100%" />
 
     <h3 class="display-4 fst-italic">@ArticleDetails.Title</h3>
 
-    <p class="blog-post-meta">
+    <p class="blog-post-meta fst-italic">
         @(ArticleDetails.UpdatedAt is not null
             ? ArticleDetails.UpdatedAt.Value.ToString("F")
             : ArticleDetails.CreatedAt.ToString("F"))
-        by @ArticleDetails.Author
+        par @ArticleDetails.Author
     </p>
+
+    <hr/>
 
     @((MarkupString)ArticleDetails.Body)
 </div>

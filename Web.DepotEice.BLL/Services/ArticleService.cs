@@ -199,8 +199,23 @@ namespace Web.DepotEice.BLL.Services
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<ArticleModel?> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate)
+        /// <summary>
+        /// Update an article by sending a PUT request with the article ID and the form with the new article
+        /// </summary>
+        /// <param name="id">The id of the article</param>
+        /// <param name="articleUpdate">The form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ArticleModel"/> 
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<ArticleModel>> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate)
         {
+            if (id <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
             if (articleUpdate is null)
             {
                 throw new ArgumentNullException(nameof(articleUpdate));
@@ -208,9 +223,25 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"Articles/{id}", articleUpdate);
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<ArticleModel> result = new ResultModel<ArticleModel>()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            return await response.Content.ReadFromJsonAsync<ArticleModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(CreateArticleAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = null;
+            }
+
+            return result;
         }
     }
 }

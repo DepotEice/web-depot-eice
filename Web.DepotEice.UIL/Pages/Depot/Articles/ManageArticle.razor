@@ -21,8 +21,6 @@
 
 <Authorize Role="@UserManager.DIRECTION_ROLE">
     <Authorized>
-        <h2 class="text-center my-5">Article du blog</h2>
-
         <div class="mb-3">
 
             @if (Article.MainImageId.HasValue)
@@ -51,7 +49,7 @@
 
             <div class="row my-3">
 
-                <RadzenHtmlEditor @bind-Value=@Article.Body style="height: 300px;" UploadUrl="@($"{ApiBaseAddress}/Files/Article")"
+                <RadzenHtmlEditor @bind-Value=@Article.Body style="height: 40rem;" UploadUrl="@($"{ApiBaseAddress}/Files/Article")"
                                   Culture="System.Globalization.CultureInfo.CurrentUICulture" UploadHeaders="@Headers">
 
                 </RadzenHtmlEditor>
@@ -261,12 +259,41 @@
             }
             else
             {
-                ArticleModel? result = await ArticleService.UpdateArticleAsync(ArticleId.Value, articleModel);
+                var result = await ArticleService.UpdateArticleAsync(ArticleId.Value, articleModel);
 
-                if (result is null)
+                if (!result.Success)
                 {
-                    Logger.LogError($"{DateTime.Now} - Article with ID \"{ArticleId}\" couldn't be updated");
+                    Logger.LogError($"The article update failed with status code \"{result.Success}\".\n{result.Message}");
+
+                    ShowMessage(
+                        ToastType.Danger,
+                        "Échec de l'enregistrement",
+                        $"La modification de l'article a échoué.\n{result.Message}",
+                        false);
+
+                    return;
                 }
+
+                if (result.Data is null)
+                {
+                    Logger.LogError($"The article update succeeded but the data is null.\n{result.Message}");
+
+                    ShowMessage(
+                        ToastType.Danger,
+                        "Erreur",
+                        "L'article a été modifié mais n'a pas pu être récupéré depuis le serveur. Veuillez recharger la page",
+                        true);
+
+                    return;
+                }
+
+                Article = Mapper.Map<ArticleForm>(result.Data);
+
+                ShowMessage(
+                    ToastType.Success,
+                    "Succès",
+                    $"\"{Article.Title}\" a été modifié avec succès",
+                    true);
             }
         }
         catch (Exception e)

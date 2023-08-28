@@ -145,7 +145,15 @@ namespace Web.DepotEice.BLL.Services
             return articlesFromApi.Count(a => a.IsPinned) < 12;
         }
 
-        public async Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate)
+        /// <summary>
+        /// Create an article by sending a POST request to the API with the form
+        /// </summary>
+        /// <param name="articleCreate">The form to create an article</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ArticleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<ArticleModel>> CreateArticleAsync(ArticleCreateModel articleCreate)
         {
             if (articleCreate is null)
             {
@@ -154,11 +162,25 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Articles", articleCreate);
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<ArticleModel> result = new ResultModel<ArticleModel>()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            ArticleModel? createdArticle = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(CreateArticleAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = null;
+            }
 
-            return createdArticle;
+            return result;
         }
 
         public async Task<bool> DeleteArticleAsync(int id)

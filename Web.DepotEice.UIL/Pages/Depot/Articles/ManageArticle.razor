@@ -6,7 +6,6 @@
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models.Forms;
-@using Syncfusion.Blazor.RichTextEditor;
 
 @inject ILogger<ManageArticle> Logger;
 @inject IArticleService ArticleService;
@@ -52,12 +51,6 @@
 
             <div class="row my-3">
 
-                @*                 <SfRichTextEditor Height="35rem" @bind-Value="Article.Body">
-                <RichTextEditorEvents BeforeUploadImage="BeforeUploadAsync" />
-
-                <RichTextEditorImageSettings Path="@GetFileRoute" SaveUrl="@($"{ApiBaseAddress}/Files")" />
-                </SfRichTextEditor>
-                *@
                 <RadzenHtmlEditor @bind-Value=@Article.Body style="height: 300px;" UploadUrl="@($"{ApiBaseAddress}/Files/Article")"
                                   Culture="System.Globalization.CultureInfo.CurrentUICulture" UploadHeaders="@Headers">
 
@@ -216,6 +209,9 @@
     {
         if (!await ArticleService.CanPinArticleAsync())
         {
+            ShowMessage(ToastType.Warning, "Épingler", "Trop d'articles sont épinglés, veuillez désépingler un article " +
+                $"avant d'appliquer la modification sur celui-ci", true);
+
             return;
         }
 
@@ -225,12 +221,43 @@
         {
             if (ArticleId is null)
             {
-                ArticleModel? result = await ArticleService.CreateArticleAsync(articleModel);
+                var result = await ArticleService.CreateArticleAsync(articleModel);
 
-                if (result is null)
+                if (!result.Success)
                 {
-                    Logger.LogError($"{DateTime.Now} - Article couldn't be created");
+                    Logger.LogError($"The article creation failed with status code \"{result.Success}\".\n{result.Message}");
+
+                    ShowMessage(
+                        ToastType.Danger,
+                        "Échec de la création",
+                        $"La création de l'article a échoué.\n{result.Message}",
+                        false);
+
+                    return;
                 }
+
+                if (result.Data is null)
+                {
+                    Logger.LogError($"The article creation succeeded but the data is null.\n{result.Message}");
+
+                    ShowMessage(
+                        ToastType.Danger,
+                        "Erreur",
+                        "L'article a été crée mais n'a pas pu être récupéré depuis le serveur. Veuillez recharger la page",
+                        true);
+
+                    return;
+                }
+
+                ArticleModel article = result.Data;
+
+                ShowMessage(
+                    ToastType.Success,
+                    "Succès",
+                    $"\"{article.Title}\" a été crée avec succès",
+                    true);
+
+                NavigationManager.NavigateTo($"/depot/manage-article/{article.Id}");
             }
             else
             {
@@ -246,12 +273,6 @@
         {
             Logger.LogError($"{DateTime.Now} - {e.Message}");
         }
-    }
-
-    public async Task BeforeUploadAsync(ImageUploadingEventArgs args)
-    {
-        string token = await LocalStorageService.GetItemAsStringAsync("token");
-        args.CurrentRequest = new List<Object> { new { Authorization = $"Bearer {token}" } };
     }
 
     /// <summary>

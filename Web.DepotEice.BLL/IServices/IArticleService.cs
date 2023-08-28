@@ -32,7 +32,16 @@ namespace Web.DepotEice.BLL.IServices
         Task<ResultModel<ArticleModel>> GetArticleAsync(int id);
 
         Task<bool> CanPinArticleAsync();
-        Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate);
+
+        /// <summary>
+        /// Create an article by sending a POST request to the API with the form
+        /// </summary>
+        /// <param name="articleCreate">The form to create an article</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ArticleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<ArticleModel>> CreateArticleAsync(ArticleCreateModel articleCreate);
         Task<ArticleModel?> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate);
         Task<bool> DeleteArticleAsync(int id);
         Task<bool> RestoreArticleAsync(int id);

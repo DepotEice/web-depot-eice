@@ -64,9 +64,12 @@
                     <NavLink href="/login" class="">ici</NavLink>
                 }
 
-                <button class="btn btn-outline-danger mx-3" type="button" @onclick="OnCancelAppointmentPressed">
-                    Annuler le rendez-vous
-                </button>
+                @if (Cancellable)
+                {
+                    <button class="btn btn-outline-danger mx-3" type="button" @onclick="OnCancelAppointmentPressed">
+                        Annuler le rendez-vous
+                    </button>
+                }
 
             </div>
         }
@@ -104,6 +107,12 @@
     /// </summary>
     [Parameter]
     public bool Modifiable { get; set; } = true;
+
+    /// <summary>
+    /// The form is cancellable
+    /// </summary>
+    [Parameter]
+    public bool Cancellable { get; set; } = true;
 
     /// <summary>
     /// The selected time span

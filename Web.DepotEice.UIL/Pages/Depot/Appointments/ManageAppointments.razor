@@ -1,10 +1,6 @@
 ﻿@page "/depot/manage-appointments"
 
 @using Web.DepotEice.UIL.Managers;
-@using Syncfusion.Blazor.Schedule;
-@using Syncfusion.Blazor.Navigations;
-@using Syncfusion.Blazor.DropDowns;
-@using Syncfusion.Blazor.Calendars;
 @using Web.DepotEice.UIL.Models;
 @using static Web.DepotEice.UIL.Helpers.Utils;
 
@@ -18,9 +14,9 @@
 
         <div class="container">
 
-            <RadzenScheduler @ref="@Scheduler" style="height: 768px;" SlotRender="OnSlotRender"
+            <RadzenScheduler @ref="@Scheduler" style="height: 768px;" SlotRender="OnSlotRender" LoadData="OnDataLoaded"
                              TItem="AppointmentDisplayModel" Data="Appointments" StartProperty="StartTime"
-                             EndProperty="EndTime" TextProperty="UserFullName" SelectedIndex="ViewIndex"
+                             EndProperty="EndTime" TextProperty="UserFullName" SelectedIndex="(int)SelectedDateRange"
                              AppointmentRender="OnAppointmentRender" Culture="System.Globalization.CultureInfo.CurrentCulture"
                              TodayText="Aujourd'hui" AppointmentSelect="OnAppointmentSelected">
 
@@ -44,9 +40,10 @@
     public RadzenScheduler<AppointmentDisplayModel> Scheduler { get; set; } = new();
 
     /// <summary>
-    /// The current view index
+    /// The selected date range
     /// </summary>
-    public int ViewIndex { get; private set; } = 1;
+    public DateRange SelectedDateRange { get; set; } = DateRange.Week;
+
 
     /// <summary>
     /// Selected date time
@@ -60,7 +57,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAppointmentsAsync((DateRange)ViewIndex);
+        await LoadAppointmentsAsync();
     }
 
     /// <summary>
@@ -68,11 +65,21 @@
     /// </summary>
     /// <param name="range">The range</param>
     /// <returns></returns>
-    private async Task LoadAppointmentsAsync(DateRange range)
+    private async Task LoadAppointmentsAsync()
     {
-        Appointments = (await AppointmentManager.GetDisplayAppointmentsAsync(SelectedDateTime, range)).ToList();
+        Appointments = (await AppointmentManager.GetDisplayAppointmentsAsync(SelectedDateTime, SelectedDateRange)).ToList();
+    }
 
-        Logger.LogInformation(Appointments.Count.ToString());
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.LoadData"> when the data is loaded
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    private async Task OnDataLoaded(SchedulerLoadDataEventArgs args)
+    {
+        SelectedDateTime = args.Start;
+
+        await LoadAppointmentsAsync();
     }
 
     /// <summary>
@@ -81,7 +88,6 @@
     /// <param name="args"></param>
     private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<AppointmentDisplayModel> args)
     {
-
         args.Attributes["style"] = $"background: {args.Data.RGBColor}";
     }
 
@@ -102,6 +108,22 @@
         {
             args.Attributes["style"] = "background: rgba(255,220,40,.2);";
         }
+
+        switch (args.View.Text)
+        {
+            case "Jour":
+                SelectedDateRange = DateRange.Day;
+                break;
+            case "Semaine":
+                SelectedDateRange = DateRange.Week;
+                break;
+            case "Mois":
+                SelectedDateRange = DateRange.Month;
+                break;
+            default:
+                Logger.LogError("The view text value doesn't exist");
+                break;
+        }
     }
 
     private async Task OnAppointmentSelected(SchedulerAppointmentSelectEventArgs<AppointmentDisplayModel> args)
@@ -111,7 +133,7 @@
 
         if (result)
         {
-            await LoadAppointmentsAsync((DateRange)ViewIndex);
+            await LoadAppointmentsAsync();
         }
 
         await Scheduler.Reload();

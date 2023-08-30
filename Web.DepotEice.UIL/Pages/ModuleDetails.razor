@@ -1,6 +1,7 @@
 ﻿@page "/modules/details/{Id:int}"
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Models;
 
 @inject ILogger<ModuleDetails> Logger;
@@ -64,26 +65,57 @@ else
     </div>
 }
 
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+
 @code {
     [Parameter]
     public int Id { get; set; }
 
+    /// <summary>
+    /// List of toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; private set; } = new();
+
     private string _moduleErrorMessage = string.Empty;
     private string _errorMessage = string.Empty;
     private bool? _userIsAccepted = false;
-    private ModuleModel _module = new();
+    private ModuleDisplayModel _module = new();
 
     protected override async Task OnInitializedAsync()
     {
-        var moduleFromRepo = await ModuleService.GetModuleAsync(Id);
+        var moduleResult = await ModuleService.GetModuleAsync(Id);
 
-        if (moduleFromRepo is null)
+        if (!moduleResult.Success)
         {
-            _moduleErrorMessage = "Le module recherché n'exite pas";
+            Logger.LogError($"The module request failed with status code \"{moduleResult.Code}\".\n{moduleResult.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement du module",
+                $"Le chargement du module a échoué.\n{moduleResult.Message}",
+                false
+            );
+
             return;
         }
 
-        _module = Mapper.Map<ModuleModel>(moduleFromRepo);
+        if (moduleResult.Data is null)
+        {
+            Logger.LogError($"The module request succeeded but the data is null.\n{moduleResult.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement du module",
+                $"Le chargement du module est réussi mais les données retournées sont null.\n{moduleResult.Data}",
+                false
+            );
+
+            return;
+        }
+
+        ModuleModel moduleFromRepo = moduleResult.Data;
+
+        _module = Mapper.Map<ModuleDisplayModel>(moduleFromRepo);
 
         try
         {
@@ -137,5 +169,26 @@ else
 
         _userIsAccepted = await ModuleService.UserIsAccepted(Id);
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

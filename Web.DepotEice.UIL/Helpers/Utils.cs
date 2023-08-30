@@ -46,5 +46,21 @@ namespace Web.DepotEice.UIL.Helpers
         /// </summary>
         public static string API_BASE_URL = Environment.GetEnvironmentVariable("API_BASE_URL")
             ?? "https://localhost:7205/api";
+
+        /// <summary>
+        /// Helper method to iterate through each day within a range
+        /// </summary>
+        /// <param name="start">The start datetime</param>
+        /// <param name="end">The end datetime</param>
+        /// <returns>
+        /// <see cref="IEnumerable{T}"/> where T is <see cref="DateTime"/>
+        /// </returns>
+        public static IEnumerable<DateTime> EachDay(DateTime start, DateTime end)
+        {
+            for (DateTime dt = start.Date; dt <= end.Date; dt = dt.AddDays(1))
+            {
+                yield return dt;
+            }
+        }
     }
 }

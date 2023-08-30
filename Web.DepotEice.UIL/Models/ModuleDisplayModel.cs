@@ -1,6 +1,6 @@
 ﻿namespace Web.DepotEice.UIL.Models
 {
-    public class ModuleModel
+    public class ModuleDisplayModel
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;

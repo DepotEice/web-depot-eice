@@ -1,6 +1,6 @@
 ﻿namespace Web.DepotEice.UIL.Models
 {
-    public class ScheduleModel
+    public class ScheduleDisplayModel
     {
         public int Id { get; set; }
         public string ModuleName { get; set; }

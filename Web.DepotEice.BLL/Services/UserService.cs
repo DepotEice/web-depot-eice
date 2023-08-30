@@ -112,27 +112,31 @@ namespace Web.DepotEice.BLL.Services
         }
 
         /// <summary>
-        /// Retrieves a collection of teacher users asynchronously.
+        /// Get the list of all teachers
         /// </summary>
-        /// <returns>The collection of teacher users.</returns>
-        public async Task<IEnumerable<UserModel>> GetTeachersAsync()
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<UserModel>>> GetTeachersAsync()
         {
-            _logger.LogInformation($"{nameof(GetTeachersAsync)}");
-
             HttpResponseMessage response = await _httpClient.GetAsync("Users/Teachers");
 
-            response.EnsureSuccessStatusCode();
-
-            IEnumerable<UserModel>? result = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
-
-            if (result is null)
+            ResultModel<IEnumerable<UserModel>> result = new()
             {
-                _logger.LogWarning("GetTeachersAsync: result is null");
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-                return Enumerable.Empty<UserModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
             }
-
-            _logger.LogInformation("GetTeachersAsync: {resultNumber}", result.Count());
+            catch (Exception e)
+            {
+                _logger.LogInformation($"{nameof(GetTeachersAsync)}: An exception was thrown, cannot " +
+                    $"read the result as json.\n{e.Message}");
+            }
 
             return result;
         }

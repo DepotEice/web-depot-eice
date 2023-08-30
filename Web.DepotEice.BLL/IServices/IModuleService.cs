@@ -10,12 +10,69 @@ namespace Web.DepotEice.BLL.IServices
     public interface IModuleService
     {
         Task<IEnumerable<ModuleModel>> GetModulesAsync();
-        Task<ModuleModel?> CreateModuleAsync(ModuleCreationModel moduleCreation);
-        Task<ModuleModel?> UpdateModuleAsync(int id, ModuleCreationModel moduleCreation);
-        Task<ModuleModel?> GetModuleAsync(int id);
-        Task<ScheduleModel?> CreateScheduleAsync(int moduleId, ScheduleCreateModel scheduleCreate);
-        Task<IEnumerable<ScheduleModel>> GetModuleSchedulesAsync(int moduleId);
-        Task<bool> DeleteScheduleAsync(int moduleId, int scheduleId);
+
+        /// <summary>
+        /// Create a new module by sending a POST request to the API with the given form in parameter
+        /// </summary>
+        /// <param name="moduleCreation">The form to create</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ModuleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<ModuleModel>> CreateModuleAsync(ModuleCreationModel moduleCreation);
+
+        /// <summary>
+        /// Update a module by sending a PUT request to the API with the module ID and the form
+        /// </summary>
+        /// <param name="id">The id of the module to update</param>
+        /// <param name="moduleCreation">The form to update the module</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ModuleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<ModuleModel>> UpdateModuleAsync(int id, ModuleCreationModel moduleCreation);
+
+        /// <summary>
+        /// Get the module with the given id by sending a GET request to the API
+        /// </summary>
+        /// <param name="id">The id of the module</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ModuleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<ModuleModel>> GetModuleAsync(int id);
+
+        /// <summary>
+        /// Create a Schedule for a module by sending a POST request to the API
+        /// </summary>
+        /// <param name="moduleId">The id of the module to which the schedule is created</param>
+        /// <param name="scheduleCreate">The body form of the schedule to create</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<ScheduleModel>> CreateScheduleAsync(int moduleId, ScheduleCreateModel scheduleCreate);
+
+        /// <summary>
+        /// Get the module schedules from the give module id by sending a GET request to the API
+        /// </summary>
+        /// <param name="moduleId">The id of the module</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        Task<ResultModel<IEnumerable<ScheduleModel>>> GetModuleSchedulesAsync(int moduleId);
+
+        /// <summary>
+        /// Delete the schedule of a module
+        /// </summary>
+        /// <param name="moduleId">The id of the module</param>
+        /// <param name="scheduleId">The id of the schedule</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<bool>> DeleteScheduleAsync(int moduleId, int scheduleId);
         Task<bool> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId);
         Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules();
         Task<bool?> UserIsAccepted(int moduleId);

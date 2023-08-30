@@ -8,6 +8,7 @@
 
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
 
@@ -82,11 +83,18 @@
     </EditForm>
 </div>
 
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+
 @code {
     // TODO : Limiter l'accès au professeur en charge
 
     [Parameter]
     public int Id { get; set; }
+
+    /// <summary>
+    /// List of toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
 
     private ScheduleDetailsModel _scheduleDetails = new();
     private bool _isTeacher = false;
@@ -113,13 +121,37 @@
 
         ScheduleDetailsModel schedule = Mapper.Map<ScheduleDetailsModel>(scheduleFromService);
 
-        var module = await ModuleService.GetModuleAsync(scheduleFromService.ModuleId);
+        var moduleResult = await ModuleService.GetModuleAsync(scheduleFromService.ModuleId);
 
-        if (module is null)
+        if (!moduleResult.Success)
         {
-            Logger.LogError($"{DateTime.Now} - Module with ID \"{scheduleFromService.ModuleId}\" doesn't exist");
+            Logger.LogError($"The module request failed with status code \"{moduleResult.Code}\".\n{moduleResult.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement du module",
+                $"Le chargement du module a échoué.\n{moduleResult.Message}",
+                false
+            );
+
             return;
         }
+
+        if (moduleResult.Data is null)
+        {
+            Logger.LogError($"The module request succeeded but the data is null.\n{moduleResult.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement du module",
+                $"Le chargement du module est réussi mais les données retournées sont null.\n{moduleResult.Data}",
+                false
+            );
+
+            return;
+        }
+
+        ModuleModel module = moduleResult.Data;
 
         var userResult = await UserService.GetUserAsync(module.TeacherId);
 
@@ -230,5 +262,26 @@
     public async Task HandleValidSubmit()
     {
         // TODO : Delete file from file system
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

@@ -33,9 +33,9 @@ namespace Web.DepotEice.UIL.Profiles
                     opt => opt.MapFrom(
                         src => src.Description.Substring(0, src.Description.Length > 250 ? 250 : src.Description.Length)));
 
-            CreateMap<BLL.Models.ModuleModel, UIL.Models.ModuleModel>();
+            CreateMap<BLL.Models.ModuleModel, UIL.Models.ModuleDisplayModel>();
 
-            CreateMap<BLL.Models.ScheduleModel, UIL.Models.ScheduleModel>()
+            CreateMap<BLL.Models.ScheduleModel, UIL.Models.ScheduleDisplayModel>()
                 .ForMember(
                     dest => dest.StartTime,
                     opt => opt.MapFrom(

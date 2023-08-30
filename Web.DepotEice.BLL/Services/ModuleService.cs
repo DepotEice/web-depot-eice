@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,9 +16,10 @@ namespace Web.DepotEice.BLL.Services
     public class ModuleService : IModuleService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILocalStorageService _localStorageService;
+        private readonly ISyncLocalStorageService _localStorageService;
+        private readonly ILogger _logger;
 
-        public ModuleService(ILocalStorageService localStorageService, HttpClient httpClient)
+        public ModuleService(ISyncLocalStorageService localStorageService, HttpClient httpClient, ILogger<ModuleService> logger)
         {
             if (localStorageService is null)
             {
@@ -29,14 +31,32 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(httpClient));
             }
 
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             _localStorageService = localStorageService;
             _httpClient = httpClient;
+            _logger = logger;
+
+            string token = _localStorageService.GetItemAsString("token");
 
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        public async Task<ModuleModel?> CreateModuleAsync(ModuleCreationModel moduleCreation)
+        /// <summary>
+        /// Create a new module by sending a POST request to the API with the given form in parameter
+        /// </summary>
+        /// <param name="moduleCreation">The form to create</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ModuleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<ModuleModel>> CreateModuleAsync(ModuleCreationModel moduleCreation)
         {
             if (moduleCreation is null)
             {
@@ -45,14 +65,39 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Modules", moduleCreation);
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<ModuleModel> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            ModuleModel? result = await response.Content.ReadFromJsonAsync<ModuleModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ModuleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(CreateModuleAsync),
+                    ex.Message
+                );
+            }
 
             return result;
         }
 
-        public async Task<ModuleModel?> UpdateModuleAsync(int id, ModuleCreationModel moduleCreation)
+        /// <summary>
+        /// Update a module by sending a PUT request to the API with the module ID and the form
+        /// </summary>
+        /// <param name="id">The id of the module to update</param>
+        /// <param name="moduleCreation">The form to update the module</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ModuleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<ModuleModel>> UpdateModuleAsync(int id, ModuleCreationModel moduleCreation)
         {
             if (moduleCreation is null)
             {
@@ -61,28 +106,71 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"Modules/{id}", moduleCreation);
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<ModuleModel> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            ModuleModel? result = await response.Content.ReadFromJsonAsync<ModuleModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ModuleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(UpdateModuleAsync),
+                    ex.Message
+                );
+            }
 
             return result;
         }
 
-        public async Task<ModuleModel?> GetModuleAsync(int id)
+        /// <summary>
+        /// Get the module with the given id by sending a GET request to the API
+        /// </summary>
+        /// <param name="id">The id of the module</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ModuleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<ModuleModel>> GetModuleAsync(int id)
         {
+            if (id <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
             HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{id}");
 
-            var result = await response.Content.ReadFromJsonAsync<ModuleModel>();
+            ResultModel<ModuleModel> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ModuleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(GetModuleAsync),
+                    ex.Message
+                );
+            }
 
             return result;
         }
 
         public async Task<IEnumerable<ModuleModel>> GetModulesAsync()
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
             HttpResponseMessage response = await _httpClient.GetAsync("Modules");
 
             response.EnsureSuccessStatusCode();
@@ -97,8 +185,23 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<ScheduleModel?> CreateScheduleAsync(int moduleId, ScheduleCreateModel scheduleCreate)
+        /// <summary>
+        /// Create a Schedule for a module by sending a POST request to the API
+        /// </summary>
+        /// <param name="moduleId">The id of the module to which the schedule is created</param>
+        /// <param name="scheduleCreate">The body form of the schedule to create</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<ScheduleModel>> CreateScheduleAsync(int moduleId, ScheduleCreateModel scheduleCreate)
         {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
             if (scheduleCreate is null)
             {
                 throw new ArgumentNullException(nameof(scheduleCreate));
@@ -107,35 +210,108 @@ namespace Web.DepotEice.BLL.Services
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync($"Modules/{moduleId}/Schedules", scheduleCreate);
 
-            response.EnsureSuccessStatusCode();
-
-            return await response.Content.ReadFromJsonAsync<ScheduleModel>();
-        }
-
-        public async Task<IEnumerable<ScheduleModel>> GetModuleSchedulesAsync(int moduleId)
-        {
-            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/Schedules");
-
-            response.EnsureSuccessStatusCode();
-
-            IEnumerable<ScheduleModel>? result = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
-
-            if (result is null)
+            ResultModel<ScheduleModel> result = new()
             {
-                return Enumerable.Empty<ScheduleModel>();
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ScheduleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(GetModuleAsync),
+                    ex.Message
+                );
             }
 
             return result;
         }
 
-        public async Task<bool> DeleteScheduleAsync(int moduleId, int scheduleId)
+        /// <summary>
+        /// Get the module schedules from the give module id by sending a GET request to the API
+        /// </summary>
+        /// <param name="moduleId">The id of the module</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<ScheduleModel>>> GetModuleSchedulesAsync(int moduleId)
         {
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/Schedules");
+
+            ResultModel<IEnumerable<ScheduleModel>> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(GetModuleSchedulesAsync),
+                    ex.Message
+                );
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Delete the schedule of a module
+        /// </summary>
+        /// <param name="moduleId">The id of the module</param>
+        /// <param name="scheduleId">The id of the schedule</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<bool>> DeleteScheduleAsync(int moduleId, int scheduleId)
+        {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
+            if (scheduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(scheduleId));
+            }
+
             HttpResponseMessage response =
                 await _httpClient.DeleteAsync($"Modules/{moduleId}/Schedules/{scheduleId}");
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            return response.IsSuccessStatusCode;
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(DeleteScheduleAsync),
+                    ex.Message
+                );
+            }
+
+            return result;
         }
 
         public async Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules()
@@ -157,17 +333,13 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<bool?> UserIsAccepted(int moduleId)
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
+            if (moduleId <= 0)
             {
-                return false;
+                throw new IndexOutOfRangeException(nameof(moduleId));
             }
 
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
             HttpResponseMessage response =
-                await _httpClient.GetAsync($"Modules/{moduleId}/UserRequestStatus");
+                 await _httpClient.GetAsync($"Modules/{moduleId}/UserRequestStatus");
 
             bool? result = await response.Content.ReadFromJsonAsync<bool>();
 
@@ -186,10 +358,6 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(userId));
             }
 
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
             HttpResponseMessage response =
                 await _httpClient.GetAsync($"Modules/{moduleId}/UserRequestStatus/{userId}");
 
@@ -205,27 +373,14 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<bool> RequestAcceptance(int moduleId)
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
             HttpResponseMessage response =
-                await _httpClient.PostAsync($"Modules/{moduleId}/RequestAcceptance", null);
+                 await _httpClient.PostAsync($"Modules/{moduleId}/RequestAcceptance", null);
 
             return response.IsSuccessStatusCode;
         }
 
         public async Task<IEnumerable<ScheduleModel>> GetSchedulesAsync()
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                return Enumerable.Empty<ScheduleModel>();
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
             HttpResponseMessage response = await _httpClient.GetAsync("Modules/Schedules");
 
             response.EnsureSuccessStatusCode();
@@ -242,14 +397,10 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<IEnumerable<ScheduleModel>> GetSchedulesAsync(int moduleId)
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
+            if (moduleId <= 0)
             {
-                return Enumerable.Empty<ScheduleModel>();
+                throw new IndexOutOfRangeException(nameof(moduleId));
             }
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/Schedules");
 
@@ -267,14 +418,10 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<ScheduleModel?> GetScheduleAsync(int id)
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
+            if (id <= 0)
             {
-                return null;
+                throw new IndexOutOfRangeException(nameof(id));
             }
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Modules/Schedules/{id}");
 
@@ -287,14 +434,10 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<IEnumerable<ScheduleFileModel>> GetScheduleFilesAsync(int scheduleId)
         {
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
+            if (scheduleId <= 0)
             {
-                return Enumerable.Empty<ScheduleFileModel>();
+                throw new IndexOutOfRangeException(nameof(scheduleId));
             }
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{scheduleId}/Files");
 
@@ -327,15 +470,6 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentOutOfRangeException(nameof(moduleId));
             }
 
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                return false;
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
             HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/HasRole/{role}");
 
             response.EnsureSuccessStatusCode();
@@ -352,17 +486,8 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentOutOfRangeException(nameof(scheduleId));
             }
 
-            string? token = await _localStorageService.GetItemAsStringAsync("token");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                return false;
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
             HttpResponseMessage response =
-                await _httpClient.DeleteAsync($"Modules/{moduleId}/Schedules/{scheduleId}/Files/{scheduleFileId}");
+                            await _httpClient.DeleteAsync($"Modules/{moduleId}/Schedules/{scheduleId}/Files/{scheduleFileId}");
 
             return response.IsSuccessStatusCode;
         }

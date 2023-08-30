@@ -287,11 +287,14 @@
 
             // Calculate start and end dates
             DateTime firstDay = schedules.FirstOrDefault()?.StartAt ?? DateTime.Now;
-            DateTime lastDay = schedules.LastOrDefault()?.EndAt ?? DateTime.Now;
+
+            // Sort schedules by EndAt in descending order and get the latest date
+            DateTime lastDay = schedules.OrderByDescending(schedule => schedule.EndAt).FirstOrDefault()?.EndAt ?? DateTime.Now;
 
             // Set the start and end date of the form
             ModuleScheduleForm.StartDate = firstDay.Date;
             ModuleScheduleForm.EndDate = lastDay.Date;
+
 
             // Populate DayTimeSelectors
             foreach (DayTimeSelectorModel day in ModuleScheduleForm.DayTimeSelectors)
@@ -644,8 +647,9 @@
                 if (!result.Data)
                 {
                     Logger.LogWarning(
-                        "The deletion of module with {id} failed.\n{msg}",
+                        "The deletion of schedule with id {sId} of module with id {mId} failed.\n{msg}",
                         schedule.Id,
+                        Id.Value,
                         result.Message
                     );
 
@@ -690,8 +694,11 @@
             return;
         }
 
+        DateTime start = ModuleScheduleForm.StartDate > DateTime.Now ? ModuleScheduleForm.StartDate : DateTime.Now;
+        DateTime end = ModuleScheduleForm.EndDate;
+
         // Load the list of schedules to create
-        foreach (DateTime dti in Utils.EachDay(ModuleScheduleForm.StartDate, ModuleScheduleForm.EndDate))
+        foreach (DateTime dti in Utils.EachDay(start, end))
         {
             DayTimeSelectorModel? daySelection = ModuleScheduleForm.DayTimeSelectors
                 .FirstOrDefault(dts => dts.IsSelected && dts.DayOfWeek == (DaysOfTheWeekFr)dti.DayOfWeek);

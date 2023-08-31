@@ -379,17 +379,52 @@ namespace Web.DepotEice.BLL.Services
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<IEnumerable<ScheduleModel>> GetSchedulesAsync()
+        /// <summary>
+        /// Get all the schedules by sending a GET request to the API
+        /// </summary>
+        /// <param name="selectedDate">
+        /// The date to get the schedules from
+        /// </param>
+        /// <param name="range">
+        /// The range to get the schedules from
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<ScheduleModel>>> GetSchedulesAsync(DateTime? selectedDate = null, int? range = null)
         {
-            HttpResponseMessage response = await _httpClient.GetAsync("Modules/Schedules");
+            string queryUrl = "Modules/Schedules?";
 
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
-
-            if (result is null)
+            if (selectedDate.HasValue)
             {
-                return Enumerable.Empty<ScheduleModel>();
+                queryUrl += $"selectedDate={selectedDate.Value:s}&";
+            }
+
+            if (range.HasValue)
+            {
+                queryUrl += $"range={range.Value}&";
+            }
+
+            HttpResponseMessage response = await _httpClient.GetAsync(queryUrl);
+
+            ResultModel<IEnumerable<ScheduleModel>> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(DeleteScheduleAsync),
+                    ex.Message
+                );
             }
 
             return result;
@@ -490,6 +525,48 @@ namespace Web.DepotEice.BLL.Services
                             await _httpClient.DeleteAsync($"Modules/{moduleId}/Schedules/{scheduleId}/Files/{scheduleFileId}");
 
             return response.IsSuccessStatusCode;
+        }
+
+        /// <summary>
+        /// Get the teacher of a module by sending a GET request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<UserModel>> GetTeacherAsync(int moduleId)
+        {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/Teacher");
+
+            ResultModel<UserModel> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<UserModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(GetTeacherAsync),
+                    ex.Message
+                );
+            }
+
+            return result;
         }
     }
 }

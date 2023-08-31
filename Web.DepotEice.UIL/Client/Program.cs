@@ -62,6 +62,7 @@ namespace Company.WebApplication1
 
             builder.Services.AddScoped<UserManager>();
             builder.Services.AddScoped<AppointmentManager>();
+            builder.Services.AddScoped<ScheduleManager>();
 
             builder.Services.AddScoped<DialogService>();
             builder.Services.AddScoped<NotificationService>();

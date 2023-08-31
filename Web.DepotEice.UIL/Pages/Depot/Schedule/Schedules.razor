@@ -14,6 +14,7 @@
 @inject IModuleService ModuleService;
 @inject UserManager UserManager;
 @inject IUserService UserService;
+@inject ScheduleManager ScheduleManager;
 
 <h3 class="text-center my-5">Calendrier</h3>
 
@@ -59,7 +60,7 @@
     /// <summary>
     /// The list of appointments
     /// </summary>
-    public List<ScheduleDisplayModel> SchedulesList { get; private set; } = new List<ScheduleDisplayModel>();
+    public IEnumerable<ScheduleDisplayModel> SchedulesList { get; private set; } = new List<ScheduleDisplayModel>();
 
     /// <summary>
     /// Initialization of the component
@@ -67,7 +68,12 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        
+        await LoadSchedulesAsync();
+    }
+
+    private async Task LoadSchedulesAsync()
+    {
+        SchedulesList = await ScheduleManager.GetSchedulesAsync(SelectedDateTime, SelectedDateRange);
     }
 
     /// <summary>
@@ -113,6 +119,8 @@
     private async Task OnDataLoaded(SchedulerLoadDataEventArgs args)
     {
         SelectedDateTime = args.Start;
+
+        await LoadSchedulesAsync();
     }
 
     /// <summary>

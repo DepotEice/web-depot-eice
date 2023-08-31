@@ -78,11 +78,36 @@ namespace Web.DepotEice.BLL.IServices
         Task<bool?> UserIsAccepted(int moduleId);
         Task<bool?> UserIsAccepted(int moduleId, string userId);
         Task<bool> RequestAcceptance(int moduleId);
-        Task<IEnumerable<ScheduleModel>> GetSchedulesAsync();
+
+        /// <summary>
+        /// Get all the schedules by sending a GET request to the API
+        /// </summary>
+        /// <param name="selectedDate">
+        /// The date to get the schedules from
+        /// </param>
+        /// <param name="range">
+        /// The range to get the schedules from
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        Task<ResultModel<IEnumerable<ScheduleModel>>> GetSchedulesAsync(DateTime? selectedDate = null, int? dateRange = null);
         Task<IEnumerable<ScheduleModel>> GetSchedulesAsync(int moduleId);
         Task<ScheduleModel?> GetScheduleAsync(int id);
         Task<IEnumerable<ScheduleFileModel>> GetScheduleFilesAsync(int scheduleId);
         Task<ScheduleFileModel?> GetScheduleFileAsync(int id);
         Task<bool> UserHasRoleAsync(string role, int moduleId);
+
+        /// <summary>
+        /// Get the teacher of a module by sending a GET request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<UserModel>> GetTeacherAsync(int moduleId);
     }
 }

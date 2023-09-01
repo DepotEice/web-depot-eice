@@ -155,5 +155,93 @@ namespace Web.DepotEice.UIL.Managers
 
             return schedules;
         }
+
+        /// <summary>
+        /// Get the schedule details with the module information and the teacher name.
+        /// </summary>
+        /// <param name="scheduleId">
+        /// The id of the schedule
+        /// </param>
+        /// <returns>
+        /// <see cref="ScheduleDetailsModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ScheduleDetailsModel> GetScheduleAsync(int scheduleId)
+        {
+            if (scheduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(scheduleId));
+            }
+
+            ResultModel<ScheduleModel> result = await _moduleService.GetScheduleAsync(scheduleId);
+
+            if (!result.Success)
+            {
+                _logger.LogError("The request failed with status code {code}.\n{msg}", result.Code, result.Message);
+
+                return new ScheduleDetailsModel();
+            }
+
+            if (result.Data is null)
+            {
+                _logger.LogError("The request succeeded but the returned data is null.\n{msg}", result.Message);
+
+                return new ScheduleDetailsModel();
+            }
+
+            ScheduleDetailsModel schedule = _mapper.Map<ScheduleDetailsModel>(result.Data);
+
+            ResultModel<ModuleModel> moduleResult = await _moduleService.GetModuleAsync(schedule.ModuleId);
+
+            if (!moduleResult.Success)
+            {
+                _logger.LogError(
+                    "The request failed with status code {code}.\n{msg}",
+                    moduleResult.Code,
+                    moduleResult.Message
+                );
+
+                return schedule;
+            }
+
+            if (moduleResult.Data is null)
+            {
+                _logger.LogError(
+                    "The request succeeded but the returned data is null.\n{msg}",
+                    moduleResult.Message
+                );
+
+                return schedule;
+            }
+
+            schedule.ModuleName = moduleResult.Data.Name;
+
+            ResultModel<UserModel> teacherResult = await _moduleService.GetTeacherAsync(schedule.ModuleId);
+
+            if (!teacherResult.Success)
+            {
+                _logger.LogError(
+                    "The request failed with status code {code}.\n{msg}",
+                    teacherResult.Code,
+                    teacherResult.Message
+                );
+
+                return schedule;
+            }
+
+            if (teacherResult.Data is null)
+            {
+                _logger.LogError(
+                    "The request succeeded but the returned data is null.\n{msg}",
+                    teacherResult.Message
+                );
+
+                return schedule;
+            }
+
+            schedule.TeacherName = $"{teacherResult.Data.LastName}, {teacherResult.Data.FirstName}";
+
+            return schedule;
+        }
     }
 }

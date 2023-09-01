@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -451,7 +452,17 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<ScheduleModel?> GetScheduleAsync(int id)
+        /// <summary>
+        /// The the schedule details by sending a GET request to the API
+        /// </summary>
+        /// <param name="id">
+        /// The id of the schedule
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        public async Task<ResultModel<ScheduleModel>> GetScheduleAsync(int id)
         {
             if (id <= 0)
             {
@@ -460,29 +471,74 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Modules/Schedules/{id}");
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<ScheduleModel> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            var result = await response.Content.ReadFromJsonAsync<ScheduleModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ScheduleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(DeleteScheduleAsync),
+                    ex.Message
+                );
+            }
 
             return result;
         }
 
-        public async Task<IEnumerable<ScheduleFileModel>> GetScheduleFilesAsync(int scheduleId)
+        /// <summary>
+        /// Get the files of a schedule by sending a GET request to the API
+        /// </summary>
+        /// <param name="mId">
+        /// The id of the module to which belongs the schedule
+        /// </param>
+        /// <param name="sId">
+        /// The id of the schedule to which belongs the files
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleFileModel"/>
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        public async Task<ResultModel<IEnumerable<ScheduleFileModel>>> GetScheduleFilesAsync(int mId, int sId)
         {
-            if (scheduleId <= 0)
+            if (mId <= 0)
             {
-                throw new IndexOutOfRangeException(nameof(scheduleId));
+                throw new IndexOutOfRangeException(nameof(mId));
             }
 
-            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{scheduleId}/Files");
-
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleFileModel>>();
-
-            if (result is null)
+            if (sId <= 0)
             {
-                return Enumerable.Empty<ScheduleFileModel>();
+                throw new IndexOutOfRangeException(nameof(sId));
+            }
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{mId}/Schedules/{sId}/Files");
+
+            ResultModel<IEnumerable<ScheduleFileModel>> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleFileModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(DeleteScheduleAsync),
+                    ex.Message
+                );
             }
 
             return result;
@@ -514,17 +570,63 @@ namespace Web.DepotEice.BLL.Services
             return result is null ? false : result.Value;
         }
 
-        public async Task<bool> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId)
+        /// <summary>
+        /// Delete a schedule's file by sending a DELETE request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which belong the schedule
+        /// </param>
+        /// <param name="scheduleId">
+        /// The id of the schedule to which belong the file
+        /// </param>
+        /// <param name="scheduleFileId">
+        /// The id of the file to delete
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<bool>> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId)
         {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
             if (scheduleId <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(scheduleId));
             }
 
+            if (scheduleFileId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(scheduleFileId));
+            }
+
             HttpResponseMessage response =
                             await _httpClient.DeleteAsync($"Modules/{moduleId}/Schedules/{scheduleId}/Files/{scheduleFileId}");
 
-            return response.IsSuccessStatusCode;
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(DeleteScheduleFileAsync),
+                    ex.Message
+                );
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -567,6 +669,136 @@ namespace Web.DepotEice.BLL.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Update a schedule by sending a PUT request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which belong the schedule
+        /// </param>
+        /// <param name="scheduleId">
+        /// The id of the schedule to update
+        /// </param>
+        /// <param name="scheduleCreate">
+        /// The new values of the schedule
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<ScheduleModel>> UpdateScheduleAsync(int moduleId, int scheduleId, ScheduleCreateModel scheduleCreate)
+        {
+            if (scheduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(scheduleId));
+            }
+
+            if (scheduleCreate is null)
+            {
+                throw new ArgumentNullException(nameof(scheduleCreate));
+            }
+
+            HttpResponseMessage response =
+                await _httpClient.PutAsJsonAsync($"Modules/{moduleId}/Schedules/{scheduleId}", scheduleCreate);
+
+            ResultModel<ScheduleModel> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ScheduleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(UpdateScheduleAsync),
+                    ex.Message
+                );
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Update a schedule's file by sending a POST request to the API
+        /// </summary>
+        /// <param name="mId">
+        /// The id of the module to which belong the schedule
+        /// </param>
+        /// <param name="sId">
+        /// The id of the schedule to which belong the file
+        /// </param>
+        /// <param name="files">
+        /// The list of files to upload
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. The API response is NoContent. 
+        /// So the data is true if the request is successful, false otherwise.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<bool>> UploadFilesAsync(int mId, int sId, IEnumerable<IBrowserFile> files)
+        {
+            if (mId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(mId));
+            }
+
+            if (sId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sId));
+            }
+
+            string query = $"Modules/{mId}/Schedules/{sId}/Files";
+
+            try
+            {
+                using MultipartFormDataContent content = new();
+
+                foreach (IBrowserFile file in files)
+                {
+                    StreamContent streamContent = new(file.OpenReadStream(file.Size), (int)file.Size);
+
+                    streamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+                    {
+                        Name = "files",
+                        FileName = file.Name
+                    };
+
+                    streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+                    content.Add(streamContent, file.Name, file.Name);
+                }
+
+                HttpResponseMessage response = await _httpClient.PostAsync(query, content);
+
+                ResultModel<bool> result = new()
+                {
+                    Code = response.StatusCode,
+                    Success = response.IsSuccessStatusCode,
+                    Message = await response.Content.ReadAsStringAsync(),
+                    Data = response.IsSuccessStatusCode
+                };
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    "{fn}: An exception was thrown when trying to upload a shcedule file.\n{e.msg}\n{e.str}",
+                    nameof(UploadFilesAsync),
+                    e.Message,
+                    e.StackTrace
+                );
+
+                throw;
+            }
         }
     }
 }

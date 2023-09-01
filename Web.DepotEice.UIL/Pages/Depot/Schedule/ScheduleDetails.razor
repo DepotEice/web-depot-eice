@@ -1,53 +1,46 @@
 ﻿@page "/depot/schedules/{Id:int}/details"
 
-@inject ILogger<ScheduleDetails> Logger;
-@inject IMapper Mapper;
-@inject IModuleService ModuleService;
-@inject IUserService UserService;
-@inject UserManager UserManager;
-
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
 
-<PageTitle>EICE Dépot - @_scheduleDetails.Title</PageTitle>
+@inject ILogger<ScheduleDetails> Logger;
+@inject IMapper Mapper;
+@inject IModuleService ModuleService;
+@inject IUserService UserService;
+@inject UserManager UserManager;
+@inject ScheduleManager ScheduleManager;
+@inject NavigationManager NavigationManager;
 
-<h3 class="text-center  my-5">Détails</h3>
-
+<PageTitle>EICE Dépot - @Schedule.Title</PageTitle>
 
 <div class="container">
+    <h3 class="my-3">
+        @Schedule.ModuleName - @Schedule.StartAt.ToString("F")
+    </h3>
 
-    @if (!string.IsNullOrEmpty(_errorMessage))
-    {
-        <span class="text-danger fs-4">@_errorMessage</span>
-    }
+    <span class="fs-5 fst-italic mb-3">
+        Professeur en charge : @Schedule.TeacherName
+    </span>
 
-    <div class="row my-3">
-        <span class="fs-5">
-            Module : @_scheduleDetails.ModuleName
-        </span>
-
-        <span class="fs-5">
-            Professeur en charge : @_scheduleDetails.TeacherName
-        </span>
-    </div>
-    <EditForm Model="_scheduleDetails">
+    <EditForm class="my-2" Model="Schedule" OnValidSubmit="HandleValidSubmit">
 
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
         <div class="border-bottom pb-3">
             <div class="row mb-3">
-                <label class="form-label">Intitulé</label>
-                <InputText class="form-control" @bind-Value="_scheduleDetails.Title"
-                           disabled="@(_isTeacher ? true : false)" />
+                <label class="form-label" for="schedule-title">Intitulé</label>
+                <InputText @bind-Value="Schedule.Title" id="schedule-title" class="form-control" disabled="@(!IsTeacher)" />
+                <ValidationMessage For="() => Schedule.Title" class="text-danger" />
             </div>
 
             <div class="row mb-3">
-                <label class="form-label">Détails</label>
-                <InputTextArea class="form-control" style="height:25rem" @bind-Value="_scheduleDetails.Details"
-                               disabled="@(_isTeacher ? true : false)" />
+                <label class="form-label" for="schedule-details">Détails</label>
+                <InputTextArea @bind-Value="Schedule.Details" id="schedule-details" class="form-control"
+                               style="height:25rem" disabled="@(!IsTeacher)" />
+                <ValidationMessage For="() => Schedule.Details" class="text-danger" />
             </div>
         </div>
 
@@ -56,212 +49,367 @@
                 <h4 class="text-center align-bottom">Fichiers</h4>
             </div>
 
-            @if (_isTeacher)
-            {
-                <div class="my-3">
-                    <InputFile class="form-control" OnChange="OnFileChangedAsync" />
-                </div>
-            }
+            <Authorize Role="@UserManager.TEACHER_ROLE">
+                <Authorized>
+                    <div class="my-3">
+                        <InputFile class="form-control" OnChange="OnFileChangedAsync" multiple />
+                    </div>
+                </Authorized>
+            </Authorize>
 
-            @foreach (var file in _scheduleDetails.ScheduleFiles)
+            @foreach (var file in Schedule.ScheduleFiles)
             {
                 <div class="input-group mb-3">
-                    @*<span class="form-control" style="min-width:50%">blabla</span>*@
-                    <NavLink href="@file.FilePath" class="form-control" style="min-width:50%" />
-                    <button type="button" class="btn btn-outline-danger" @onclick="(async () => await DeleteFileAsync(file.Id))">
-                        X
+                    <a href="@($"{ApiBaseAddress}/Files/ByFileName/{file.FileName}")" class="form-control" style="min-width:50%" download>
+                        @file.FileName
+                    </a>
+                    <button type="button" class="btn btn-outline-danger" @onclick="(() => DeleteFileAsync(file.Id))">
+                        <i class="bi bi-trash"></i>
                     </button>
                 </div>
             }
         </div>
 
-        <div class="row my-3">
-            <button type="submit" class="btn btn-outline-primary">
-                Enregistrer
-            </button>
-        </div>
+        <Authorize Role="@UserManager.TEACHER_ROLE">
+            <Authorized>
+                <div class="row my-3">
+                    <button type="submit" class="btn btn-outline-primary">
+                        Enregistrer
+                    </button>
+                </div>
+            </Authorized>
+        </Authorize>
     </EditForm>
 </div>
 
 <Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 
 @code {
-    // TODO : Limiter l'accès au professeur en charge
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
 
+    /// <summary>
+    /// The id of the schedule
+    /// </summary>
     [Parameter]
     public int Id { get; set; }
+
+    /// <summary>
+    /// The schedule details
+    /// </summary>
+    public ScheduleDetailsModel Schedule { get; private set; } = new();
 
     /// <summary>
     /// List of toast messages
     /// </summary>
     public List<ToastMessage> ToastMessages { get; set; } = new();
 
-    private ScheduleDetailsModel _scheduleDetails = new();
-    private bool _isTeacher = false;
+    /// <summary>
+    /// Specify if the current user is the teacher
+    /// </summary>
+    public bool IsTeacher { get; private set; } = false;
 
-    private string _errorMessage = string.Empty;
+    /// <summary>
+    /// List of files to delete
+    /// </summary>
+    public List<ScheduleFileModel> FilesToDelete { get; set; } = new();
 
+    /// <summary>
+    /// List of files to upload
+    /// </summary>
+    public List<IBrowserFile> FilesToUpload { get; set; } = new();
+
+#if DEBUG
+    public string ApiBaseAddress { get; private set; } = "https://localhost:7205/api";
+#else
+    public string ApiBaseAddress { get; private set; } = "https://api-depot-eice.azurewebsites.net/api";
+#endif
+
+    /// <summary>
+    /// Initialization of the component
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        var scheduleFromService = await ModuleService.GetScheduleAsync(Id);
+        PreloadService?.Show();
 
-        if (scheduleFromService is null)
-        {
-            Logger.LogError($"{DateTime.Now} - The schedule with ID \"{Id}\" doesn't exist");
-            return;
-        }
+        Schedule = await ScheduleManager.GetScheduleAsync(Id);
 
-        _isTeacher = await UserManager.HasRole(UserManager.TEACHER_ROLE, scheduleFromService.ModuleId);
-
-        if (scheduleFromService is null)
-        {
-            _errorMessage = $"Le cours que vous essayez de récupérer n'existe pas!";
-            return;
-        }
-
-        ScheduleDetailsModel schedule = Mapper.Map<ScheduleDetailsModel>(scheduleFromService);
-
-        var moduleResult = await ModuleService.GetModuleAsync(scheduleFromService.ModuleId);
-
-        if (!moduleResult.Success)
-        {
-            Logger.LogError($"The module request failed with status code \"{moduleResult.Code}\".\n{moduleResult.Message}");
-
-            ShowMessage(
-                ToastType.Danger,
-                "Chargement du module",
-                $"Le chargement du module a échoué.\n{moduleResult.Message}",
-                false
-            );
-
-            return;
-        }
-
-        if (moduleResult.Data is null)
-        {
-            Logger.LogError($"The module request succeeded but the data is null.\n{moduleResult.Message}");
-
-            ShowMessage(
-                ToastType.Danger,
-                "Chargement du module",
-                $"Le chargement du module est réussi mais les données retournées sont null.\n{moduleResult.Data}",
-                false
-            );
-
-            return;
-        }
-
-        ModuleModel module = moduleResult.Data;
-
-        var userResult = await UserService.GetUserAsync(module.TeacherId);
-
-        if (!userResult.Success)
-        {
-            Logger.LogError($"The request of the user has failed with status code \"{userResult.Code}\".\n{userResult.Message}");
-
-            return;
-        }
-
-        if (userResult.Data is null)
-        {
-            Logger.LogError($"The requested user data is null.\n{userResult.Message}");
-
-            return;
-        }
-
-        var user = userResult.Data;
-
-        if (user is not null)
-        {
-            _scheduleDetails.TeacherName = $"{user.LastName.ToUpper()} {user.FirstName}";
-        }
-
-        Logger.LogInformation($"{module.Name}");
-
-        _scheduleDetails.ModuleName = module.Name;
+        IsTeacher = await UserManager.HasRole(UserManager.TEACHER_ROLE, Schedule.ModuleId);
 
         try
         {
-            _scheduleDetails.ScheduleFiles = (await ModuleService.GetScheduleFilesAsync(Id)).ToList();
-        }
-        catch (Exception e)
-        {
-            Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to retrieve files.\n" +
-                $"{e.Message}\n{e.StackTrace}");
-        }
+            ResultModel<IEnumerable<ScheduleFileModel>> fileResult =
+                await ModuleService.GetScheduleFilesAsync(Schedule.ModuleId, Schedule.Id);
 
-        StateHasChanged();
-    }
-
-    public async Task DownloadFileAsync(int fileId)
-    {
-        // TODO : Download file from API
-    }
-
-    public async Task DeleteFileAsync(int fileId)
-    {
-        bool result = await ModuleService.DeleteScheduleFileAsync(_scheduleDetails.ModuleId, _scheduleDetails.Id, fileId);
-
-        if (result)
-        {
-            Logger.LogInformation($"{DateTime.Now} - File with ID \"{fileId}\" has been successfully deleted");
-
-            var file = _scheduleDetails.ScheduleFiles.SingleOrDefault(sf => sf.Id.Equals(fileId));
-
-            if (file is null)
+            if (!fileResult.Success)
             {
-                Logger.LogError($"{DateTime.Now} - There is no {typeof(ScheduleDetailsModel)} with ID \"{fileId}\" " +
-                    $"in the list");
+                Logger.LogError(
+                    "Request to get files for schedule with id \"{id}\" failed with status code \"{code}\"\n{msg}",
+                    Schedule.Id,
+                    fileResult.Code,
+                    fileResult.Message
+                );
+
+                ShowMessage(
+                    ToastType.Warning,
+                    "Fichiers",
+                    $"La récupération des fichiers a échoué.\n{fileResult.Message}",
+                    false
+                );
+
+                PreloadService?.Hide();
+
                 return;
             }
 
-            _scheduleDetails.ScheduleFiles.Remove(file);
-            StateHasChanged();
+            if (fileResult.Data is null)
+            {
+                Logger.LogError(
+                    "Request to get files for schedule with id \"{id}\" succeeded but returned null data\n{msg}",
+                    Schedule.Id,
+                    fileResult.Message
+                );
+
+                ShowMessage(
+                    ToastType.Warning,
+                    "Fichiers",
+                    $"La récupération des fichiers est réussi mais aucune donnée n'a été retourné\n{fileResult.Message}",
+                    true
+                );
+
+                PreloadService?.Hide();
+
+                return;
+            }
+
+            Schedule.ScheduleFiles = fileResult.Data.ToList();
         }
+        catch (Exception e)
+        {
+            Logger.LogError(
+                "{date} - An exception was thrown when trying to retrieve files.\n{e.Message}\n{e.StackTrace}",
+                DateTime.Now,
+                e.Message,
+                e.StackTrace
+            );
+        }
+
+        PreloadService?.Hide();
     }
 
-    public async Task OnFileChangedAsync(InputFileChangeEventArgs args)
+    /// <summary>
+    /// Event raised when the user delete a file. Add the file to the list of files to delete.
+    /// </summary>
+    /// <param name="fileId">
+    /// the id of the file to delete
+    /// </param>
+    public void DeleteFileAsync(int fileId)
     {
-        if (args.FileCount <= 0)
+        PreloadService?.Show();
+
+        ScheduleFileModel? file = Schedule.ScheduleFiles.SingleOrDefault(sf => sf.Id == fileId);
+
+        if (file is null)
         {
-            Logger.LogWarning($"{DateTime.Now} - The number of files loaded is 0");
+            Logger.LogError(
+                "{date} - There is no {type} with id \"{fileId}\" in the list of files",
+                DateTime.Now,
+                nameof(ScheduleFileModel),
+                fileId
+            );
+
+            ShowMessage(ToastType.Warning, "Suppression impossible", "Le fichier n'existe pas dans la liste des fichiers", true);
+
+            PreloadService?.Hide();
+
             return;
         }
 
-        List<byte> fileStream = new();
+        FilesToDelete.Add(file);
 
-        if (args.FileCount == 1)
-        {
-            var file = args.File;
+        Schedule.ScheduleFiles.Remove(file);
 
-            long index = 0;
+        StateHasChanged();
 
-            while (index < file.Size)
-            {
-                byte[] buffers = new byte[index >= file.Size ? file.Size - index : 512000];
-
-                await file.OpenReadStream().ReadAsync(buffers);
-                fileStream.AddRange(buffers.ToList());
-
-                if (index + 512000 >= file.Size)
-                {
-                    index += (file.Size - 1 - index);
-                }
-                else
-                {
-                    index = index + 512000;
-                }
-            }
-        }
-        else
-        {
-
-        }
+        PreloadService?.Hide();
     }
 
+    /// <summary>
+    /// Event raised when the user has selected files to upload. Add the files to the list of files to upload.
+    /// </summary>
+    /// <param name="args"></param>
+    private void OnFileChangedAsync(InputFileChangeEventArgs args)
+    {
+        PreloadService?.Show();
+
+        if (args.FileCount <= 0)
+        {
+            Logger.LogWarning("{date} - The number of files loaded is 0", DateTime.Now);
+
+            ShowMessage(
+                ToastType.Warning,
+                "Ajout de fichiers",
+                "Aucun fichier n'a été chargé",
+                true
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        int nbFiles = args.FileCount;
+        IReadOnlyList<IBrowserFile> files = args.GetMultipleFiles(nbFiles);
+
+        FilesToUpload.AddRange(files);
+
+        PreloadService?.Hide();
+    }
+
+    /// <summary>
+    /// Submit the changes if the form is valid
+    /// </summary>
+    /// <returns></returns>
     public async Task HandleValidSubmit()
     {
-        // TODO : Delete file from file system
+        PreloadService?.Show();
+
+        // Update the schedule
+        ScheduleCreateModel schedule = Mapper.Map<ScheduleCreateModel>(Schedule);
+
+        ResultModel<ScheduleModel> scheduleResult = await ModuleService.UpdateScheduleAsync(Schedule.ModuleId, Schedule.Id, schedule);
+
+        if (!scheduleResult.Success)
+        {
+            Logger.LogError(
+                "{date} - The update request for schedule with id \"{scheduleId}\" failed with status code {code}.\n{msg}",
+                DateTime.Now,
+                Schedule.Id,
+                scheduleResult.Code,
+                scheduleResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Échec de la mise à jour",
+                $"La mise à jour du cours a échoué avec l'erreur\n{scheduleResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (scheduleResult.Data is null)
+        {
+            Logger.LogError(
+                "{date} - The update request for schedule with id \"{id}\" succeeded but the returned data is null.\n{msg}",
+                DateTime.Now,
+                Schedule.Id,
+                scheduleResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Warning,
+                "Un problème est survenu",
+                $"La mise à jour apprait comme réussi mais aucune donnée n'est retournée\n{scheduleResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        ShowMessage(
+            ToastType.Success,
+            "Modifications enregistrées",
+            "Les détails du cours ont bien été enregistrés",
+            true
+        );
+
+        if (FilesToDelete.Count > 0)
+        {
+            // Delete the files
+            foreach (ScheduleFileModel scheduleFile in FilesToDelete)
+            {
+                ResultModel<bool> fileResult =
+                    await ModuleService.DeleteScheduleFileAsync(Schedule.ModuleId, Schedule.Id, scheduleFile.Id);
+
+                if (!fileResult.Success || !fileResult.Data)
+                {
+                    Logger.LogError(
+                        "{date} - The delete request for file with id \"{fileId}\" failed with status code {code}.\n" +
+                        "{msg}",
+                        DateTime.Now,
+                        scheduleFile,
+                        fileResult.Code,
+                        fileResult.Message
+                    );
+
+                    ShowMessage(
+                        ToastType.Danger,
+                        "Échec de la suppression",
+                        $"La suprression du fichier {scheduleFile.FileName} a échouée avec l'erreur\n{fileResult.Message}",
+                        false
+                    );
+
+                    PreloadService?.Hide();
+
+                    continue;
+                }
+            }
+
+            ShowMessage(
+                ToastType.Success,
+                "Suppression",
+                "La suppression des fichiers a été effectuée avec succès",
+                true
+            );
+        }
+
+        // Upload the new files
+        if (FilesToUpload.Count > 0)
+        {
+            ResultModel<bool> uploadResult = await ModuleService.UploadFilesAsync(Schedule.ModuleId, Schedule.Id, FilesToUpload);
+
+            if (!uploadResult.Success || !uploadResult.Data)
+            {
+                Logger.LogError(
+                    "{date} - The upload request for files failed with status code {code}.\n{msg}",
+                    DateTime.Now,
+                    uploadResult.Code,
+                    uploadResult.Message
+                );
+
+                ShowMessage(
+                    ToastType.Danger,
+                    "Échec de l'envoi",
+                    $"L'envoi des fichiers a échoué avec l'erreur\n{uploadResult.Message}",
+                    false
+                );
+
+                PreloadService?.Hide();
+
+                return;
+            }
+
+            ShowMessage(
+                ToastType.Success,
+                "Envoi des fichiers",
+                "L'envoi des fichiers a été effectué avec succès",
+                true
+            );
+        }
+
+        PreloadService?.Hide();
+
+        NavigationManager.NavigateTo($"/depot/schedules/{Id}/Details", true);
     }
 
     /// <summary>

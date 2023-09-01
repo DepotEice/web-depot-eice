@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Web.DepotEice;
+using Web.DepotEice.BLL.Models;
 using Web.DepotEice.UIL.Models;
 using Web.DepotEice.UIL.Models.Forms;
 
@@ -9,21 +10,21 @@ namespace Web.DepotEice.UIL.Profiles
     {
         public ModuleProfile()
         {
-            CreateMap<ModuleForm, BLL.Models.ModuleCreationModel>()
+            CreateMap<ModuleForm, ModuleCreationModel>()
                 .ForMember(
                     dest => dest.Name,
                     opt => opt.MapFrom(
                         src => src.Title));
 
-            CreateMap<BLL.Models.ModuleModel, ModuleForm>()
+            CreateMap<ModuleModel, ModuleForm>()
                 .ForMember(
                     dest => dest.Title,
                     opt => opt.MapFrom(
                         src => src.Name));
 
-            CreateMap<ScheduleForm, BLL.Models.ScheduleCreateModel>();
+            CreateMap<ScheduleForm, ScheduleCreateModel>();
 
-            CreateMap<BLL.Models.ModuleModel, ModulePresentationModel>()
+            CreateMap<ModuleModel, ModulePresentationModel>()
                 .ForMember(
                     dest => dest.Title,
                     opt => opt.MapFrom(
@@ -33,9 +34,9 @@ namespace Web.DepotEice.UIL.Profiles
                     opt => opt.MapFrom(
                         src => src.Description.Substring(0, src.Description.Length > 250 ? 250 : src.Description.Length)));
 
-            CreateMap<BLL.Models.ModuleModel, UIL.Models.ModuleDisplayModel>();
+            CreateMap<ModuleModel, ModuleDisplayModel>();
 
-            CreateMap<BLL.Models.ScheduleModel, UIL.Models.ScheduleDisplayModel>()
+            CreateMap<ScheduleModel, ScheduleDisplayModel>()
                 .ForMember(
                     dest => dest.StartTime,
                     opt => opt.MapFrom(
@@ -45,7 +46,9 @@ namespace Web.DepotEice.UIL.Profiles
                     opt => opt.MapFrom(
                         src => src.EndAt));
 
-            CreateMap<BLL.Models.ScheduleModel, ScheduleDetailsModel>();
+            CreateMap<ScheduleModel, ScheduleDetailsModel>();
+
+            CreateMap<ScheduleDetailsModel, ScheduleCreateModel>();
         }
     }
 }

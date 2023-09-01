@@ -15,6 +15,7 @@
 @inject UserManager UserManager;
 @inject IUserService UserService;
 @inject ScheduleManager ScheduleManager;
+@inject NavigationManager NavigationManager;
 
 <h3 class="text-center my-5">Calendrier</h3>
 
@@ -132,17 +133,9 @@
         args.Attributes["style"] = $"background: {args.Data.RGBColor}";
     }
 
-    private async Task OnAppointmentSelected(SchedulerAppointmentSelectEventArgs<ScheduleDisplayModel> args)
+    private void OnAppointmentSelected(SchedulerAppointmentSelectEventArgs<ScheduleDisplayModel> args)
     {
-        Logger.LogInformation("test");
-        // bool result = await DialogService.OpenAsync<ManageAppointment>("Gérer", new Dictionary<string, object>() { { "Appointment", args.Data } });
-
-        // if (result)
-        // {
-        //     await LoadAppointmentsAsync();
-        // }
-
-        // await Scheduler.Reload();
+        NavigationManager.NavigateTo($"/depot/schedules/{args.Data.Id}/details");
     }
 
     /// <summary>

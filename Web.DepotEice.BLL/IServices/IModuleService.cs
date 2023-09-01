@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -73,7 +74,24 @@ namespace Web.DepotEice.BLL.IServices
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         Task<ResultModel<bool>> DeleteScheduleAsync(int moduleId, int scheduleId);
-        Task<bool> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId);
+
+        /// <summary>
+        /// Delete a schedule's file by sending a DELETE request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which belong the schedule
+        /// </param>
+        /// <param name="scheduleId">
+        /// The id of the schedule to which belong the file
+        /// </param>
+        /// <param name="scheduleFileId">
+        /// The id of the file to delete
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<bool>> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId);
         Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules();
         Task<bool?> UserIsAccepted(int moduleId);
         Task<bool?> UserIsAccepted(int moduleId, string userId);
@@ -93,8 +111,33 @@ namespace Web.DepotEice.BLL.IServices
         /// </returns>
         Task<ResultModel<IEnumerable<ScheduleModel>>> GetSchedulesAsync(DateTime? selectedDate = null, int? dateRange = null);
         Task<IEnumerable<ScheduleModel>> GetSchedulesAsync(int moduleId);
-        Task<ScheduleModel?> GetScheduleAsync(int id);
-        Task<IEnumerable<ScheduleFileModel>> GetScheduleFilesAsync(int scheduleId);
+
+        /// <summary>
+        /// The the schedule details by sending a GET request to the API
+        /// </summary>
+        /// <param name="id">
+        /// The id of the schedule
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        Task<ResultModel<ScheduleModel>> GetScheduleAsync(int id);
+
+        /// <summary>
+        /// Get the files of a schedule by sending a GET request to the API
+        /// </summary>
+        /// <param name="mId">
+        /// The id of the module to which belongs the schedule
+        /// </param>
+        /// <param name="sId">
+        /// The id of the schedule to which belongs the files
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleFileModel"/>
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        Task<ResultModel<IEnumerable<ScheduleFileModel>>> GetScheduleFilesAsync(int mId, int sId);
         Task<ScheduleFileModel?> GetScheduleFileAsync(int id);
         Task<bool> UserHasRoleAsync(string role, int moduleId);
 
@@ -109,5 +152,43 @@ namespace Web.DepotEice.BLL.IServices
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         Task<ResultModel<UserModel>> GetTeacherAsync(int moduleId);
+
+        /// <summary>
+        /// Update a schedule by sending a PUT request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which belong the schedule
+        /// </param>
+        /// <param name="scheduleId">
+        /// The id of the schedule to update
+        /// </param>
+        /// <param name="scheduleCreate">
+        /// The new values of the schedule
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<ScheduleModel>> UpdateScheduleAsync(int moduleId, int scheduleId, ScheduleCreateModel scheduleCreate);
+
+        /// <summary>
+        /// Update a schedule's file by sending a POST request to the API
+        /// </summary>
+        /// <param name="mId">
+        /// The id of the module to which belong the schedule
+        /// </param>
+        /// <param name="sId">
+        /// The id of the schedule to which belong the file
+        /// </param>
+        /// <param name="files">
+        /// The list of files to upload
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. The API response is NoContent. 
+        /// So the data is true if the request is successful, false otherwise.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<bool>> UploadFilesAsync(int mId, int sId, IEnumerable<IBrowserFile> files);
     }
 }

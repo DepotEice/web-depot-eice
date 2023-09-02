@@ -49,6 +49,8 @@ namespace Web.DepotEice.UIL.Profiles
             CreateMap<ScheduleModel, ScheduleDetailsModel>();
 
             CreateMap<ScheduleDetailsModel, ScheduleCreateModel>();
+
+            CreateMap<UserModuleRequestModel, UserModuleRequestDisplayModel>();
         }
     }
 }

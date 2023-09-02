@@ -92,7 +92,14 @@ namespace Web.DepotEice.BLL.IServices
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         Task<ResultModel<bool>> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId);
-        Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules();
+
+        /// <summary>
+        /// Get the users requesting to join a modules
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModuleRequestModel"/>
+        /// </returns>
+        Task<ResultModel<IEnumerable<UserModuleRequestModel>>> GetUsersRequestingModules();
 
         /// <summary>
         /// Verify the user status for a module. If the user is accepted or not
@@ -104,8 +111,23 @@ namespace Web.DepotEice.BLL.IServices
         /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. true if the user is accepted, false otherwise
         /// </returns>
         /// <exception cref="IndexOutOfRangeException"></exception>
-        Task<ResultModel<bool?>> ModuleUserStatus(int moduleId);
-        Task<bool?> UserIsAccepted(int moduleId, string userId);
+        Task<ResultModel<bool?>> GetUserModuleStatus(int moduleId);
+
+        /// <summary>
+        /// Get the user status for a module by sending a GET request to the API. If the user is accepted or not
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module
+        /// </param>
+        /// <param name="userId">
+        /// The id of the user
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. true if the user is accepted, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<bool>> GetUserModuleStatus(int moduleId, string userId);
 
         /// <summary>
         /// Request acceptance for a module by sending a POST request to the API
@@ -212,5 +234,25 @@ namespace Web.DepotEice.BLL.IServices
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         Task<ResultModel<bool>> UploadFilesAsync(int mId, int sId, IEnumerable<IBrowserFile> files);
+
+        /// <summary>
+        /// Set the status of the user in the module
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which belong the user
+        /// </param>
+        /// <param name="userId">
+        /// The id of the user for which to set the status
+        /// </param>
+        /// <param name="status">
+        /// The value of the status
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. The API response is NoContent, so the data is 
+        /// true if the request is successful, false otherwise.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<bool>> SetUserModuleStatusAsync(int moduleId, string userId, bool status);
     }
 }

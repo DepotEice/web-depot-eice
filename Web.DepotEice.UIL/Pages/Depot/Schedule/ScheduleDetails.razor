@@ -29,26 +29,41 @@
 
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
-        <div class="border-bottom pb-3">
+        <div class="pb-3">
             <div class="row mb-3">
                 <label class="form-label" for="schedule-title">Intitulé</label>
-                <InputText @bind-Value="Schedule.Title" id="schedule-title" class="form-control" disabled="@(!IsTeacher)" />
-                <ValidationMessage For="() => Schedule.Title" class="text-danger" />
+                <Authorize Role="@UserManager.TEACHER_ROLE">
+                    <Authorized>
+                        <InputText @bind-Value="Schedule.Title" id="schedule-title" class="form-control" />
+                        <ValidationMessage For="() => Schedule.Title" class="text-danger" />
+                    </Authorized>
+                    <Unauthorized>
+                        <span id="schedule-title" class="form-control">@Schedule.Title</span>
+                    </Unauthorized>
+                </Authorize>
             </div>
 
             <div class="row mb-3">
                 <label class="form-label" for="schedule-details">Détails</label>
-                <InputTextArea @bind-Value="Schedule.Details" id="schedule-details" class="form-control"
-                               style="height:25rem" disabled="@(!IsTeacher)" />
-                <ValidationMessage For="() => Schedule.Details" class="text-danger" />
+                <Authorize Role="@UserManager.TEACHER_ROLE">
+                    <Authorized>
+                        <InputTextArea @bind-Value="Schedule.Details" id="schedule-details" class="form-control"
+                                       style="height:25rem" />
+                        <ValidationMessage For="() => Schedule.Details" class="text-danger" />
+                    </Authorized>
+                    <Unauthorized>
+                        <span id="schedule-details" class="form-control" style="height:25rem">
+                            @Schedule.Details
+                        </span>
+                    </Unauthorized>
+                </Authorize>
+
             </div>
         </div>
 
-        <div class="my-4 border-bottom">
-            <div class="row my-3">
-                <h4 class="text-center align-bottom">Fichiers</h4>
-            </div>
+        <hr />
 
+        <div class="my-4">
             <Authorize Role="@UserManager.TEACHER_ROLE">
                 <Authorized>
                     <div class="my-3">
@@ -60,12 +75,16 @@
             @foreach (var file in Schedule.ScheduleFiles)
             {
                 <div class="input-group mb-3">
-                    <a href="@($"{ApiBaseAddress}/Files/ByFileName/{file.FileName}")" class="form-control" style="min-width:50%" download>
+                    <a href="@($"{ApiBaseAddress}/Files/ByFileName/{file.FileName}")" class="form-control" download>
                         @file.FileName
                     </a>
-                    <button type="button" class="btn btn-outline-danger" @onclick="(() => DeleteFileAsync(file.Id))">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <Authorize Role="@UserManager.TEACHER_ROLE">
+                        <Authorized>
+                            <button type="button" class="btn btn-outline-danger" @onclick="(() => DeleteFileAsync(file.Id))">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </Authorized>
+                    </Authorize>
                 </div>
             }
         </div>
@@ -108,11 +127,6 @@
     public List<ToastMessage> ToastMessages { get; set; } = new();
 
     /// <summary>
-    /// Specify if the current user is the teacher
-    /// </summary>
-    public bool IsTeacher { get; private set; } = false;
-
-    /// <summary>
     /// List of files to delete
     /// </summary>
     public List<ScheduleFileModel> FilesToDelete { get; set; } = new();
@@ -137,8 +151,6 @@
         PreloadService?.Show();
 
         Schedule = await ScheduleManager.GetScheduleAsync(Id);
-
-        IsTeacher = await UserManager.HasRole(UserManager.TEACHER_ROLE, Schedule.ModuleId);
 
         try
         {

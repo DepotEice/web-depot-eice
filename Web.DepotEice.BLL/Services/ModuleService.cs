@@ -315,25 +315,42 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules()
+        /// <summary>
+        /// Get the users requesting to join a modules
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModuleRequestModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<UserModuleRequestModel>>> GetUsersRequestingModules()
         {
             HttpResponseMessage response =
                 await _httpClient.GetAsync("Modules/RequestingUsers");
 
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<IEnumerable<UserModuleRequestModel>>();
-
-            if (result is null)
+            ResultModel<IEnumerable<UserModuleRequestModel>> result = new()
             {
-                return Enumerable.Empty<UserModuleRequestModel>();
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<UserModuleRequestModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(GetUsersRequestingModules),
+                    ex.Message
+                );
             }
 
             return result;
         }
 
         /// <summary>
-        /// Verify the user status for a module. If the user is accepted or not
+        /// Get the user status for a module by sending a GET request to the API. If the user is accepted or not
         /// </summary>
         /// <param name="moduleId">
         /// The id of the module
@@ -342,7 +359,7 @@ namespace Web.DepotEice.BLL.Services
         /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. true if the user is accepted, false otherwise
         /// </returns>
         /// <exception cref="IndexOutOfRangeException"></exception>
-        public async Task<ResultModel<bool?>> ModuleUserStatus(int moduleId)
+        public async Task<ResultModel<bool?>> GetUserModuleStatus(int moduleId)
         {
             if (moduleId <= 0)
             {
@@ -367,7 +384,7 @@ namespace Web.DepotEice.BLL.Services
             {
                 _logger.LogError(
                     "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
-                    nameof(UserIsAccepted),
+                    nameof(GetUserModuleStatus),
                     ex.Message
                 );
             }
@@ -375,8 +392,27 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<bool?> UserIsAccepted(int moduleId, string userId)
+        /// <summary>
+        /// Get the user status for a module by sending a GET request to the API. If the user is accepted or not
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module
+        /// </param>
+        /// <param name="userId">
+        /// The id of the user
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. true if the user is accepted, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> GetUserModuleStatus(int moduleId, string userId)
         {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
             if (string.IsNullOrEmpty(userId))
             {
                 throw new ArgumentNullException(nameof(userId));
@@ -385,14 +421,27 @@ namespace Web.DepotEice.BLL.Services
             HttpResponseMessage response =
                 await _httpClient.GetAsync($"Modules/{moduleId}/UserRequestStatus/{userId}");
 
-            bool? result = await response.Content.ReadFromJsonAsync<bool>();
-
-            if (result is null)
+            ResultModel<bool> result = new()
             {
-                return false;
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(GetUserModuleStatus),
+                    ex.Message
+                );
             }
 
-            return result.Value;
+            return result;
         }
 
         /// <summary>
@@ -413,7 +462,7 @@ namespace Web.DepotEice.BLL.Services
             }
 
             HttpResponseMessage response =
-                 await _httpClient.PostAsync($"Modules/{moduleId}/RequestAcceptance", null);
+                 await _httpClient.PostAsync($"Modules/{moduleId}/Request", null);
 
             ResultModel<bool> result = new()
             {
@@ -857,6 +906,51 @@ namespace Web.DepotEice.BLL.Services
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Set the status of the user in the module
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which belong the user
+        /// </param>
+        /// <param name="userId">
+        /// The id of the user for which to set the status
+        /// </param>
+        /// <param name="status">
+        /// The value of the status
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. The API response is NoContent, so the data is 
+        /// true if the request is successful, false otherwise.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> SetUserModuleStatusAsync(int moduleId, string userId, bool status)
+        {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            string queryUri = $"Modules/{moduleId}/Students/{userId}/Status";
+
+            HttpResponseMessage response = await _httpClient.PutAsJsonAsync(queryUri, status);
+
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = response.IsSuccessStatusCode
+            };
+
+            return result;
         }
     }
 }

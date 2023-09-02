@@ -189,7 +189,7 @@
     {
         PreloadService?.Show();
 
-        ResultModel<bool?> userStatusResult = await ModuleService.ModuleUserStatus(Id);
+        ResultModel<bool?> userStatusResult = await ModuleService.GetUserModuleStatus(Id);
 
         if (!userStatusResult.Success)
         {

@@ -1,6 +1,7 @@
 ﻿@page "/depot/modules"
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
 @using Web.DepotEice.UIL.Models.Forms;
@@ -91,7 +92,30 @@
 
     protected override async Task OnInitializedAsync()
     {
-        NumberOfAcceptationDemands = (await ModuleService.GetUsersRequestingModules()).Count();
+        ResultModel<IEnumerable<UserModuleRequestModel>> result = await ModuleService.GetUsersRequestingModules();
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "Requesting the user asking for a module failed with status code \"{code}\".\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "Requesting the users asking for a module succeded but the data is null.\n{msg}",
+                result.Message
+            );
+
+            return;
+        }
+
+        NumberOfAcceptationDemands = result.Data.Count();
     }
 
     /// <summary>

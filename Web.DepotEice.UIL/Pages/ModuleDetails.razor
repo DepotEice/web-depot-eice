@@ -2,72 +2,72 @@
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
 
 @inject ILogger<ModuleDetails> Logger;
 @inject IMapper Mapper;
 @inject IModuleService ModuleService;
 @inject IUserService UserService;
+@inject UserManager UserManager;
 
 <h3 class="text-center my-5"></h3>
 
-@if (_module is null)
-{
-    <h4 class="text-center my-5">@_moduleErrorMessage</h4>
-}
-else
-{
-    <div class="container">
-        <div class="row mb-3 border-bottom pb-3">
-            <label class="form-label">Nom du module</label>
-            <input class="form-control" value="@_module.Name" disabled />
-        </div>
+<div class="container">
+    <div class="row mb-3 border-bottom pb-3">
+        <label class="form-label">Nom du module</label>
+        <input class="form-control" value="@Module.Name" disabled />
+    </div>
 
-        <div class="row mb-3 border-bottom pb-3">
-            <label class="form-label">Description</label>
-            <textarea disabled style="height: 10rem">@_module.Description</textarea>
-        </div>
+    <div class="row mb-3 border-bottom pb-3">
+        <label class="form-label">Description</label>
+        <textarea class="form-controlk" style="height: 10rem" disabled>@Module.Description</textarea>
+    </div>
 
-        <div class="row mb-3 border-bottom pb-3">
-            <label class="form-label">Professeur en charge</label>
-            <input class="form-control" value="@_module.TeacherFullName" disabled />
-        </div>
+    <div class="row mb-3 border-bottom pb-3">
+        <label class="form-label">Professeur en charge</label>
+        <input class="form-control" value="@Module.TeacherFullName" disabled />
+    </div>
 
-        <div class="d-flex flex-lg-row align-items-center">
-            @if (_userIsAccepted.HasValue)
-            {
-                if (_userIsAccepted.Value)
+    <Authorize Role="@UserManager.STUDENT_ROLE">
+        <Authorized>
+            <div class="d-flex flex-lg-row align-items-center">
+                @if (IsAccepted.HasValue)
                 {
-                    <button type="button" class="btn btn-outline-secondary" disabled>
-                        Vous êtes déjà inscris à ce module
-                    </button>
+                    if (IsAccepted.Value)
+                    {
+                        <button type="button" class="btn btn-outline-secondary" disabled>
+                            Vous êtes déjà inscris à ce module
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btnbtn-outline-secondary" disabled>
+                            Votre demande est en cours de traitement
+                        </button>
+                    }
                 }
                 else
                 {
-                    <button type="button" class="btn btnbtn-outline-secondary" disabled>
-                        Votre demande est en cours de traitement
+                    <button type="button" class="btn btn-outline-primary" @onclick="RequestAcceptance">
+                        S'inscrire au module
                     </button>
                 }
-            }
-            else
-            {
-                <button type="button" class="btn btn-outline-primary" @onclick="RequestAcceptance">
-                    Demander à s'inscrire
-                </button>
-            }
-            <NavLink href="#" class="mx-3">Voir l'horaire</NavLink>
-        </div>
-
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <span class="text-danger">@_errorMessage</span>
-        }
-    </div>
-}
+                <NavLink href="#" class="mx-3">Voir l'horaire</NavLink>
+            </div>
+        </Authorized>
+    </Authorize>
+</div>
 
 <Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 
 @code {
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
+
+    /// <summary>
+    /// The id of the module to display
+    /// </summary>
     [Parameter]
     public int Id { get; set; }
 
@@ -76,14 +76,25 @@ else
     /// </summary>
     public List<ToastMessage> ToastMessages { get; private set; } = new();
 
-    private string _moduleErrorMessage = string.Empty;
-    private string _errorMessage = string.Empty;
-    private bool? _userIsAccepted = false;
-    private ModuleDisplayModel _module = new();
+    /// <summary>
+    /// User is accepted in the module
+    /// </summary>
+    public bool? IsAccepted { get; private set; }
 
+    /// <summary>
+    /// The module to display
+    /// </summary>
+    public ModuleDisplayModel Module { get; private set; } = new();
+
+    /// <summary>
+    /// Initialization of the component
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        var moduleResult = await ModuleService.GetModuleAsync(Id);
+        PreloadService?.Show();
+
+        ResultModel<ModuleModel> moduleResult = await ModuleService.GetModuleAsync(Id);
 
         if (!moduleResult.Success)
         {
@@ -95,6 +106,8 @@ else
                 $"Le chargement du module a échoué.\n{moduleResult.Message}",
                 false
             );
+
+            PreloadService?.Hide();
 
             return;
         }
@@ -110,16 +123,18 @@ else
                 false
             );
 
+            PreloadService?.Hide();
+
             return;
         }
 
         ModuleModel moduleFromRepo = moduleResult.Data;
 
-        _module = Mapper.Map<ModuleDisplayModel>(moduleFromRepo);
+        Module = Mapper.Map<ModuleDisplayModel>(moduleFromRepo);
 
         try
         {
-            var result = await UserService.GetUserAsync(moduleFromRepo.TeacherId);
+            ResultModel<UserModel> result = await UserService.GetUserAsync(moduleFromRepo.TeacherId);
 
             if (!result.Success)
             {
@@ -135,40 +150,117 @@ else
                 return;
             }
 
-            var teacher = result.Data;
+            UserModel? teacher = result.Data;
 
             if (teacher is not null)
             {
-                _module.TeacherFullName = $"{teacher.LastName.ToUpper()} {teacher.FirstName}";
+                Module.TeacherFullName = $"{teacher.LastName.ToUpper()} {teacher.FirstName}";
             }
         }
         catch (Exception e)
         {
-            Logger.LogError($"{DateTime.Now} - An exception was thrown when retrieving user and setting user full " +
-                $"name.\n{e.Message}\n{e.StackTrace}");
+            Logger.LogError(
+                "{date} - An exception was thrown when retrieving user and setting user fullname.\n{eMsg}\n{eStr}",
+                DateTime.Now,
+                e.Message,
+                e.StackTrace
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Récupération du professeur",
+                $"La récupération du professeur en charge du module a échoué.\n{e.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
         }
 
-        // TODO : Check not if user is accepted but rather if there is a request and based on the value of the request
-        // show pending request button if false and "You are already registered"
-        _userIsAccepted = await ModuleService.UserIsAccepted(Id);
+        await SetIsAccepted();
+
+        PreloadService?.Hide();
     }
 
+    /// <summary>
+    /// Set the value of <see cref="IsAccepted"/> property
+    /// </summary>
+    /// <returns></returns>
+    private async Task SetIsAccepted()
+    {
+        PreloadService?.Show();
+
+        ResultModel<bool?> userStatusResult = await ModuleService.ModuleUserStatus(Id);
+
+        if (!userStatusResult.Success)
+        {
+            Logger.LogError(
+                "The request of the user status has failed with status code \"{code}\".\n{msg}",
+                userStatusResult.Code,
+                userStatusResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Récupération du status",
+                $"La récupération de votre status par rapport au module a échoué.\n{userStatusResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        IsAccepted = userStatusResult.Data;
+
+        PreloadService?.Hide();
+    }
+
+    /// <summary>
+    /// Request the acceptance of the user in the module
+    /// </summary>
+    /// <returns></returns>
     public async Task RequestAcceptance()
     {
-        bool result = await ModuleService.RequestAcceptance(Id);
+        PreloadService?.Show();
 
-        if (!result)
+        ResultModel<bool> result = await ModuleService.RequestAcceptance(Id);
+
+        if (!result.Success)
         {
-            Logger.LogError($"{DateTime.Now} - The request failed");
-            _errorMessage = "La demande a échouée";
-        }
-        else
-        {
-            _errorMessage = "La demande est en cours";
+            Logger.LogError(
+                "The request of the user status has failed with status code \"{code}\".\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Demande d'inscription",
+                $"La demande d'inscription au module a échoué.\n{result.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
         }
 
-        _userIsAccepted = await ModuleService.UserIsAccepted(Id);
+        if (result.Data)
+        {
+            ShowMessage(
+                ToastType.Success,
+                "Demande d'inscription",
+                $"La demande d'inscription au module a réussi.\n{result.Message}",
+                false
+            );
+        }
+
+        await SetIsAccepted();
+
         StateHasChanged();
+
+        PreloadService?.Hide();
     }
 
     /// <summary>

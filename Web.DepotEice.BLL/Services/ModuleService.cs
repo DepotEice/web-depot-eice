@@ -332,7 +332,17 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<bool?> UserIsAccepted(int moduleId)
+        /// <summary>
+        /// Verify the user status for a module. If the user is accepted or not
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. true if the user is accepted, false otherwise
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        public async Task<ResultModel<bool?>> ModuleUserStatus(int moduleId)
         {
             if (moduleId <= 0)
             {
@@ -342,14 +352,27 @@ namespace Web.DepotEice.BLL.Services
             HttpResponseMessage response =
                  await _httpClient.GetAsync($"Modules/{moduleId}/UserRequestStatus");
 
-            bool? result = await response.Content.ReadFromJsonAsync<bool>();
-
-            if (result is null)
+            ResultModel<bool?> result = new()
             {
-                return false;
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(UserIsAccepted),
+                    ex.Message
+                );
             }
 
-            return result.Value;
+            return result;
         }
 
         public async Task<bool?> UserIsAccepted(int moduleId, string userId)
@@ -372,12 +395,47 @@ namespace Web.DepotEice.BLL.Services
             return result.Value;
         }
 
-        public async Task<bool> RequestAcceptance(int moduleId)
+        /// <summary>
+        /// Request acceptance for a module by sending a POST request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which the user want to be accepted
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. true if the request was successful, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<bool>> RequestAcceptance(int moduleId)
         {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
             HttpResponseMessage response =
                  await _httpClient.PostAsync($"Modules/{moduleId}/RequestAcceptance", null);
 
-            return response.IsSuccessStatusCode;
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<bool>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(RequestAcceptance),
+                    ex.Message
+                );
+            }
+
+            return result;
         }
 
         /// <summary>

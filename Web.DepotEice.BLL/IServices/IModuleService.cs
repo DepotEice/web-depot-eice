@@ -93,9 +93,31 @@ namespace Web.DepotEice.BLL.IServices
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         Task<ResultModel<bool>> DeleteScheduleFileAsync(int moduleId, int scheduleId, int scheduleFileId);
         Task<IEnumerable<UserModuleRequestModel>> GetUsersRequestingModules();
-        Task<bool?> UserIsAccepted(int moduleId);
+
+        /// <summary>
+        /// Verify the user status for a module. If the user is accepted or not
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. true if the user is accepted, false otherwise
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        Task<ResultModel<bool?>> ModuleUserStatus(int moduleId);
         Task<bool?> UserIsAccepted(int moduleId, string userId);
-        Task<bool> RequestAcceptance(int moduleId);
+
+        /// <summary>
+        /// Request acceptance for a module by sending a POST request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which the user want to be accepted
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. true if the request was successful, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<bool>> RequestAcceptance(int moduleId);
 
         /// <summary>
         /// Get all the schedules by sending a GET request to the API

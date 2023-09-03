@@ -1,6 +1,4 @@
-﻿using Syncfusion.Blazor.HeatMap;
-
-namespace Web.DepotEice.UIL.Models
+﻿namespace Web.DepotEice.UIL.Models
 {
     public class ScheduleDisplayModel
     {

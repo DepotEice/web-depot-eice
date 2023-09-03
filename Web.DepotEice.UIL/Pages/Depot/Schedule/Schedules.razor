@@ -27,9 +27,19 @@
                      AppointmentRender="OnAppointmentRender" Culture="System.Globalization.CultureInfo.CurrentCulture"
                      TodayText="Aujourd'hui" AppointmentSelect="OnAppointmentSelected">
 
-        <RadzenDayView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Jour" TimeFormat="HH:mm" />
-        <RadzenWeekView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Semaine" TimeFormat="HH:mm" />
-        <RadzenMonthView Text="Mois" />
+        <Template>
+            <div class="row">
+                <span class="fs-6 fw-bold mb-2">@context.ModuleName</span>
+                <span class="fst-italic mb-2">@context.Title</span>
+                <span>@context.Details</span>
+            </div>
+        </Template>
+
+        <ChildContent>
+            <RadzenDayView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Jour" TimeFormat="HH:mm" />
+            <RadzenWeekView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Semaine" TimeFormat="HH:mm" />
+            <RadzenMonthView Text="Mois" />
+        </ChildContent>
 
     </RadzenScheduler>
 

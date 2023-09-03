@@ -29,6 +29,18 @@ else
     public string? Role { get; set; }
 
     /// <summary>
+    /// On authorized callback
+    /// </summary>
+    [Parameter]
+    public Func<bool>? OnAuthorized { get; set; }
+
+    /// <summary>
+    /// On authorized async call back
+    /// </summary>
+    [Parameter]
+    public Func<Task<bool>>? OnAuthorizedAsync { get; set; }
+
+    /// <summary>
     /// The fragment rendered if the user is authorized
     /// </summary>
     [Parameter]
@@ -73,6 +85,16 @@ else
         else
         {
             IsAuthorized = await UserManager.IsInRoleAsync(Role);
+        }
+
+        if (OnAuthorized is not null)
+        {
+            IsAuthorized = OnAuthorized.Invoke();
+        }
+
+        if (OnAuthorizedAsync is not null)
+        {
+            IsAuthorized = await OnAuthorizedAsync.Invoke();
         }
 
         PreloadService?.Hide();

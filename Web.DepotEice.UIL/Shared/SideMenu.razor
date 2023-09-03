@@ -1,58 +1,73 @@
 ﻿@using Web.DepotEice.UIL.Managers;
 
 @inject UserManager UserManager;
+@inject NavigationManager NavigationManager;
+@inject ILogger<SideMenu> Logger;
 
-<div class="col-sm-auto sticky-top">
-    <div class="d-flex flex-sm-column flex-row flex-nowrap align-items-center sticky-top">
-        <ul class="nav nav-flush flex-sm-column flex-row flex-nowrap mb-auto mx-auto text-center align-items-center">
+<div class="col-sm-auto col-md-2 sticky-top py-5">
+    <div class="d-flex flex-sm-column flex-row flex-nowrap sticky-top">
+        <ul class="nav nav-flush flex-sm-column flex-row flex-nowrap">
             <li>
-                <NavLink href="depot/schedules" class="nav-link py-3 px-2 link-dark" title="" data-bs-toggle="tooltip"
-                         data-bs-placement="right" data-bs-original-title="Schedules">
-                    <i class="bi bi-journal fs-2"></i>
+                <NavLink Match="NavLinkMatch.Prefix" href="depot/schedules" class="nav-link py-2 link-dark row d-flex"
+                         title="Calendrier" data-bs-toggle="tooltip" data-bs-placement="right"
+                         data-bs-original-title="Schedules">
+
+                    <i class="bi bi-journal fs-2 col-md-3"></i>
+                    <span class="text-description fs-3 col-md align-self-center fw-normal">Calendrier</span>
                 </NavLink>
             </li>
             <li>
-                <NavLink href="/depot/modules" class="nav-link py-2 px-3 link-dark" title=""
-                         data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Dashboard">
-                    <i class="bi bi-book fs-2"></i>
+                <NavLink Match="NavLinkMatch.Prefix" href="/depot/modules" class="nav-link py-2 link-dark row d-flex" title="Modules"
+                         data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Modules">
+                    <i class="bi bi-book fs-2 col-3"></i>
+                    <span class="text-description fs-3 col-md align-self-center fw-normal">Modules</span>
                 </NavLink>
             </li>
-            @if (IsDirection)
-            {
-                <li>
-                    <NavLink href="/depot/users" class="d-block p-2 link-dark text-decoration-none" title="" data-bs-toggle="tooltip"
-                             data-bs-placement="right" data-bs-original-title="Icon-only">
-                        <i class="bi bi-people fs-2"></i>
-                    </NavLink>
-                </li>
-                <li>
-                    <NavLink href="depot/manageopeninghours" class="nav-link py-3 px-2 link-dark" title=""
-                             data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Orders">
-                        <i class="bi bi-clock fs-2"></i>
-                    </NavLink>
-                </li>
-                <li>
-                    <NavLink href="depot/manage-appointments" class="nav-link py-3 px-2 link-dark" title=""
-                             data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Orders">
-                        <i class="bi bi-calendar4-week fs-2"></i>
-                    </NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink href="/depot/articles" class="nav-link py-2 px-3 link-dark" title=""
-                             data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Home">
-                        <i class="bi bi-newspaper fs-2"></i>
-                    </NavLink>
-                </li>
-            }
+            <Authorize Role="@UserManager.DIRECTION_ROLE">
+                <Authorized>
+                    <li>
+                        <NavLink href="/depot/users" class="nav-link py-2 link-dark row d-flex" title="Utilisateurs"
+                                 data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Icon-only">
+                            <i class="bi bi-people fs-2 col-md-3"></i>
+                            <span class="text-description fs-3 col-md align-self-center fw-normal">Utilisateurs</span>
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink href="depot/manageopeninghours" class="nav-link py-2 link-dark row d-flex" title=""
+                                 data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Orders">
+                            <i class="bi bi-clock fs-2 col-md-3"></i>
+                            <span class="text-description fs-3 col-md align-self-center fw-normal">Horaires</span>
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink href="depot/manage-appointments" class="nav-link py-2 link-dark row d-flex" title=""
+                                 data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Orders">
+                            <i class="bi bi-calendar4-week fs-2 col-md-3"></i>
+                            <span class="text-description fs-3 col-md align-self-center fw-normal">Rendez-vous</span>
+                        </NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink href="/depot/articles" class="nav-link py-2 link-dark row d-flex" title=""
+                                 data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Home">
+                            <i class="bi bi-newspaper fs-2 col-md-3"></i>
+                            <span class="text-description fs-3 col-md align-self-center fw-normal">Articles</span>
+                        </NavLink>
+                    </li>
+                </Authorized>
+            </Authorize>
         </ul>
     </div>
 </div>
 
 @code {
-    public bool IsDirection { get; private set; } = false;
-
-    protected override async Task OnInitializedAsync()
+    bool IsActive(string href, NavLinkMatch navLinkMatch = NavLinkMatch.Prefix)
     {
-        IsDirection = await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE);
+        var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).ToLower();
+
+        Logger.LogInformation(relativePath);
+
+        return navLinkMatch == NavLinkMatch.All ? relativePath == href.ToLower() : relativePath.StartsWith(href.ToLower());
     }
+
+    string GetActive(string href, NavLinkMatch navLinkMatch = NavLinkMatch.All) => IsActive(href, navLinkMatch) ? "active" : "";
 }

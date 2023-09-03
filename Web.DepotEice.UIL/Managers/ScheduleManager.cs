@@ -51,9 +51,19 @@ namespace Web.DepotEice.UIL.Managers
         /// <returns>
         /// <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleDisplayModel"/>
         /// </returns>
-        public async Task<IEnumerable<ScheduleDisplayModel>> GetSchedulesAsync(DateTime selectedDate, DateRange dateRange)
+        public async Task<IEnumerable<ScheduleDisplayModel>> GetSchedulesAsync(DateTime selectedDate,
+            DateRange dateRange, int? mId = null)
         {
-            ResultModel<IEnumerable<ScheduleModel>> result = await _moduleService.GetSchedulesAsync(selectedDate, (int)dateRange);
+            ResultModel<IEnumerable<ScheduleModel>> result;
+
+            if (mId.HasValue)
+            {
+                result = await _moduleService.GetSchedulesAsync(mId.Value, selectedDate, (int)dateRange);
+            }
+            else
+            {
+                result = await _moduleService.GetSchedulesAsync(selectedDate, (int)dateRange);
+            }
 
             if (!result.Success)
             {

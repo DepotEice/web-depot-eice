@@ -23,8 +23,15 @@
     <div class="">
         <div class="mb-3">
             <label class="form-label" for="modules-select">Module</label>
-            <select class="form-select">
-                <option>test</option>
+
+            <select DisplayName="Une erreur est survenue" id="modules-select" class="form-select" @onchange="OnSelectedModuleChanged"
+                    selected="@SelectedModule?.Id">
+                <option value="null"></option>
+
+                @foreach (var module in Modules)
+                {
+                    <option value="@module.Id">@module.Name</option>
+                }
             </select>
         </div>
 
@@ -87,18 +94,79 @@
     /// </summary>
     public IEnumerable<ScheduleDisplayModel> SchedulesList { get; private set; } = new List<ScheduleDisplayModel>();
 
+    public IEnumerable<ModuleModel> Modules { get; set; } = new List<ModuleModel>();
+
+    public ModuleModel? SelectedModule { get; set; }
+
     /// <summary>
     /// Initialization of the component
     /// </summary>
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        await LoadModulesAsync();
         await LoadSchedulesAsync();
     }
 
     private async Task LoadSchedulesAsync()
     {
-        SchedulesList = await ScheduleManager.GetSchedulesAsync(SelectedDateTime, SelectedDateRange);
+        SchedulesList = await ScheduleManager.GetSchedulesAsync(SelectedDateTime, SelectedDateRange, SelectedModule?.Id);
+    }
+
+    private async Task LoadModulesAsync()
+    {
+        ResultModel<IEnumerable<ModuleModel>> modulesResult = await ModuleService.GetModulesAsync();
+
+        if (!modulesResult.Success)
+        {
+            Logger.LogError(
+                "Requesting the modules failed with status code {code}.\n{msg}",
+                modulesResult.Code,
+                modulesResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des modules",
+                $"Le chargement des modules a échoué.\n{modulesResult.Message}",
+                false
+            );
+
+            return;
+        }
+
+        if (modulesResult.Data is null)
+        {
+            Logger.LogError(
+                "The modules request succeded but the data is null.\n{msg}",
+                modulesResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des modules",
+                $"Le chargement des modules a réussi mais aucune donnée n'a été retourné.\n{modulesResult.Message}",
+                false
+            );
+
+            return;
+        }
+
+        Modules = modulesResult.Data;
+    }
+
+    private void OnSelectedModuleChanged(ChangeEventArgs args)
+    {
+        if (args is not null && args.Value is not null && int.TryParse(args.Value.ToString(), out int id))
+        {
+            SelectedModule = Modules.SingleOrDefault(m => m.Id == id);
+        }
+        else
+        {
+            SelectedModule = null;
+        }
+
+        Scheduler.Reload();
     }
 
     private void OnSelectedDateTimeChanged(DateTime? value)

@@ -170,17 +170,34 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<IEnumerable<ModuleModel>> GetModulesAsync()
+        /// <summary>
+        /// Get the modules by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ModuleModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<ModuleModel>>> GetModulesAsync()
         {
             HttpResponseMessage response = await _httpClient.GetAsync("Modules");
 
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<IEnumerable<ModuleModel>>();
-
-            if (result is null)
+            ResultModel<IEnumerable<ModuleModel>> result = new()
             {
-                return Enumerable.Empty<ModuleModel>();
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<ModuleModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(GetModulesAsync),
+                    ex.Message
+                );
             }
 
             return result;
@@ -538,22 +555,62 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<IEnumerable<ScheduleModel>> GetSchedulesAsync(int moduleId)
+        /// <summary>
+        /// Get all the schedules for a module by sending a GET request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which the schedules belong
+        /// </param>
+        /// <param name="selectedDate">
+        /// The date to get the schedules from
+        /// </param>
+        /// <param name="range">
+        /// The date range to get the schedules from
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        public async Task<ResultModel<IEnumerable<ScheduleModel>>> GetSchedulesAsync(int moduleId,
+            DateTime? selectedDate = null, int? range = null)
         {
             if (moduleId <= 0)
             {
                 throw new IndexOutOfRangeException(nameof(moduleId));
             }
 
+            string queryUrl = $"Modules/{moduleId}/Schedules?";
+
+            if (selectedDate.HasValue)
+            {
+                queryUrl += $"selectedDate={selectedDate.Value:s}&";
+            }
+
+            if (range.HasValue)
+            {
+                queryUrl += $"range={range.Value}&";
+            }
+
             HttpResponseMessage response = await _httpClient.GetAsync($"Modules/{moduleId}/Schedules");
 
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
-
-            if (result is null)
+            ResultModel<IEnumerable<ScheduleModel>> result = new()
             {
-                return Enumerable.Empty<ScheduleModel>();
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<ScheduleModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(DeleteScheduleAsync),
+                    ex.Message
+                );
             }
 
             return result;

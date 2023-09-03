@@ -10,7 +10,13 @@ namespace Web.DepotEice.BLL.IServices
 {
     public interface IModuleService
     {
-        Task<IEnumerable<ModuleModel>> GetModulesAsync();
+        /// <summary>
+        /// Get the modules by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ModuleModel"/>
+        /// </returns>
+        Task<ResultModel<IEnumerable<ModuleModel>>> GetModulesAsync();
 
         /// <summary>
         /// Create a new module by sending a POST request to the API with the given form in parameter
@@ -153,8 +159,26 @@ namespace Web.DepotEice.BLL.IServices
         /// <returns>
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
         /// </returns>
-        Task<ResultModel<IEnumerable<ScheduleModel>>> GetSchedulesAsync(DateTime? selectedDate = null, int? dateRange = null);
-        Task<IEnumerable<ScheduleModel>> GetSchedulesAsync(int moduleId);
+        Task<ResultModel<IEnumerable<ScheduleModel>>> GetSchedulesAsync(DateTime? selectedDate = null, int? range = null);
+
+        /// <summary>
+        /// Get all the schedules for a module by sending a GET request to the API
+        /// </summary>
+        /// <param name="moduleId">
+        /// The id of the module to which the schedules belong
+        /// </param>
+        /// <param name="selectedDate">
+        /// The date to get the schedules from
+        /// </param>
+        /// <param name="range">
+        /// The date range to get the schedules from
+        /// </param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        Task<ResultModel<IEnumerable<ScheduleModel>>> GetSchedulesAsync(int moduleId, DateTime? selectedDate = null,
+            int? range = null);
 
         /// <summary>
         /// The the schedule details by sending a GET request to the API

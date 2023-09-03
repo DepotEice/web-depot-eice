@@ -2,7 +2,6 @@
 @page "/depot/"
 
 @using AutoMapper;
-@using Syncfusion.Blazor.Schedule
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
@@ -12,14 +11,29 @@
 @inject ILogger<Schedules> Logger;
 @inject IMapper Mapper;
 @inject IModuleService ModuleService;
-@inject UserManager UserManager;
 @inject IUserService UserService;
+@inject UserManager UserManager;
 @inject ScheduleManager ScheduleManager;
 @inject NavigationManager NavigationManager;
 
-<h3 class="text-center my-5">Calendrier</h3>
+<h3 class="text-center my-md-5">Calendrier</h3>
 
 <div class="container">
+
+    <div class="">
+        <div class="mb-3">
+            <label class="form-label" for="modules-select">Module</label>
+            <select class="form-select">
+                <option>test</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="selected-date">Date</label>
+            <RadzenDatePicker TValue="DateTime" Value="SelectedDateTime" Inline="true" id="selected-date"
+                              class="form-control" Change="OnSelectedDateTimeChanged" />
+        </div>
+    </div>
 
     <RadzenScheduler @ref="@Scheduler" style="height: 50rem;" SlotRender="OnSlotRender" LoadData="OnDataLoaded"
                      TItem="ScheduleDisplayModel" Data="SchedulesList" StartProperty="StartTime"
@@ -85,6 +99,24 @@
     private async Task LoadSchedulesAsync()
     {
         SchedulesList = await ScheduleManager.GetSchedulesAsync(SelectedDateTime, SelectedDateRange);
+    }
+
+    private void OnSelectedDateTimeChanged(DateTime? value)
+    {
+        if (value.HasValue)
+        {
+            if (SelectedDateRange == DateRange.Month)
+            {
+                DateTime currentDate = Scheduler.CurrentDate;
+                Scheduler.CurrentDate = new DateTime(value.Value.Year, value.Value.Month, currentDate.Day);
+            }
+            else
+            {
+                Scheduler.CurrentDate = value.Value;
+            }
+
+            Scheduler.Reload();
+        }
     }
 
     /// <summary>

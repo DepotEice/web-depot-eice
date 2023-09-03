@@ -185,9 +185,10 @@ namespace Web.DepotEice.BLL.Services
         /// <returns>
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{AppointmentModel}"/> where T is <see cref="AppointmentModel"/>
         /// </returns>
-        public async Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(DateTime? date = null, int? dateRange = null)
+        public async Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(bool me = false,
+            DateTime? date = null, int? dateRange = null)
         {
-            string queryUri = "Appointments";
+            string queryUri = me ? "Appointments/me" : "Appointments";
 
             if (date.HasValue)
             {
@@ -214,8 +215,11 @@ namespace Web.DepotEice.BLL.Services
             }
             catch (Exception e)
             {
-                _logger.LogInformation($"{nameof(GetAppointmentsAsync)}: An exception was thrown, cannot " +
-                        $"read the result as json.\n{e.Message}");
+                _logger.LogInformation(
+                    "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}",
+                    nameof(GetAppointmentsAsync),
+                    e.Message
+                );
             }
 
             return result;

@@ -199,7 +199,7 @@
             TimeSpan startTime = openingHours.OpenAt.TimeOfDay;
             TimeSpan endTime = openingHours.CloseAt.TimeOfDay;
 
-            var appointmentsResult = await AppointmentService.GetAppointmentsAsync(AppointmentForm.From);
+            var appointmentsResult = await AppointmentService.GetAppointmentsAsync(false, AppointmentForm.From);
 
             if (!appointmentsResult.Success)
             {

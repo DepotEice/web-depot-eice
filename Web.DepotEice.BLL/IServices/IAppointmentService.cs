@@ -42,7 +42,8 @@ namespace Web.DepotEice.BLL.IServices
         /// <returns>
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{AppointmentModel}"/> where T is <see cref="AppointmentModel"/>
         /// </returns>
-        Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(DateTime? date = null, int? dateRange = null);
+        Task<ResultModel<IEnumerable<AppointmentModel>>> GetAppointmentsAsync(bool me = false, DateTime? date = null, 
+            int? dateRange = null);
 
         /// <summary>
         /// Get an appointment by sending a GET request to the API

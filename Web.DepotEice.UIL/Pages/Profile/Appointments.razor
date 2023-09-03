@@ -4,6 +4,7 @@
 @using Web.DepotEice.BLL.Models;
 
 @inject IAppointmentService AppointmentService;
+@inject ILogger<Appointments> Logger;
 
 <PageTitle>EICE - Mes rendez-vous</PageTitle>
 
@@ -13,6 +14,11 @@
 
     @if (ExistingAppointments is not null)
     {
+        if (ExistingAppointments.Count <= 0)
+        {
+            <span>Vous n'avez actuellement aucun rendez-vous</span>
+        }
+
         for (int i = 1; i < ExistingAppointments.Count; i++)
         {
             AppointmentModel appointment = ExistingAppointments[i];
@@ -52,7 +58,7 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        ResultModel<IEnumerable<AppointmentModel>> appointments = await AppointmentService.GetAppointmentsAsync();
+        ResultModel<IEnumerable<AppointmentModel>> appointments = await AppointmentService.GetAppointmentsAsync(true);
 
         if (!appointments.Success)
         {
@@ -75,6 +81,8 @@
         }
 
         ExistingAppointments = appointments.Data.OrderByDescending(a => a.StartAt).ToList();
+
+        StateHasChanged();
     }
 
     /// <summary>

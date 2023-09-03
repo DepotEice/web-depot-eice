@@ -56,7 +56,7 @@ namespace Web.DepotEice.UIL.Managers
         public async Task<IEnumerable<AppointmentDisplayModel>> GetDisplayAppointmentsAsync(DateTime dateTime, DateRange range)
         {
             ResultModel<IEnumerable<AppointmentModel>> resultModel =
-                await _appointmentService.GetAppointmentsAsync(dateTime, (int)range);
+                await _appointmentService.GetAppointmentsAsync(false, dateTime, (int)range);
 
             if (!resultModel.Success)
             {

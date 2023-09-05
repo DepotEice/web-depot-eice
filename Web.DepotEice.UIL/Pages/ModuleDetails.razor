@@ -1,7 +1,9 @@
 ﻿@page "/modules/details/{Id:int}"
+
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.Helpers;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
 
@@ -11,22 +13,47 @@
 @inject IUserService UserService;
 @inject UserManager UserManager;
 
-<h3 class="text-center my-5"></h3>
-
 <div class="container">
-    <div class="row mb-3 border-bottom pb-3">
-        <label class="form-label">Nom du module</label>
-        <input class="form-control" value="@Module.Name" disabled />
+
+    @if (!string.IsNullOrEmpty(ReturnUrl))
+    {
+        <div class="row">
+            <a href="@ReturnUrl"><i class="bi bi-arrow-left me-1"></i>Revenir à la page précédente</a>
+        </div>
+    }
+
+    <h3 class="my-md-3">@Module.Name</h3>
+
+    <div class="row mb-3">
+        <span class="fs-6 fst-italic">@Module.TeacherFullName</span>
     </div>
 
-    <div class="row mb-3 border-bottom pb-3">
-        <label class="form-label">Description</label>
-        <textarea class="form-control" style="height: 10rem" disabled>@Module.Description</textarea>
+    <div class="row mb-3 pb-3 border-bottom" style="border-radius: 2rem;">
+        <span class="fs-5 text-wrap">@Module.Description</span>
     </div>
 
-    <div class="row mb-3 border-bottom pb-3">
-        <label class="form-label">Professeur en charge</label>
-        <input class="form-control" value="@Module.TeacherFullName" disabled />
+    <div class="row mb-3">
+        <p>
+            Les cours auront lieu du <b> @FirstDay.ToString("D") </b> au <b> @LastDay.ToString("D") </b> <br />
+            Le : <br />
+
+            @if (SchedulesOfWeek is not null && SchedulesOfWeek.Count > 0)
+            {
+                <ul>
+                    @foreach (var schedule in SchedulesOfWeek)
+                    {
+                        <li>
+                            @(((DaysOfTheWeekFr)schedule.StartAt.DayOfWeek).ToString())
+                            de
+                            @schedule.StartAt.ToString("t")
+                            à
+                            @schedule.EndAt.ToString("t")
+                        </li>
+                    }
+                </ul>
+            }
+
+        </p>
     </div>
 
     <Authorize Role="@UserManager.STUDENT_ROLE">
@@ -72,6 +99,13 @@
     public int Id { get; set; }
 
     /// <summary>
+    /// The return url
+    /// </summary>
+    [Parameter]
+    [SupplyParameterFromQuery(Name = nameof(ReturnUrl))]
+    public string? ReturnUrl { get; set; }
+
+    /// <summary>
     /// List of toast messages
     /// </summary>
     public List<ToastMessage> ToastMessages { get; private set; } = new();
@@ -85,6 +119,12 @@
     /// The module to display
     /// </summary>
     public ModuleDisplayModel Module { get; private set; } = new();
+
+    public DateTime FirstDay { get; set; }
+
+    public DateTime LastDay { get; set; }
+
+    public List<ScheduleModel> SchedulesOfWeek { get; set; } = new List<ScheduleModel>();
 
     /// <summary>
     /// Initialization of the component
@@ -177,8 +217,117 @@
         }
 
         await SetIsAccepted();
+        await GetFirstDay();
 
         PreloadService?.Hide();
+    }
+
+    /// <summary>
+    /// Load the schedules
+    /// </summary>
+    /// <returns></returns>
+    private async Task<IEnumerable<ScheduleModel>> LoadSchedulesAsync()
+    {
+        PreloadService?.Show();
+
+        ResultModel<IEnumerable<ScheduleModel>> scheduleResult = await ModuleService.GetSchedulesAsync(Id);
+
+        if (!scheduleResult.Success)
+        {
+            Logger.LogError(
+                "{date} - Requesting the schedules failed with status code {code}.\n{msg}",
+                DateTime.Now,
+                scheduleResult.Code,
+                scheduleResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Horaires",
+                $"Le chargement de l'horaire a échoué.\n{scheduleResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return Enumerable.Empty<ScheduleModel>();
+        }
+
+        if (scheduleResult.Data is null)
+        {
+            Logger.LogError(
+                "Requesting the schedules succeeded but the data is null.\n{msg}",
+                scheduleResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Horaires",
+                $"Le chargement de l'horaire a réussi mais les données retournées sont null.\n{scheduleResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return Enumerable.Empty<ScheduleModel>();
+        }
+
+        PreloadService?.Hide();
+
+        return scheduleResult.Data;
+    }
+
+    private async Task GetFirstDay()
+    {
+        var schedules = (await LoadSchedulesAsync()).OrderBy(s => s.StartAt);
+
+        if (schedules.Count() <= 0)
+        {
+            Logger.LogError("The list of schedules is empty");
+
+            return;
+        }
+
+        ScheduleModel? firstSchedule = schedules.MinBy(s => s.StartAt);
+
+        if (firstSchedule is null)
+        {
+            Logger.LogError("The first schedule is null");
+
+            return;
+        }
+
+        FirstDay = firstSchedule.StartAt;
+
+        ScheduleModel? lastSchedule = schedules.MaxBy(s => s.EndAt);
+
+        if (lastSchedule is null)
+        {
+            Logger.LogError("The last schedule is null");
+
+            return;
+        }
+
+        LastDay = lastSchedule.EndAt;
+
+        var distinctSchedules = schedules.DistinctBy(s => s.StartAt.DayOfWeek);
+
+        foreach (var distinctSchedule in distinctSchedules)
+        {
+            bool isExceptional = schedules.Count(s => s.StartAt.DayOfWeek == distinctSchedule.StartAt.DayOfWeek) <= 1;
+
+            if (isExceptional)
+            {
+                Logger.LogInformation(
+                    "The schedule on {date} is exceptional and should not be reported in the calendar",
+                    distinctSchedule.StartAt.ToString("F")
+                );
+
+                continue;
+            }
+
+            SchedulesOfWeek.Add(distinctSchedule);
+        }
     }
 
     /// <summary>

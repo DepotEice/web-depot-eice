@@ -52,7 +52,7 @@
                     </p>
                     <span>@module.TeacherName</span>
                     <div class="row">
-                        <NavLink href="@module.ModuleUrl">Plus de détails</NavLink>
+                        <NavLink href="@($"{module.ModuleUrl}?ReturnUrl=/depot/modules")">Plus de détails</NavLink>
 
                         <Authorize Role="@UserManager.DIRECTION_ROLE">
                             <Authorized>

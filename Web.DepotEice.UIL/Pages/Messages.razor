@@ -1,15 +1,18 @@
 ﻿@page "/messages"
 
 @using AutoMapper;
+@using Blazored.LocalStorage;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
+@using Microsoft.AspNetCore.SignalR.Client;
 
 @inject ILogger<Messages> Logger;
 @inject IMapper Mapper;
 @inject IMessageService MessageService;
 @inject UserManager UserManager;
 @inject NavigationManager NavigationManager;
+@inject ILocalStorageService LocalStorageService;
 
 <Authorize>
     <Authorized>
@@ -172,6 +175,8 @@
     /// </summary>
     public string MessageContent { get; set; } = string.Empty;
 
+    public HubConnection? HubConnection { get; private set; }
+
     /// <summary>
     /// Initialization of the component
     /// </summary>
@@ -187,6 +192,27 @@
             return;
         }
 
+        string? token = await LocalStorageService.GetItemAsStringAsync("token");
+
+        if (string.IsNullOrEmpty(token))
+        {
+            if (await UserManager.SignOutAsync())
+            {
+                NavigationManager.NavigateTo($"/login?ReturnUrl=/messages", true);
+            }
+            else
+            {
+                ShowMessage(
+                    ToastType.Danger,
+                    "Token d'accès",
+                    "Impossible de récupérer le token d'accès, se déconnecter et se rediriger vers la page de connexion",
+                    false
+                );
+            }
+
+            return;
+        }
+
         CurrentUserId = userId;
 
         await LoadConversationsAsync();
@@ -195,6 +221,24 @@
         {
             SelectedConversation = Conversations.FirstOrDefault();
         }
+
+        HubConnection = new HubConnectionBuilder()
+            .WithUrl($"https://localhost:7205/hub/chat?access_token={token}")
+            .Build();
+
+        HubConnection.On<string>("receiveMessage", (message) =>
+        {
+            Logger.LogInformation(message);
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        HubConnection.On<string>("newUserConnected", userId =>
+        {
+            Logger.LogInformation("User with id \"{id}\" logged in", userId);
+        });
+
+        await HubConnection.StartAsync();
     }
 
     /// <summary>

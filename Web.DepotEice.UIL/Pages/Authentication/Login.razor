@@ -1,5 +1,5 @@
-@page "/login/{returnUrl?}"
-@page "/signin/{returnUrl?}"
+@page "/login"
+@page "/signin"
 
 @using Web.DepotEice.UIL.Models.Forms
 @using Web.DepotEice.UIL.Managers
@@ -52,6 +52,7 @@
 
 @code {
     [Parameter]
+    [SupplyParameterFromQuery(Name = nameof(ReturnUrl))]
     public string? ReturnUrl { get; set; }
 
     private SignInForm _signInForm = new();

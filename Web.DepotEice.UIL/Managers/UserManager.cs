@@ -209,6 +209,36 @@ namespace Web.DepotEice.UIL.Managers
             return result;
         }
 
+        /// <summary>
+        /// Verify if the current user is in one of the roles
+        /// </summary>
+        /// <param name="roles">The array of roles to check</param>
+        /// <returns>
+        /// true If the user has one of the roles, false Otherwise
+        /// </returns>
+        public async Task<bool> IsInRoleAsync(string[] roles)
+        {
+            var resultModel = await _roleService.GetRolesAsync();
+
+            if (!resultModel.Success)
+            {
+                _logger.LogError($"Getting current user's role failed");
+
+                return false;
+            }
+
+            if (resultModel.Data is null)
+            {
+                _logger.LogError($"Current user's roles data is null");
+
+                return false;
+            }
+
+            bool result = resultModel.Data.Any(r => roles.Contains(r.Name));
+
+            return result;
+        }
+
         public async Task<bool> HasRole(string role, int moduleId)
         {
             if (string.IsNullOrEmpty(role))

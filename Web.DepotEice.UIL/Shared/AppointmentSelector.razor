@@ -1,0 +1,361 @@
+﻿@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models.Forms;
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices
+@using Web.DepotEice.Helpers;
+@using Web.DepotEice.UIL.Managers;
+@using Web.DepotEice.UIL.Models;
+
+@inject ILogger<AppointmentSelector> Logger;
+@inject IOpeningHoursService OpeningHoursService;
+@inject UserManager UserManager;
+@inject IAppointmentService AppointmentService;
+@inject IMapper Mapper;
+
+<div class="d-flex flex-column align-items-center justify-content-center mt-2">
+
+    <EditForm class="mt-3" Model="@AppointmentForm" OnValidSubmit="@OnValidationSubmit" style="width: 50%">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+
+        <div class="mb-3">
+            <label for="date" class="form-label">Date</label>
+            <RadzenDatePicker TValue="DateTime?" Inline="true" DateRender="@DateRenderOpenDates"
+                              Change="@(args => OnChange(args, "Calendar", "dd/MM/yyyy"))"
+                              Value="AppointmentForm.From" CurrentDateChanged="@OnCurrentDateChanged"
+                              InitialViewDate="AppointmentForm.From" />
+            <ValidationMessage class="text-danger" For="@(() => AppointmentForm.From)" />
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-center">
+
+            @for (int i = 0; i < AvailableTimes.Count; i++)
+            {
+                int x = i;
+
+                <button class="btn btn-outline-secondary m-1 @(SelectedIndex == x ? "active" : "")" type="button"
+                @onclick="(() => SelectIndex(x))">
+
+                    @AvailableTimes[i].ToString("HH:mm")
+                    -
+                    @AvailableTimes[i].AddMinutes(30).ToString("HH:mm")
+                </button>
+            }
+
+        </div>
+
+        @if (Modifiable)
+        {
+            <div class="my-3">
+                @if (UserManager.IsConnected)
+                {
+                    @if (Updatable)
+                    {
+                        <button type="submit" class="btn btn-outline-primary mx-auto">
+                            Prendre rendez-vous
+                        </button>
+                    }
+                }
+                else
+                {
+
+                    <span class="text-danger">
+                        Pour prendre rendez-vous, veuillez vous connecter ou vous s'inscrire en cliquant
+                    </span>
+                    <NavLink href="/login" class="">ici</NavLink>
+                }
+
+                @if (Cancellable)
+                {
+                    <button class="btn btn-outline-danger mx-3" type="button" @onclick="OnCancelAppointmentPressed">
+                        Annuler le rendez-vous
+                    </button>
+                }
+
+            </div>
+        }
+    </EditForm>
+</div>
+
+
+@code {
+    /// <summary>
+    /// The appointment form.
+    /// </summary>
+    [Parameter]
+    public AppointmentForm AppointmentForm { get; set; } = new();
+
+    /// <summary>
+    /// Event callback executed when the form is submitted and the appointment is created
+    /// </summary>
+    [Parameter]
+    public EventCallback<DateTime> ValidSubmit { get; set; }
+
+    /// <summary>
+    /// Event callback executed when the appointment is canceled
+    /// </summary>
+    [Parameter]
+    public EventCallback CancelAppointment { get; set; }
+
+    /// <summary>
+    /// Verify if the form is updatable
+    /// </summary>
+    [Parameter]
+    public bool Updatable { get; set; }
+
+    /// <summary>
+    /// The form is modifiable
+    /// </summary>
+    [Parameter]
+    public bool Modifiable { get; set; } = true;
+
+    /// <summary>
+    /// The form is cancellable
+    /// </summary>
+    [Parameter]
+    public bool Cancellable { get; set; } = true;
+
+    /// <summary>
+    /// The selected time span
+    /// </summary>
+    public TimeOnly SelectedTime { get; set; }
+
+    /// <summary>
+    /// The opening hours.
+    /// </summary>
+    public IEnumerable<OpeningHoursModel> OpeningHours { get; private set; } = new List<OpeningHoursModel>();
+
+    /// <summary>
+    /// The available time spans
+    /// </summary>
+    public List<TimeOnly> AvailableTimes { get; private set; } = new List<TimeOnly>();
+
+    /// <summary>
+    /// The selected index of the available times
+    /// </summary>
+    public int SelectedIndex { get; private set; } = -1;
+
+    /// <summary>
+    /// The minimum date time
+    /// </summary>
+    public DateTime MinimumDateTime { get; private set; } = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ResultModel<IEnumerable<OpeningHoursModel>> result =
+            await OpeningHoursService.GetOpeningHoursAsync(month: AppointmentForm.From.Month, year: AppointmentForm.From.Year);
+
+        if (result.Success)
+        {
+            if (result.Data is null)
+            {
+                Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+                return;
+            }
+
+            OpeningHours = result.Data;
+        }
+        else
+        {
+            Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+            return;
+        }
+
+        await LoadAvailableTimeSpansAsync();
+    }
+
+    private void SelectIndex(int index)
+    {
+        SelectedIndex = index;
+
+        SelectedTime = AvailableTimes[index];
+
+        Logger.LogInformation($"{DateTime.Now} - Selected index \"{index}\"");
+    }
+
+    /// <summary>
+    /// Load the available time spans for the selected date in the calendar
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadAvailableTimeSpansAsync()
+    {
+        try
+        {
+            Logger.LogInformation($"{DateTime.Now} - {AppointmentForm.From.Date}");
+
+            List<TimeOnly> availableTimeSpans = Enumerable.Empty<TimeOnly>().ToList();
+
+            OpeningHoursModel? openingHours = OpeningHours.SingleOrDefault(oh =>
+               oh.OpenAt.Year == AppointmentForm.From.Year &&
+               oh.OpenAt.Month == AppointmentForm.From.Month &&
+               oh.OpenAt.Day == AppointmentForm.From.Day);
+
+            if (openingHours is null)
+            {
+                return;
+            }
+
+            TimeSpan startTime = openingHours.OpenAt.TimeOfDay;
+            TimeSpan endTime = openingHours.CloseAt.TimeOfDay;
+
+            var appointmentsResult = await AppointmentService.GetAppointmentsAsync(false, AppointmentForm.From);
+
+            if (!appointmentsResult.Success)
+            {
+                Logger.LogError($"{DateTime.Now} - {appointmentsResult.Message}");
+
+                return;
+            }
+
+            IEnumerable<AppointmentModel>? appointments = appointmentsResult.Data;
+
+            if (appointments is null)
+            {
+                Logger.LogError($"{DateTime.Now} - {appointmentsResult.Message}");
+
+                return;
+            }
+
+            for (TimeSpan ts = startTime; ts <= endTime.Subtract(new TimeSpan(0, 30, 0)); ts = ts.Add(new TimeSpan(0, 30, 0)))
+            {
+                if (!appointments.Any(a => a.StartAt.TimeOfDay == ts))
+                {
+                    availableTimeSpans.Add(new TimeOnly(ts.Hours, ts.Minutes, ts.Seconds));
+                }
+            }
+
+            Logger.LogInformation($"{DateTime.Now} - Availabel timespans contains {availableTimeSpans.Count} elements");
+
+            AvailableTimes = availableTimeSpans;
+
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - {e.Message} - {e.StackTrace}");
+        }
+    }
+
+    /// <summary>
+    /// Event handler for the <see cref="RadzenDatePicker.DateRender"/> event.
+    /// </summary>
+    /// <param name="args"></param>
+    private void DateRenderOpenDates(DateRenderEventArgs args)
+    {
+        try
+        {
+            args.Disabled = args.Disabled ||
+                            args.Date.DayOfWeek == DayOfWeek.Sunday ||
+                            args.Date < DateTime.Now ||
+                            !OpeningHours.Any(oh => oh.OpenAt.Year == args.Date.Year &&
+                                                oh.OpenAt.Month == args.Date.Month &&
+                                                oh.OpenAt.Day == args.Date.Day);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Event handler for the <see cref="RadzenDatePicker.DateRender"/> event.
+    /// </summary>
+    /// <param name="args"></param>
+    private void DateRenderOpenDateTimes(DateRenderEventArgs args)
+    {
+        try
+        {
+            args.Disabled = args.Disabled ||
+                        !OpeningHours.Any(oh => oh.OpenAt.Year == args.Date.Year &&
+                                                oh.OpenAt.Month == args.Date.Month &&
+                                                oh.OpenAt.Day == args.Date.Day &&
+                                                args.Date.TimeOfDay >= oh.OpenAt.TimeOfDay &&
+                                                args.Date.TimeOfDay <= oh.CloseAt.TimeOfDay);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"{DateTime.Now} - {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Event handler for the <see cref="RadzenDatePicker.ValueChanged"/> event.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="name"></param>
+    /// <param name="format"></param>
+    private async void OnChange(DateTime? value, string name, string format)
+    {
+        if (value is not null)
+        {
+            AppointmentForm.From = value.Value;
+
+
+            await LoadAvailableTimeSpansAsync();
+            SelectedIndex = -1;
+            // Logger.LogInformation(_appointmentForm.From.ToString());
+            Logger.LogInformation($"{name} value changed to {value?.ToString(format)}");
+        }
+    }
+
+    /// <summary>
+    /// Event handler for the <see cref="RadzenDatePicker.CurrentDateChanged"/> event.
+    /// </summary>
+    /// <param name="date"></param>
+    private async void OnCurrentDateChanged(DateTime date)
+    {
+        Logger.LogInformation($"{nameof(OnCurrentDateChanged)} - {date.ToString()}");
+
+        AppointmentForm.From = date;
+
+        ResultModel<IEnumerable<OpeningHoursModel>> result =
+            await OpeningHoursService.GetOpeningHoursAsync(month: AppointmentForm.From.Month, year: AppointmentForm.From.Year);
+
+        if (result.Success)
+        {
+            if (result.Data is null)
+            {
+                Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+                return;
+            }
+
+            OpeningHours = result.Data;
+        }
+        else
+        {
+            Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+            return;
+        }
+
+        await LoadAvailableTimeSpansAsync();
+    }
+
+    /// <summary>
+    /// Event handler when the user submit a valid form
+    /// </summary>
+    /// <returns></returns>
+    public async Task OnValidationSubmit()
+    {
+        DateTime startDate = new DateTime(
+           AppointmentForm.From.Year,
+           AppointmentForm.From.Month,
+           AppointmentForm.From.Day,
+           SelectedTime.Hour,
+           SelectedTime.Minute,
+           SelectedTime.Second);
+
+        await ValidSubmit.InvokeAsync(startDate);
+    }
+
+    /// <summary>
+    /// Event handler when the user press the cancel button
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnCancelAppointmentPressed()
+    {
+        await CancelAppointment.InvokeAsync();
+    }
+}

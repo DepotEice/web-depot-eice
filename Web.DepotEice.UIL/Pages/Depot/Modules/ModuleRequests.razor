@@ -1,52 +1,248 @@
-﻿// TODO: Change the SyncFusion grid with the Bootstrap grid
-
-@page "/depot/modulerequests"
+﻿@page "/depot/module-requests"
 
 @using AutoMapper;
-@using Syncfusion.Blazor.Grids
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Managers;
+@using Web.DepotEice.UIL.Models;
 
 @inject ILogger<ModuleRequests> Logger;
 @inject IMapper Mapper;
 @inject IModuleService ModuleService;
+@inject UserManager UserManager;
 
-<PageTitle>Demande d'acceptation</PageTitle>
+<PageTitle>EICE - Depot - Demande d'acceptation</PageTitle>
 
-<h3 class="text-center my-5">Demande d'acceptation</h3>
+<Authorize Role="@UserManager.DIRECTION_ROLE">
+    <Authorized>
+        <h3 class="text-center my-5">Demandes d'acceptation</h3>
 
-<div class="container">
-    @*<SfGrid DataSource="@_users" EnableHeaderFocus="true" EnableAdaptiveUI="true" AllowFiltering="true"
-            AllowSorting="true">
+        <div class="container">
 
-        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
-        <GridPageSettings PageSize="50"></GridPageSettings>
-        <GridSelectionSettings CheckboxOnly="true" PersistSelection="true" Type="SelectionType.Multiple"></GridSelectionSettings>
-        <GridEditSettings AllowAdding="false" AllowDeleting="false" AllowEditing="false" AllowEditOnDblClick="false"
-                          AllowNextRowEdit="false"></GridEditSettings>
+            <Grid TItem="UserModuleRequestDisplayModel" Data="Users" AllowFiltering="true" AllowPaging="true" Responsive="true"
+                  ItemsPerPageText="Utilisateurs par page" PageSizeSelectorItems="new int[] { 10, 20, 50 }"
+                  PaginationItemsTextFormat="{0} - {1} des {2} utilisateurs" EmptyText="Aucun n'utilisateur n'a fait de demande"
+                  AllowSelection="true" class="table table-hover table-bordered table-striped" SelectedItemsChanged="SelectedItemsChanged">
 
-        <GridColumns>
-            <GridColumn Type="ColumnType.CheckBox" AllowFiltering="false" AllowSorting="false" Width="60"></GridColumn>
-            <GridColumn Field="ID" HeaderText="ID de l'utilisateur" IsPrimaryKey="true"></GridColumn>
-            <GridColumn Field="Prénom" HeaderText="Prénom"></GridColumn>
-            <GridColumn Field="Nom" HeaderText="Nom"></GridColumn>
-            <GridColumn Field="ID module" HeaderText="ID Module"></GridColumn>
-            <GridColumn Field="Nom Module" HeaderText="Nom Module"></GridColumn>
-        </GridColumns>
+                <GridColumn TItem="UserModuleRequestDisplayModel" HeaderText="ID du Module" PropertyName="ModuleId">
+                    @context.ModuleId
+                </GridColumn>
 
-    </SfGrid>*@
+                <GridColumn TItem="UserModuleRequestDisplayModel" HeaderText="Prénom" PropertyName="FirstName">
+                    @context.FirstName
+                </GridColumn>
 
-    <div class="row mb-3">
-        <button type="button" class="btn btn-outline-danger my-2">Refuser la sélection</button>
-        <button type="button" class="btn btn-outline-primary my-1">Accepter la sélection</button>
-    </div>
-</div>
+                <GridColumn TItem="UserModuleRequestDisplayModel" HeaderText="Nom" PropertyName="LastName">
+                    @context.LastName
+                </GridColumn>
+
+                <GridColumn TItem="UserModuleRequestDisplayModel" HeaderText="Module" PropertyName="ModuleName">
+                    @context.ModuleName
+                </GridColumn>
+
+            </Grid>
+
+            <div class="row mb-3">
+                <button type="button" class="btn btn-outline-danger my-2" @onclick="() => SetUserStatusAsync(false)">
+                    Refuser la sélection
+                </button>
+                <button type="button" class="btn btn-outline-primary my-1" @onclick="() => SetUserStatusAsync(true)">
+                    Accepter la sélection
+                </button>
+            </div>
+        </div>
+    </Authorized>
+    <Unauthorized>
+        <h3 class="text-center my-5">Accès refusé</h3>
+    </Unauthorized>
+</Authorize>
+
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 
 @code {
-    private IEnumerable<UserModuleRequestModel> _users = new List<UserModuleRequestModel>();
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
 
+    /// <summary>
+    /// List of toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
+    /// The list of users requesting access to modules.
+    /// </summary>
+    public IEnumerable<UserModuleRequestDisplayModel> Users { get; private set; } = new List<UserModuleRequestDisplayModel>();
+
+    /// <summary>
+    /// The list of selected users
+    /// </summary>
+    public List<UserModuleRequestDisplayModel> SelectedUsers { get; set; } = new();
+
+    /// <summary>
+    /// Initialization of the component
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        _users = await ModuleService.GetUsersRequestingModules();
+        await LoadUsersAsync();
+    }
+
+    /// <summary>
+    /// Load the list of users requesting to join a module
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadUsersAsync()
+    {
+        PreloadService?.Show();
+
+        ResultModel<IEnumerable<UserModuleRequestModel>> result = await ModuleService.GetUsersRequestingModules();
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "Requesting users asking to join modules failed with status code \"{code}\".\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des demandes",
+                $"Le chargement a échoué.\n{result.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "Requesting users asking to join modules succeeded but no data is returned.\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des demandes",
+                $"Le chargement a réussi, mais aucune données n'a été chargées.\n{result.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        Users = Mapper.Map<IEnumerable<UserModuleRequestDisplayModel>>(result.Data);
+
+        PreloadService?.Hide();
+    }
+
+    /// <summary>
+    /// handler for <see cref="Grid{TItem}.SelectedItemsChanged"/> event. Set the list <see cref="SelectedUsers"/> to
+    /// the list of selected users from the grid.
+    /// </summary>
+    /// <param name="args"></param>
+    private void SelectedItemsChanged(HashSet<UserModuleRequestDisplayModel> args)
+    {
+        SelectedUsers = args.ToList();
+    }
+
+    /// <summary>
+    /// Set the status of the user to the given status
+    /// </summary>
+    /// <param name="status"></param>
+    /// <returns></returns>
+    private async Task SetUserStatusAsync(bool status)
+    {
+        foreach (var user in SelectedUsers)
+        {
+            ResultModel<bool> result = await ModuleService.SetUserModuleStatusAsync(user.ModuleId, user.Id, status);
+
+            if (!result.Success)
+            {
+                Logger.LogError(
+                    "Setting the user status to \"{status}\" for user \"{user}\" failed with status code \"{code}\".\n{msg}",
+                    status,
+                    user.Id,
+                    result.Code,
+                    result.Message
+                );
+
+                ShowMessage(
+                    ToastType.Danger,
+                    "Mise à jour des status",
+                    $"La mise à jour du status pour l'utilisateur {user.LastName}, {user.FirstName} a échoué.\n{result.Message}",
+                    false
+                );
+
+                continue;
+            }
+
+            if (!result.Data)
+            {
+                Logger.LogError(
+                    "Setting the user status to \"{status}\" for user \"{user}\" succeeded but result is false.\n{msg}",
+                    status,
+                    user.Id,
+                    result.Code,
+                    result.Message
+                );
+
+                ShowMessage(
+                    ToastType.Danger,
+                    "Mise à jour des status",
+                    $"La mise à jour du status pour l'utilisateur {user.LastName}, {user.FirstName} a réussi, mais le " +
+                    $"résultat est faux.\n{result.Message}",
+                    false
+                );
+
+                continue;
+            }
+
+            ShowMessage(
+                ToastType.Info,
+                "Mise à jour des status",
+                $"La mise à jour du status pour l'utilisateur {user.LastName}, {user.FirstName} a réussi.",
+                true
+            );
+        }
+
+        ShowMessage(
+            ToastType.Success,
+            "Mise à jour des status",
+            $"La mise à jour est terminée",
+            true
+        );
+
+        await LoadUsersAsync();
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

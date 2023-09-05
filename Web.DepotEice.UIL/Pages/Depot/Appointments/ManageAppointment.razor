@@ -1,0 +1,169 @@
+﻿@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Managers;
+@using Web.DepotEice.UIL.Models;
+
+@inject ILogger<ManageAppointment> Logger;
+@inject DialogService DialogService;
+@inject IAppointmentService AppointmentService;
+@inject UserManager UserManager;
+
+<Authorize Role="@UserManager.DIRECTION_ROLE">
+    <Authorized>
+
+        <EditForm Model="Appointment" OnValidSubmit="OnValidSubmitAsync">
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="user-input">Utilisateur</label>
+                </div>
+                <div class="col-8">
+                    <InputText id="user-input" @bind-Value="Appointment.UserFullName" type="text" class="form-control-plaintext" readonly />
+                    <ValidationMessage For="@(() => Appointment.UserFullName)" />
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="user-email">Email</label>
+                </div>
+                <div class="col-8">
+                    <a href="mailto:@Appointment.Email" id="user-email" class="form-control-plaintext">
+                        @Appointment.Email
+                    </a>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="user-phone">Téléphone</label>
+                </div>
+                <div class="col-8">
+                    <a id="user-phone" href="tel:@Appointment.Phone" class="form-control-plaintext">
+                        @Appointment.Phone
+                    </a>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="user-mobile-phone">GSM</label>
+                </div>
+                <div class="col-8">
+                    <a id="user-phone" href="tel:@Appointment.MobilePhone" class="form-control-plaintext">
+                        @Appointment.MobilePhone
+                    </a>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="start-date-input">Début</label>
+                </div>
+                <div class="col">
+                    <RadzenDatePicker id="start-date-input" @bind-Value="@Appointment.StartTime" Name="Début" ShowTime="true"
+                                      Culture="System.Globalization.CultureInfo.CurrentUICulture" CurrentDateChanged="OnCurrentDateChanged" />
+                    <ValidationMessage For="@(() => Appointment.StartTime)" />
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 16px">
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-label" for="end-date-input">Fin</label>
+                </div>
+                <div class="col">
+                    <RadzenDatePicker id="end-date-input" @bind-Value="Appointment.EndTime" Name="Fin" ShowTime="true" ReadOnly="true"
+                                      Culture="System.Globalization.CultureInfo.CurrentUICulture" />
+                    <ValidationMessage For="@(() => Appointment.EndTime)" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col">
+                    <button class="btn btn-danger" type="button" @onclick="OnCancelAppointmentAsync">Annuler</button>
+
+                    @if (!Appointment.IsAccepted)
+                    {
+                        <button class="btn btn-primary mx-2" type="submit">Confirmer</button>
+                    }
+                </div>
+            </div>
+        </EditForm>
+
+    </Authorized>
+
+    <Unauthorized>
+        <h2 class="text-center my-5">Accès non autorisé</h2>
+        <p class="text-center">Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
+    </Unauthorized>
+</Authorize>
+
+
+
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+@code {
+    [Parameter]
+    public AppointmentDisplayModel Appointment { get; set; } = new();
+
+    public List<ToastMessage> ToastMessages { get; private set; } = new();
+
+    private void OnCurrentDateChanged(DateTime date)
+    {
+        Appointment.EndTime = date.AddMinutes(30);
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        ResultModel<bool> result = await AppointmentService.AcceptAppointmentAsync(Appointment.Id);
+
+        if (!result.Success)
+        {
+            ShowMessage(ToastType.Danger, "Erreur", "La confirmation du rendez-vous a échoué", true);
+
+            Logger.LogError($"Accepting appointment failed with following message:\n{result.Message}");
+
+            return;
+        }
+
+        ShowMessage(ToastType.Success, "Succès", "Le rendez-vous a été confirmé", true);
+
+        DialogService.Close(true);
+    }
+
+    /// <summary>
+    /// Delete the appointment and close the dialog
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnCancelAppointmentAsync()
+    {
+        ResultModel<bool> result = await AppointmentService.DeleteAppointmentAsync(Appointment.Id);
+
+        if (!result.Success)
+        {
+            ShowMessage(ToastType.Danger, "Erreur", "L'annulation du rendez-vous a échoué", true);
+
+            Logger.LogError($"Deleting appointment failed with following message:\n{result.Message}");
+
+            return;
+        }
+
+        ShowMessage(ToastType.Success, "Succès", "Le rendez-vous a été annulé", true);
+
+        DialogService.Close(true);
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
+    }
+}

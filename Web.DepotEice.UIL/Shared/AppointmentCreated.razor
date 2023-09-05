@@ -1,0 +1,26 @@
+﻿@using Web.DepotEice.BLL.Models;
+
+<div class="row">
+    <p>Votre rendez-vous a correctement été crée, vous allez être rediriger vers les détails du rendez-vous.</p>
+</div>
+
+<div class="d-inline-flex">
+    <b>@Appointment.StartAt.ToString("F")</b>
+</div>
+
+<div class="my-2">
+    <Button Color="ButtonColor.Secondary" @onclick="OnCloseModalAsync">Fermer</Button>
+</div>
+
+@code {
+    [Parameter]
+    public AppointmentModel Appointment { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnCloseCallback { get; set; }
+
+    private async Task OnCloseModalAsync()
+    {
+        await OnCloseCallback.InvokeAsync();
+    }
+}

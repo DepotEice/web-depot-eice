@@ -14,5 +14,14 @@ namespace Web.DepotEice.BLL.IServices
         Task<bool> RequestNewPassword(string email);
         Task<bool> Activate(string userId, string token);
         Task<bool> ResetPassword(PasswordResetModel passwordResetModel, string token);
+
+        /// <summary>
+        /// Validate the current token
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>
+        /// </returns>
+        /// <exception cref="NullReferenceException"></exception>
+        Task<ResultModel<bool>> AuthorizeAsync();
     }
 }

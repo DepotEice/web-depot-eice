@@ -1,0 +1,247 @@
+﻿@page "/Profile/Appointments/{Id:int}"
+
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models.Forms;
+
+@inject ILogger<AppointmentDetails> Logger;
+@inject IAppointmentService AppointmentService;
+@inject NavigationManager NavigationManager;
+
+<Authorize>
+    <Authorized>
+
+        <h4 class="text-center my-5">Rendez-vous le @(AppointmentForm.From.ToString("F")). @StatusMessage</h4>
+
+        <AppointmentSelector AppointmentForm="AppointmentForm" ValidSubmit="OnValidSubmitAsync" Updatable="Updatable"
+                             CancelAppointment="OnCancelAppointmentPressed" Modifiable="Modifiable" />
+
+    </Authorized>
+    <Unauthorized>
+        <h3 class="my-5 text-center">Vous n'êtes pas autorisé à accéder à cette page</h3>
+    </Unauthorized>
+</Authorize>
+
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+
+<ConfirmDialog @ref="ConfirmDialog" />
+
+@code {
+    /// <summary>
+    /// The Id of the appointment
+    /// </summary>
+    [Parameter]
+    public int Id { get; set; }
+
+    /// <summary>
+    /// The return url
+    /// </summary>
+    [Parameter]
+    [SupplyParameterFromQuery(Name = nameof(ReturnUrl))]
+    public string? ReturnUrl { get; set; }
+
+    /// <summary>
+    /// If the appointment is modifiable
+    /// </summary>
+    public bool Modifiable { get; private set; } = true;
+
+    /// <summary>
+    /// If the appointment is cancelable
+    /// </summary>
+    public bool Updatable { get; private set; } = true;
+
+    /// <summary>
+    /// The status message
+    /// </summary>
+    public string StatusMessage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Confirmation dialog
+    /// </summary>
+    public ConfirmDialog ConfirmDialog { get; private set; } = new();
+
+    /// <summary>
+    /// The list of Toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
+    /// The appointment form.
+    /// </summary>
+    public AppointmentForm AppointmentForm { get; set; } = new();
+
+    /// <summary>
+    /// Event handler when the page is initialized
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        ResultModel<AppointmentModel?> result = await AppointmentService.GetAppointmentAsync(Id);
+
+        if (!result.Success)
+        {
+            string title = "La récupération a échoué";
+            string body = $"La requête a échouée, tentez de recharger la page ou contacter l'administrateur";
+
+            Logger.LogError($"The update failed with the following message:\n{result.Message}");
+
+            ShowMessage(ToastType.Danger, title, body, false);
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            string title = "La récupération a échoué";
+            string body = $"Le rendez-vous n'a pas été trouvé";
+
+            Logger.LogError($"The update failed with the following message:\n{result.Message}");
+
+            ShowMessage(ToastType.Danger, title, body, false);
+
+            return;
+
+        }
+
+        if (result.Data.EndAt < DateTime.Now)
+        {
+            StatusMessage = "Terminé";
+
+            Modifiable = false;
+        }
+        if (result.Data.IsAccepted)
+        {
+            StatusMessage = "Accepté.";
+
+            Updatable = false;
+        }
+        else
+        {
+            StatusMessage = "En attente de confirmation.";
+        }
+
+        AppointmentForm.From = result.Data.StartAt;
+
+        Logger.LogInformation("return url" + ReturnUrl);
+    }
+
+    /// <summary>
+    /// Valid submit event handler
+    /// </summary>
+    /// <param name="startDate"></param>
+    /// <returns></returns>
+    private async Task OnValidSubmitAsync(DateTime startDate)
+    {
+        AppointmentCreateModel appointment = new()
+            {
+                StartAt = startDate,
+                EndAt = startDate.AddMinutes(30)
+            };
+
+        appointment.EndAt = appointment.StartAt.AddMinutes(30);
+
+        ResultModel<AppointmentModel?> result = await AppointmentService.UpdateAppointmentAsync(Id, appointment);
+
+        if (!result.Success)
+        {
+            string title = "La modification a échoué";
+            string body = $"Les changements n'ont pas été enregistrées";
+
+            Logger.LogError($"The update failed with the following message:\n{result.Message}");
+
+            ShowMessage(ToastType.Danger, title, body, false);
+
+            return;
+        }
+
+        ShowMessage(ToastType.Success, "Succès", "Votre rendez-vous a bien été modifié", true);
+
+        if (string.IsNullOrEmpty(ReturnUrl))
+        {
+            NavigationManager.NavigateTo("Profile/Appointments");
+        }
+        else
+        {
+            NavigationManager.NavigateTo(ReturnUrl);
+        }
+    }
+
+    /// <summary>
+    /// Event handler when the appointment is cancelled
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnCancelAppointmentPressed()
+    {
+        string title = "Êtes-vous sûre de vouloir annuler le rendez-vous ?";
+        string message = "Annuler ce rendez-vous supprimer ce dernier et le processus de prise de rendez-vous recommencera à zéro";
+
+        ConfirmDialogOptions confirmDialogOptions = new()
+            {
+                YesButtonColor = ButtonColor.Primary,
+                YesButtonText = "Confirmer",
+                NoButtonColor = ButtonColor.Secondary,
+                NoButtonText = "Annuler"
+            };
+
+        bool confirmed = await ConfirmDialog.ShowAsync(title, message, confirmDialogOptions);
+
+        if (!confirmed)
+        {
+            Logger.LogInformation("The cancellation of the appointment was cancelled");
+
+            return;
+        }
+
+        ResultModel<bool> result = await AppointmentService.DeleteAppointmentAsync(Id);
+
+        if (!result.Success)
+        {
+            ShowMessage(ToastType.Danger, "Erreur", "L'annulation du rendez-vous a échouée", false);
+
+            Logger.LogError($"The appointment couldn't be cancelled and returned this message:\n{result.Message}");
+
+            return;
+        }
+
+        Logger.LogInformation($"The cancellation was successful");
+
+        if (!result.Data)
+        {
+            ShowMessage(ToastType.Warning, "Erreur", "L'annulation du rendez-vous a échouée", true);
+
+            Logger.LogWarning($"The result is success but the data is false.\n{result.Message}");
+
+            return;
+        }
+
+        if (string.IsNullOrEmpty(ReturnUrl))
+        {
+            NavigationManager.NavigateTo("Profile/Appointments");
+        }
+        else
+        {
+            NavigationManager.NavigateTo(ReturnUrl);
+        }
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
+    }
+}

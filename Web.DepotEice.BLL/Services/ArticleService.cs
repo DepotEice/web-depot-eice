@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,85 +15,176 @@ namespace Web.DepotEice.BLL.Services
     public class ArticleService : IArticleService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILocalStorageService _localStorageService;
+        private readonly ISyncLocalStorageService _localStorageService;
+        private readonly ILogger _logger;
 
-        public ArticleService(ILocalStorageService localStorageService, HttpClient httpClient)
+        public ArticleService(ISyncLocalStorageService localStorageService, HttpClient httpClient,
+            ILogger<ArticleService> logger)
         {
             if (localStorageService is null)
             {
                 throw new ArgumentNullException(nameof(localStorageService));
             }
 
+            if (httpClient is null)
+            {
+                throw new ArgumentNullException(nameof(httpClient));
+            }
+
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             _localStorageService = localStorageService;
-            _httpClient= httpClient;
+            _httpClient = httpClient;
+            _logger = logger;
+
+            string token = _localStorageService.GetItemAsString("token");
 
             _httpClient.DefaultRequestHeaders.Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        public async Task<ArticleModel?> GetArticleAsync(int id)
+        /// <summary>
+        /// Get the article by sending a GET requesting to the API
+        /// </summary>
+        /// <param name="id">The id of the article</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ArticleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<ArticleModel>> GetArticleAsync(int id)
         {
-            if (id == 0)
+            if (id <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(id));
             }
 
             HttpResponseMessage response = await _httpClient.GetAsync($"Articles/{id}");
 
-            response.EnsureSuccessStatusCode();
-
-            ArticleModel? article = await response.Content.ReadFromJsonAsync<ArticleModel>();
-
-            return article;
-        }
-
-        public async Task<IEnumerable<ArticleModel>> GetArticlesAsync()
-        {
-            HttpResponseMessage response = await _httpClient.GetAsync("Articles");
-
-            response.EnsureSuccessStatusCode();
-
-            IEnumerable<ArticleModel>? articles = await response.Content.ReadFromJsonAsync<IEnumerable<ArticleModel>>();
-
-            if (articles is null)
+            var result = new ResultModel<ArticleModel>()
             {
-                return Enumerable.Empty<ArticleModel>();
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(GetArticlesAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = null;
             }
 
-            return articles;
+            return result;
+        }
+
+        /// <summary>
+        /// Get articles by sending a GET request to the API
+        /// </summary>
+        /// <param name="pinned">Specify if only the pinned articles must be retrieved</param>
+        /// <param name="skip">The number of elements to skip</param>
+        /// <param name="top">The number of elements to keep</param>
+        /// <param name="descending">The descending order</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ArticleModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<ArticleModel>>> GetArticlesAsync(bool pinned = false, int skip = 0,
+            int top = 100, bool descending = false)
+        {
+            string queryUri = $"Articles?onlyPinned={pinned}&skip={skip}&top={top}&descending={descending}";
+
+            HttpResponseMessage response = await _httpClient.GetAsync(queryUri);
+
+            ResultModel<IEnumerable<ArticleModel>> result = new ResultModel<IEnumerable<ArticleModel>>()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<ArticleModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(GetArticlesAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = Enumerable.Empty<ArticleModel>();
+            }
+
+            return result;
         }
 
         public async Task<bool> CanPinArticleAsync()
         {
-            IEnumerable<ArticleModel> articlesFromApi = await GetArticlesAsync();
+            var result = await GetArticlesAsync(pinned: true);
+
+            if (!result.Success)
+            {
+                _logger.LogError("Getting articles failed");
+
+                return false;
+            }
+
+            IEnumerable<ArticleModel>? articlesFromApi = result.Data;
+
+            if (articlesFromApi is null)
+            {
+                return true;
+            }
 
             return articlesFromApi.Count(a => a.IsPinned) < 12;
         }
 
-        public async Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate)
+        /// <summary>
+        /// Create an article by sending a POST request to the API with the form
+        /// </summary>
+        /// <param name="articleCreate">The form to create an article</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ArticleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<ArticleModel>> CreateArticleAsync(ArticleCreateModel articleCreate)
         {
             if (articleCreate is null)
             {
                 throw new ArgumentNullException(nameof(articleCreate));
             }
 
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
-
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("Articles", articleCreate);
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<ArticleModel> result = new ResultModel<ArticleModel>()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            ArticleModel? createdArticle = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(CreateArticleAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = null;
+            }
 
-            return createdArticle;
+            return result;
         }
 
         public async Task<bool> DeleteArticleAsync(int id)
         {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
-
             HttpResponseMessage response = await _httpClient.DeleteAsync($"Articles/{id}");
 
             return response.IsSuccessStatusCode;
@@ -100,29 +192,56 @@ namespace Web.DepotEice.BLL.Services
 
         public async Task<bool> RestoreArticleAsync(int id)
         {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
+
 
             HttpResponseMessage response = await _httpClient.PutAsync($"Articles/restore/{id}", null);
 
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<ArticleModel?> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate)
+        /// <summary>
+        /// Update an article by sending a PUT request with the article ID and the form with the new article
+        /// </summary>
+        /// <param name="id">The id of the article</param>
+        /// <param name="articleUpdate">The form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ArticleModel"/> 
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<ArticleModel>> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate)
         {
+            if (id <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
             if (articleUpdate is null)
             {
                 throw new ArgumentNullException(nameof(articleUpdate));
             }
 
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", await _localStorageService.GetItemAsStringAsync("token"));
-
             HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"Articles/{id}", articleUpdate);
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<ArticleModel> result = new ResultModel<ArticleModel>()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            return await response.Content.ReadFromJsonAsync<ArticleModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<ArticleModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    $"{nameof(CreateArticleAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                result.Data = null;
+            }
+
+            return result;
         }
     }
 }

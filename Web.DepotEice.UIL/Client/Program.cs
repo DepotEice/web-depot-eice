@@ -3,8 +3,7 @@ using BlazorBootstrap;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Syncfusion.Blazor;
-using Syncfusion.Licensing;
+using Radzen;
 using Web.DepotEice.BLL.IServices;
 using Web.DepotEice.BLL.Services;
 using Web.DepotEice.UIL.Managers;
@@ -13,13 +12,8 @@ namespace Company.WebApplication1
 {
     public class Program
     {
-        public static readonly string API_SYNCFUSION_SECRET =
-            Environment.GetEnvironmentVariable("SYNCFUSION_SECRET")
-            ?? "NzU5NDEyQDMyMzAyZTMzMmUzMGJFdTU3bHV2S01SY1hzVnpxcmJ0djBpN29TMlpCM1hnbk53blJ3a3BCdDQ9";
-
         public static async Task Main(string[] args)
         {
-            SyncfusionLicenseProvider.RegisterLicense(API_SYNCFUSION_SECRET);
 
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<Web.DepotEice.UIL.App>("#app");
@@ -28,10 +22,6 @@ namespace Company.WebApplication1
             builder.Services.AddLogging();
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             builder.Services.AddBlazoredLocalStorage();
-            builder.Services.AddSyncfusionBlazor(options =>
-            {
-                // options.IgnoreScriptIsolation = true;
-            });
 
             builder.Services.AddBlazorBootstrap();
 
@@ -57,8 +47,16 @@ namespace Company.WebApplication1
             builder.Services.AddScoped<IAppointmentService, AppointmentService>();
             builder.Services.AddScoped<IModuleService, ModuleService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
+            builder.Services.AddScoped<IFileService, FileService>();
 
             builder.Services.AddScoped<UserManager>();
+            builder.Services.AddScoped<AppointmentManager>();
+            builder.Services.AddScoped<ScheduleManager>();
+
+            builder.Services.AddScoped<DialogService>();
+            builder.Services.AddScoped<NotificationService>();
+            builder.Services.AddScoped<TooltipService>();
+            builder.Services.AddScoped<ContextMenuService>();
 
             var host = builder.Build();
 

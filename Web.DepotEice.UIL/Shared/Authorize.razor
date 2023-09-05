@@ -1,9 +1,12 @@
-﻿@using Web.DepotEice.UIL.Managers;
+﻿@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Managers;
 
 @inject UserManager UserManager;
 @inject ILogger<Authorize> Logger;
+@inject IAuthService AuthService;
 
-@if (_isAuthorized)
+@if (IsAuthorized)
 {
     @Authorized
 }
@@ -13,28 +16,88 @@ else
 }
 
 @code {
-    [Parameter]
-    public string Role { get; set; } = string.Empty;
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
 
+    /// <summary>
+    /// The role to check
+    /// </summary>
+    [Parameter]
+    public string? Role { get; set; }
+
+    /// <summary>
+    /// On authorized callback
+    /// </summary>
+    [Parameter]
+    public Func<bool>? OnAuthorized { get; set; }
+
+    /// <summary>
+    /// On authorized async call back
+    /// </summary>
+    [Parameter]
+    public Func<Task<bool>>? OnAuthorizedAsync { get; set; }
+
+    /// <summary>
+    /// The fragment rendered if the user is authorized
+    /// </summary>
     [Parameter]
     public RenderFragment? Authorized { get; set; }
 
+    /// <summary>
+    /// The fragment rendered if the user is not authorized
+    /// </summary>
     [Parameter]
     public RenderFragment? Unauthorized { get; set; }
 
-    private bool _isAuthorized = false;
+    /// <summary>
+    /// Verify if the user is authorized
+    /// </summary>
+    public bool IsAuthorized { get; private set; } = false;
 
-
+    /// <summary>
+    /// Initialize
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(Role))
-        {
-            throw new ArgumentNullException(nameof(Role));
-        }
+        PreloadService?.Show(SpinnerColor.Dark);
 
         Logger.LogInformation($"{DateTime.Now} - Requesting authorization for role \"{Role}\"");
 
-        _isAuthorized = await UserManager.IsInRoleAsync(Role);
+        if (string.IsNullOrEmpty(Role))
+        {
+            ResultModel<bool> result = await AuthService.AuthorizeAsync();
+
+            if (!result.Success)
+            {
+                Logger.LogError($"Getting authorization failed : \"{result.Message}\"");
+
+                IsAuthorized = false;
+
+                return;
+            }
+
+            IsAuthorized = result.Data;
+        }
+        else
+        {
+            IsAuthorized = await UserManager.IsInRoleAsync(Role);
+        }
+
+        if (OnAuthorized is not null)
+        {
+            IsAuthorized = OnAuthorized.Invoke();
+        }
+
+        if (OnAuthorizedAsync is not null)
+        {
+            IsAuthorized = await OnAuthorizedAsync.Invoke();
+        }
+
+        PreloadService?.Hide();
 
         StateHasChanged();
     }

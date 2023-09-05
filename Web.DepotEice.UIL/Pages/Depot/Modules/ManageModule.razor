@@ -1,9 +1,11 @@
-﻿@page "/depot/managemodule/{Id:int?}"
+﻿@page "/depot/manage-module/{Id:int?}"
 
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.Helpers;
+@using Web.DepotEice.UIL.Helpers;
+@using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models.Forms;
 @using Web.DepotEice.UIL.Models;
 
@@ -12,41 +14,48 @@
 @inject IMapper Mapper;
 @inject IUserService UserService;
 @inject IModuleService ModuleService;
+@inject UserManager UserManager;
 
-<PageTitle>Gestion de module</PageTitle>
+<PageTitle>EICE - Depot - Gestion de module</PageTitle>
 
 <div class="container">
     <h3 class="text-center">Informations sur le module</h3>
-    <EditForm Model="_moduleForm" OnValidSubmit="HandleValidModuleSubmitAsync" class="border-bottom pb-3 mb-5">
+    <EditForm Model="ModuleForm" OnValidSubmit="HandleValidModuleSubmitAsync" class="border-bottom pb-3 mb-5">
         <div class="row mb-3">
-            <label class="form-label">Titre</label>
-            <InputText class="form-control" @bind-Value="_moduleForm.Title" />
+            <label for="input-title" class="form-label">Titre</label>
+            <InputText @bind-Value="ModuleForm.Title" id="input-title" class="form-control" />
+            <ValidationMessage class="text-danger" For="() => ModuleForm.Title" />
         </div>
 
         <div class="row mb-3">
-            <label class="form-label">Description</label>
-            <InputTextArea class="form-control" style="height: 20rem" @bind-Value="_moduleForm.Description" />
+            <label for="input-description" class="form-label">Description</label>
+            <InputTextArea @bind-Value="ModuleForm.Description" id="input-description" class="form-control"
+                           style="height: 20rem" />
+            <ValidationMessage class="text-danger" For="() => ModuleForm.Description" />
         </div>
 
         <div class="row mb-3">
-            <label class="form-label">Professeur en charge</label>
-            <InputSelect class="form-control" @bind-Value="_moduleForm.TeacherId">
-                <option value=""></option>
-                @foreach (var teacher in _teachers)
-                {
-                    <option value="@teacher.Id">@teacher.FullName</option>
-                }
-            </InputSelect>
-        </div>
+            <label for="teacher" class="form-label">Professeur en charge</label>
 
-        @if (!string.IsNullOrEmpty(_moduleResultMessage))
-        {
-            <div class="row mb-3">
-                <span class="text-danger">
-                    @_moduleResultMessage
-                </span>
-            </div>
-        }
+            <Authorize Role="@UserManager.DIRECTION_ROLE">
+                <Authorized>
+                    <InputSelect id="teacher" class="form-control" @bind-Value="ModuleForm.TeacherId">
+                        <option value=""></option>
+                        @foreach (var teacher in Teachers)
+                        {
+                            <option value="@teacher.Id">@teacher.FullName</option>
+                        }
+                    </InputSelect>
+                </Authorized>
+                <Unauthorized>
+                    <span id="teacher" class="fw-bold form-control">
+                        @Teachers.SingleOrDefault(t => t.Id.Equals(ModuleForm.TeacherId))?.FullName
+                    </span>
+                </Unauthorized>
+            </Authorize>
+
+
+        </div>
 
         <div class="mb-3">
             <button type="submit" class="btn btn-outline-primary">Enregistrer</button>
@@ -55,23 +64,23 @@
 
     <h3 class="text-center">Horaire du module</h3>
 
-    <EditForm Model="_moduleScheduleForm" OnValidSubmit="HandleValidModuleScheduleSubmitAsync">
+    <EditForm Model="ModuleScheduleForm" OnValidSubmit="HandleValidModuleScheduleSubmitAsync">
         <div class="row mb-3">
             <label class="form-label">Date du premier cours</label>
-            <InputDate class="form-control" @bind-Value="_moduleScheduleForm.StartDate" disabled="@_moduleScheduleIsDisabled" />
+            <InputDate class="form-control" @bind-Value="ModuleScheduleForm.StartDate" disabled="@(!Id.HasValue)" />
         </div>
 
         <div class="row mb-3">
             <label class="form-label">Date du dernier cours</label>
-            <InputDate class="form-control" @bind-Value="_moduleScheduleForm.EndDate" disabled="@_moduleScheduleIsDisabled" />
+            <InputDate class="form-control" @bind-Value="ModuleScheduleForm.EndDate" disabled="@(!Id.HasValue)" />
         </div>
 
         <div class="d-lg-inline-flex w-100 my-4 pb-3 border-bottom">
 
-            @foreach (var dayTimeSelector in _moduleScheduleForm.DayTimeSelectors)
+            @foreach (var dayTimeSelector in ModuleScheduleForm.DayTimeSelectors)
             {
                 <div class="col-lg-2 mb-4">
-                    <DayTimeSelector DayTimeSelectorModel="dayTimeSelector" Disabled="@_moduleScheduleIsDisabled" />
+                    <DayTimeSelector DayTimeSelectorModel="dayTimeSelector" Disabled="@(!Id.HasValue)" />
                 </div>
             }
 
@@ -83,14 +92,14 @@
                     <h4 class="text-center align-bottom">Fermeture exceptionnelle</h4>
                 </div>
                 <div class="col-2">
-                    <button class="btn btn-outline-secondary float-end" type="button" disabled="@_moduleScheduleIsDisabled"
-                            @onclick="AddExceptionalClose">
+                    <button class="btn btn-outline-secondary float-end" type="button" disabled="@(!Id.HasValue)"
+                    @onclick="AddExceptionalClose">
                         +
                     </button>
                 </div>
             </div>
 
-            @foreach (var exceptionalClose in _moduleScheduleForm.ExceptionalCloses)
+            @foreach (var exceptionalClose in ModuleScheduleForm.ExceptionalCloses)
             {
                 <div class="row my-3">
                     <div class="col-lg-5 mx-2 my-1">
@@ -111,7 +120,7 @@
                     </div>
                     <div class="col-lg-1 mx-2 my-1">
                         <button class="btn btn-outline-danger" type="button"
-                            @onclick="@(() => RemoveExceptionalClose(exceptionalClose.Id))">
+                        @onclick="@(() => RemoveExceptionalClose(exceptionalClose.Id))">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -127,14 +136,14 @@
                 </div>
 
                 <div class="col-2">
-                    <button class="btn btn-outline-secondary float-end" type="button" disabled="@_moduleScheduleIsDisabled"
-                            @onclick="AddExceptionalSchedule">
+                    <button class="btn btn-outline-secondary float-end" type="button" disabled="@(!Id.HasValue)"
+                    @onclick="AddExceptionalSchedule">
                         +
                     </button>
                 </div>
             </div>
 
-            @foreach (var exceptionalSchedule in _moduleScheduleForm.ExceptionalSchedules)
+            @foreach (var exceptionalSchedule in ModuleScheduleForm.ExceptionalSchedules)
             {
                 <div class="row my-3">
                     <div class="col-lg-4 mx-2 my-1">
@@ -150,9 +159,9 @@
                             <label class="col-form-label col-3 me-3">De :</label>
                             <div class="col-sm-9">
                                 <RadzenDatePicker TValue="DateTime?" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
-                                              ShowTimeOkButton="true"
-                                              Change=@(args => OnChangeFrom(args, "Time-only DatePicker", "HH:mm", exceptionalSchedule.Id))
-                                              Class="w-100" Value="exceptionalSchedule.From" />
+                                                  ShowTimeOkButton="true"
+                                                  Change=@(args => OnChangeFrom(args, "Time-only DatePicker", "HH:mm", exceptionalSchedule.Id))
+                                                  Class="w-100" Value="exceptionalSchedule.From" />
                             </div>
                         </div>
                     </div>
@@ -161,15 +170,15 @@
                             <label class="col-form-label col-3 me-3">A :</label>
                             <div class="col-sm-9">
                                 <RadzenDatePicker TValue="DateTime?" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
-                                              ShowTimeOkButton="true"
-                                              Change=@(args => OnChangeTo(args, "Time-only DatePicker", "HH:mm", exceptionalSchedule.Id))
-                                              Class="w-100" Value="exceptionalSchedule.To" />
+                                                  ShowTimeOkButton="true"
+                                                  Change=@(args => OnChangeTo(args, "Time-only DatePicker", "HH:mm", exceptionalSchedule.Id))
+                                                  Class="w-100" Value="exceptionalSchedule.To" />
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-1 mx-2 my-1">
                         <button class="btn btn-outline-danger" type="button"
-                            @onclick="@(() => RemoveExceptionalSchedule(exceptionalSchedule.Id))">
+                        @onclick="@(() => RemoveExceptionalSchedule(exceptionalSchedule.Id))">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -178,102 +187,179 @@
         </div>
 
         <div class="mb-3">
-            <button type="submit" class="btn btn-outline-primary float-end" disabled="@_moduleScheduleIsDisabled">
+            <button type="submit" class="btn btn-outline-primary float-end" disabled="@(!Id.HasValue)">
                 Enregistrer
             </button>
         </div>
     </EditForm>
 </div>
 
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+
 @code {
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
+
+    /// <summary>
+    /// The id of the module
+    /// </summary>
     [Parameter]
     public int? Id { get; set; }
 
-    private IEnumerable<UserSelectionModel> _teachers = new List<UserSelectionModel>();
-    private ModuleForm _moduleForm = new();
-    private ModuleScheduleForm _moduleScheduleForm = new();
-    private bool _moduleScheduleIsDisabled = false;
+    /// <summary>
+    /// The list of toast messages to display (Components)
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
 
-    private string _moduleResultMessage = string.Empty;
+    /// <summary>
+    /// The list of available teachers
+    /// </summary>
+    public IEnumerable<UserSelectionModel> Teachers { get; private set; } = new List<UserSelectionModel>();
+
+    /// <summary>
+    /// The module form
+    /// </summary>
+    public ModuleForm ModuleForm { get; private set; } = new();
+
+    /// <summary>
+    /// The module schedule form
+    /// </summary>
+    public ModuleScheduleForm ModuleScheduleForm { get; private set; } = new();
 
     // TODO : Change the page so the teacher also can access the data except the Teacher in charge field
 
     protected override async Task OnInitializedAsync()
     {
-        var teachers = await UserService.GetTeachersAsync();
+        // Load the list of teachers
+        bool loadingTeachers = await LoadTeachersAsync();
 
-        _teachers = Mapper.Map<IEnumerable<UserSelectionModel>>(teachers);
-
-        if (Id is null)
+        if (!loadingTeachers)
         {
-            _moduleScheduleIsDisabled = true;
+            Logger.LogError("Loading teachers data failed");
+
+            return;
         }
-        else
+
+        if (Id.HasValue)
         {
-            var moduleFromService = await ModuleService.GetModuleAsync(Id.Value);
+            // Load the module
+            bool loadModule = await LoadModuleAsync();
 
-            _moduleForm = Mapper.Map<ModuleForm>(moduleFromService);
-
-            Logger.LogInformation(_moduleForm.TeacherId);
-
-            var schedulesFromRepo = await ModuleService.GetModuleSchedulesAsync(Id.Value);
-
-            if (schedulesFromRepo is null || schedulesFromRepo.Count() <= 0)
+            if (!loadModule)
             {
-                Logger.LogInformation($"{DateTime.Now} - The Schedules sequence contains no element");
+                Logger.LogError("Loading the module failed.");
+
                 return;
             }
 
-            var firstDay = schedulesFromRepo.First().StartAt;
-            var lastDay = schedulesFromRepo.Last().EndAt;
+            // Load schedules
+            ResultModel<IEnumerable<ScheduleModel>> schedulesResult = await ModuleService.GetModuleSchedulesAsync(Id.Value);
 
-            _moduleScheduleForm.StartDate = new DateTime(firstDay.Year, firstDay.Month, firstDay.Day);
-            _moduleScheduleForm.EndDate = new DateTime(lastDay.Year, lastDay.Month, lastDay.Day);
-
-            foreach (var day in _moduleScheduleForm.DayTimeSelectors)
+            if (!schedulesResult.Success)
             {
-                var val = schedulesFromRepo.FirstOrDefault(s => s.StartAt.DayOfWeek == (DayOfWeek)day.DayOfWeek);
+                Logger.LogError($"The schedules request failed with status code \"{schedulesResult.Code}\".\n{schedulesResult.Message}");
 
-                if (val is null)
-                {
-                    day.IsSelected = false;
-                    day.From = new DateTime();
-                    day.To = new DateTime();
-                }
-                else
-                {
-                    day.IsSelected = true;
-                    day.From = val.StartAt;
-                    day.To = val.EndAt;
-                }
+                ShowMessage(
+                    ToastType.Danger,
+                    "Chargement des horaires",
+                    $"Le chargement des horaires a échoué.\n{schedulesResult.Message}",
+                    false
+                );
+
+                return;
             }
 
+            if (schedulesResult.Data is null)
+            {
+                Logger.LogError($"The schedules request succeeded but the data is null.\n{schedulesResult.Message}");
+
+                ShowMessage(
+                    ToastType.Danger,
+                    "Chargement des horaires",
+                    $"Le chargement des horaires est réussi mais les données sont null.\n{schedulesResult.Message}",
+                    false
+                );
+
+                return;
+            }
+
+            IEnumerable<ScheduleModel> schedules = schedulesResult.Data;
+
+            // Calculate start and end dates
+            DateTime firstDay = schedules.FirstOrDefault()?.StartAt ?? DateTime.Now;
+
+            // Sort schedules by EndAt in descending order and get the latest date
+            DateTime lastDay = schedules.OrderByDescending(schedule => schedule.EndAt).FirstOrDefault()?.EndAt ?? DateTime.Now;
+
+            // Set the start and end date of the form
+            ModuleScheduleForm.StartDate = firstDay.Date;
+            ModuleScheduleForm.EndDate = lastDay.Date;
+
+
+            // Populate DayTimeSelectors
+            foreach (DayTimeSelectorModel day in ModuleScheduleForm.DayTimeSelectors)
+            {
+                ScheduleModel? scheduleForDay = schedules.FirstOrDefault(s => s.StartAt.DayOfWeek == (DayOfWeek)day.DayOfWeek);
+
+                int nbElements = schedules.Count(s => s.StartAt.DayOfWeek == (DayOfWeek)day.DayOfWeek);
+
+                day.IsSelected = scheduleForDay is not null && nbElements > 1;
+                day.From = nbElements > 1 ? scheduleForDay?.StartAt ?? new DateTime() : new DateTime();
+                day.To = nbElements > 1 ? scheduleForDay?.EndAt ?? new DateTime() : new DateTime();
+            }
+
+            int index = 0;
+
+            foreach (ScheduleModel schedule in schedules)
+            {
+                int nbSchedule = schedules.Count(sc => sc.StartAt.DayOfWeek == schedule.StartAt.DayOfWeek);
+
+                if (nbSchedule == 1)
+                {
+                    ModuleScheduleForm.ExceptionalSchedules.Add(new(index)
+                        {
+                            Date = schedule.StartAt,
+                            From = schedule.StartAt,
+                            To = schedule.EndAt
+                        });
+                }
+
+                index++;
+            }
+
+            // Generate ExceptionalCloses
             for (DateTime dti = firstDay; dti <= lastDay; dti = dti.AddDays(1))
             {
-                bool exist = schedulesFromRepo.Any(s =>
-                    s.StartAt.Year == dti.Year && s.StartAt.Month == dti.Month && s.StartAt.Date == dti.Date);
+                // Check if schedules contains the exceptional close date time
+                bool exist = schedules.Any(s => s.StartAt.Date == dti.Date);
 
-                bool isSelected = _moduleScheduleForm.DayTimeSelectors.Any(dts =>
-                    dts.IsSelected && (DayOfWeek)dts.DayOfWeek == dti.DayOfWeek);
+                // Check if the current day of week is selected
+                bool isSelected = ModuleScheduleForm
+                    .DayTimeSelectors
+                    .Any(dts => dts.IsSelected && (DayOfWeek)dts.DayOfWeek == dti.DayOfWeek);
 
+                // If the exceptional close doesn't already exit and the day is not selected and the day is not sunday
                 if (!exist && isSelected && dti.DayOfWeek != DayOfWeek.Sunday)
                 {
+                    // Set the close from datetime
                     DateTime closedFrom = dti;
+
+                    // Set the close to datetime
                     DateTime closedTo = dti;
 
-                    bool closureOver = false;
-
-                    for (DateTime cdt = dti.AddDays(1); cdt < lastDay && !closureOver; cdt = cdt.AddDays(1))
+                    for (DateTime cdt = dti.AddDays(1); cdt < lastDay; cdt = cdt.AddDays(1))
                     {
-                        bool cdtExist = schedulesFromRepo.Any(s =>
-                            s.StartAt.Year == cdt.Year && s.StartAt.Month == cdt.Month && s.StartAt.Day == cdt.Day);
+                        bool cdtExist = schedules.Any(s => s.StartAt.Date == cdt.Date);
 
                         if (cdtExist)
                         {
-                            closureOver = true;
+                            break;
                         }
 
-                        bool cdtIsSelected = _moduleScheduleForm.DayTimeSelectors.Any(dts =>
+                        bool cdtIsSelected = ModuleScheduleForm.DayTimeSelectors.Any(dts =>
                             dts.IsSelected && (DayOfWeek)dts.DayOfWeek == cdt.DayOfWeek);
 
                         if (!cdtExist && cdtIsSelected)
@@ -282,16 +368,16 @@
                         }
                     }
 
-                    _moduleScheduleForm.ExceptionalCloses.Add(new ExceptionalCloseForm()
+                    int nbExceptionalCloses = ModuleScheduleForm.ExceptionalCloses.Count;
+
+                    ModuleScheduleForm.ExceptionalCloses.Add(new ExceptionalCloseForm()
                         {
                             From = closedFrom,
                             To = closedTo,
-                            Id = _moduleScheduleForm.ExceptionalCloses.Count == 0
-                                        ? 0
-                                        : _moduleScheduleForm.ExceptionalCloses.OrderBy(e => e.Id).Last().Id + 1
+                            Id = nbExceptionalCloses == 0 ? 0 : ModuleScheduleForm.ExceptionalCloses.Max(e => e.Id) + 1
                         });
 
-                    dti = new DateTime(closedTo.Year, closedTo.Month, closedTo.Day);
+                    dti = closedTo.Date;
                 }
             }
         }
@@ -299,125 +385,425 @@
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Load all the available teachers from the database
+    /// </summary>
+    /// <returns></returns>
+    private async Task<bool> LoadTeachersAsync()
+    {
+        /// Load the teachers
+        ResultModel<IEnumerable<UserModel>> result = await UserService.GetTeachersAsync();
+
+        if (!result.Success)
+        {
+            Logger.LogError($"The teachers request failed with status codes \"{result.Code}\".\n{result.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des professeurs",
+                $"Le chargement de la liste des professeurs a échoué.\n{result.Message}",
+                false);
+
+            return false;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError($"The teachers request succeeded but data result is null.\n{result.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des professeurs",
+                $"Le chargement de la liste des professeurs est réussi mais les données retournées sont null.\n{result.Message}",
+                false
+            );
+
+            return false;
+        }
+
+        Teachers = Mapper.Map<IEnumerable<UserSelectionModel>>(result.Data);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Load the current module by the given ID
+    /// </summary>
+    /// <returns></returns>
+    private async Task<bool> LoadModuleAsync()
+    {
+        if (!Id.HasValue)
+        {
+            Logger.LogError("The id of the module is null");
+
+            return false;
+        }
+
+        ResultModel<ModuleModel> moduleResult = await ModuleService.GetModuleAsync(Id.Value);
+
+        if (!moduleResult.Success)
+        {
+            Logger.LogError($"The module request failed with status codes \"{moduleResult.Code}\".\n{moduleResult.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement du module",
+                $"Le chargement du module a échoué.\n{moduleResult.Message}",
+                false
+            );
+
+            return false;
+        }
+
+        if (moduleResult.Data is null)
+        {
+            Logger.LogError($"The module request succeeded but the data is null.\n{moduleResult.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement du module",
+                $"Le chargement du module est réussi mais les données retournées sont null.\n{moduleResult.Data}",
+                false
+            );
+
+            return false;
+        }
+
+        ModuleForm = Mapper.Map<ModuleForm>(moduleResult.Data);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Event handler for the module <see cref="EditForm.OnValidSubmit"/>
+    /// </summary>
+    /// <returns></returns>
     private async Task HandleValidModuleSubmitAsync()
     {
-        Logger.LogInformation($"{DateTime.Now} - {nameof(HandleValidModuleSubmitAsync)} started");
+        PreloadService?.Show();
+
+        ModuleCreationModel module = Mapper.Map<ModuleCreationModel>(ModuleForm);
+
+        ResultModel<ModuleModel>? result = null;
 
         if (Id.HasValue)
         {
-            var moduleToUpdate = Mapper.Map<ModuleCreationModel>(_moduleForm);
-
-            var updatedModule = await ModuleService.UpdateModuleAsync(Id.Value, moduleToUpdate);
-
-            if (updatedModule is null)
-            {
-                _moduleResultMessage = "La mise à jour du module a échouée";
-
-                Logger.LogError($"{DateTime.Now} - Module update failed !");
-            }
+            result = await ModuleService.UpdateModuleAsync(Id.Value, module);
         }
         else
         {
-            var moduleToCreate = Mapper.Map<ModuleCreationModel>(_moduleForm);
-
-            var createdModule = await ModuleService.CreateModuleAsync(moduleToCreate);
-
-            Logger.LogInformation($"{DateTime.Now} - Creation result : {createdModule is not null}");
-
-            if (createdModule is not null)
-            {
-                NavigationManager.NavigateTo($"/depot/managemodule/{createdModule.Id}");
-            }
-            else
-            {
-                _moduleResultMessage = "La création du module a échouée, veuillez contacter l'équipe technique";
-            }
+            result = await ModuleService.CreateModuleAsync(module);
         }
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "The changes of the module failed with status code \"{code}\".\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Enregistrement du module",
+                $"L'enregistrement du module a échoué.\n{result.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "The changes of the module succeeded but the returned data is null.\n{msg}",
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Enregistrement du module",
+                $"L'enregistrement du module est réussi mais les données retournées sont null.\n{result.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (!Id.HasValue)
+        {
+            int createdModuleId = result.Data.Id;
+
+            NavigationManager.NavigateTo($"/depot/manage-module/{createdModuleId}");
+        }
+        else
+        {
+            ModuleForm = Mapper.Map<ModuleForm>(result.Data);
+        }
+
+        PreloadService?.Hide();
+
+        ShowMessage(
+            ToastType.Success,
+            "Enregistrement du module",
+            "Les modifications ont correctement été enregistrées",
+            true
+        );
     }
 
+    /// <summary>
+    /// Event handler for the schedules <see cref="EditForm.OnValidSubmit"/>
+    /// </summary>
+    /// <returns></returns>
     private async Task HandleValidModuleScheduleSubmitAsync()
     {
-        Logger.LogInformation($"{DateTime.Now} - {nameof(HandleValidModuleScheduleSubmitAsync)} started");
+        PreloadService?.Show();
+
+        if (!Id.HasValue)
+        {
+            Logger.LogError("The module id is null");
+
+            ShowMessage(
+                ToastType.Warning,
+                "Action interdite",
+                "Vous ne pouvez pas modifier l'horaire d'un module brouillon. Veuillez d'abord créer un module",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        ResultModel<IEnumerable<ScheduleModel>> schedulesResult = await ModuleService.GetModuleSchedulesAsync(Id.Value);
+
+        if (!schedulesResult.Success)
+        {
+            Logger.LogError($"The schedules request failed with status code \"{schedulesResult.Code}\".\n{schedulesResult.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des horaires",
+                $"Le chargement des horaires a échoué.\n{schedulesResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (schedulesResult.Data is null)
+        {
+            Logger.LogError($"The schedules request succeeded but the data is null.\n{schedulesResult.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des horaires",
+                $"Le chargement des horaires est réussi mais les données sont null.\n{schedulesResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        IEnumerable<ScheduleModel> schedules = schedulesResult.Data;
 
         List<ScheduleForm> schedulesToCreate = new();
 
-        IEnumerable<BLL.Models.ScheduleModel> schedulesFromRepo = await ModuleService.GetModuleSchedulesAsync(Id.Value);
-
+        // Delete all the existing schedules
         try
         {
-            if (_moduleScheduleForm.StartDate < DateTime.Now)
+            // If the module start date is smaller (in the past) than today, retrieve all schedules starting from today
+            if (ModuleScheduleForm.StartDate < DateTime.Now)
             {
-                schedulesFromRepo = schedulesFromRepo.Where(s => s.StartAt >= DateTime.Now);
+                schedules = schedules.Where(s => s.StartAt >= DateTime.Now);
             }
 
-            foreach (var schedule in schedulesFromRepo)
+            // Delete each schedule from the list
+            foreach (ScheduleModel schedule in schedules)
             {
-                var result = await ModuleService.DeleteScheduleAsync(Id.Value, schedule.Id);
+                ResultModel<bool> result = await ModuleService.DeleteScheduleAsync(Id.Value, schedule.Id);
 
-                if (result)
+                if (!result.Success)
                 {
-                    Logger.LogInformation($"{DateTime.Now} - Schedule with ID \"{schedule.Id}\" successfully deleted");
+                    Logger.LogError(
+                        "The deletion request failed with status code \"{code}\".\n{msg}",
+                        result.Code,
+                        result.Message
+                    );
+
+                    ShowMessage(
+                        ToastType.Danger,
+                        "Suppression",
+                        $"La suppression de l'horaire du {schedule.StartAt.ToString("F")} a échoué",
+                        false
+                    );
+                }
+
+                if (!result.Data)
+                {
+                    Logger.LogWarning(
+                        "The deletion of schedule with id {sId} of module with id {mId} failed.\n{msg}",
+                        schedule.Id,
+                        Id.Value,
+                        result.Message
+                    );
+
+                    ShowMessage(
+                        ToastType.Warning,
+                        "Suppression de l'horaire",
+                        $"La suprresion de l'horaire du {schedule.StartAt.ToString("F")} a échoué",
+                        false
+                    );
                 }
                 else
                 {
-                    Logger.LogError($"{DateTime.Now} - Schedule with ID \"{schedule.Id}\" delete failed");
+                    Logger.LogInformation("The deletion of module with {id} succeeded", schedule.Id);
+
+                    ShowMessage(
+                        ToastType.Success,
+                        "Suppression de l'horaire",
+                        $"La suppression de l'horaire du {schedule.StartAt.ToString("F")} s'est fait correctement",
+                        true
+                    );
                 }
             }
         }
         catch (Exception e)
         {
-            Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to delete a schedule :\n " +
-                    $"{e.Message}\n{e.StackTrace}");
+            Logger.LogError(
+                "{date} - An exception was thrown when trying to delete a schedule :\n{eMsg}\n{eStr}",
+                DateTime.Now,
+                e.Message,
+                e.StackTrace
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Suppression de l'horaire",
+                "Une erreur est survenue lors de la suppression de l'horaire. Veuillez recharger la page",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
         }
 
-        for (DateTime dti = _moduleScheduleForm.StartDate; dti <= _moduleScheduleForm.EndDate; dti = dti.AddDays(1))
+        DateTime start = ModuleScheduleForm.StartDate > DateTime.Now ? ModuleScheduleForm.StartDate : DateTime.Now;
+        DateTime end = ModuleScheduleForm.EndDate;
+
+        // Load the list of schedules to create
+        foreach (DateTime dti in Utils.EachDay(start, end))
         {
-            var daySelection = _moduleScheduleForm.DayTimeSelectors
+            DayTimeSelectorModel? daySelection = ModuleScheduleForm.DayTimeSelectors
                 .FirstOrDefault(dts => dts.IsSelected && dts.DayOfWeek == (DaysOfTheWeekFr)dti.DayOfWeek);
 
-            bool isExceptionallyClosed = _moduleScheduleForm.ExceptionalCloses.Any(e => dti >= e.From && dti <= e.To);
-
-            if (daySelection is not null && !isExceptionallyClosed)
+            if (daySelection is null)
             {
-                schedulesToCreate.Add(new ScheduleForm()
-                    {
-                        StartAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelection.From.Hour,
-                                                                                    daySelection.From.Minute, 0),
-                        EndAt = new DateTime(dti.Year, dti.Month, dti.Day, daySelection.To.Hour,
-                                                                                    daySelection.To.Minute, 0),
-                    });
+                Logger.LogInformation("The selected day is null");
+
+                continue;
             }
+
+            bool isExceptionallyClosed = ModuleScheduleForm.ExceptionalCloses.Any(e => dti >= e.From && dti <= e.To);
+
+            if (isExceptionallyClosed)
+            {
+                Logger.LogInformation("The {date} is registered as exceptionally closed", dti.ToString("G"));
+
+                continue;
+            }
+
+            DateTime startAt = dti.Date + daySelection.From.TimeOfDay;
+            DateTime endAt = dti.Date + daySelection.To.TimeOfDay;
+
+            schedulesToCreate.Add(new ScheduleForm()
+                {
+                    StartAt = startAt,
+                    EndAt = endAt
+                });
         }
 
-        foreach (var schedule in schedulesToCreate)
+        // Creation of the schedules
+        foreach (ScheduleForm schedule in schedulesToCreate)
         {
             try
             {
                 ScheduleCreateModel scheduleToCreate = Mapper.Map<ScheduleCreateModel>(schedule);
 
-                var createdSchedule = await ModuleService.CreateScheduleAsync(Id.Value, scheduleToCreate);
+                ResultModel<ScheduleModel> scheduleResult = await ModuleService.CreateScheduleAsync(Id.Value, scheduleToCreate);
 
-                if (createdSchedule is null)
+                if (!scheduleResult.Success)
                 {
-                    Logger.LogError($"{DateTime.Now} - Schedule could not be created for \"{scheduleToCreate.StartAt}\"");
+                    Logger.LogError(
+                        "The creation of the schedule for date {date} failed with status codes {code}.\n{msg}",
+                        schedule.StartAt.ToString("G"),
+                        scheduleResult.Code,
+                        scheduleResult.Message
+                    );
+
+                    ShowMessage(
+                        ToastType.Warning,
+                        "Échec de la création",
+                        $"La création de l'horaire pour le {schedule.StartAt.ToString("F")} a échoué.\n{scheduleResult.Message}",
+                        false
+                    );
+
+                    continue;
                 }
+
+                if (scheduleResult.Data is null)
+                {
+                    Logger.LogError(
+                        "The creation of the schedule for date {date} succeded but the returned data is null.\n{msg}",
+                        schedule.StartAt.ToString("G"),
+                        scheduleResult.Message
+                    );
+
+                    ShowMessage(
+                        ToastType.Warning,
+                        "Échec de la création",
+                        $"La création de l'horaire pour le {schedule.StartAt.ToString("F")} a réussi mais les données " +
+                        $"sont null.\n{scheduleResult.Message}",
+                        false
+                    );
+
+                    continue;
+                }
+
+                ScheduleModel createdSchedule = scheduleResult.Data;
             }
             catch (Exception e)
             {
-                Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to create a Schedule " +
-                    $"{e.Message}\n{e.StackTrace}");
+                Logger.LogError(
+                    "{date} - An exception was thrown when trying to create a Schedule {eMsg}\n{eStr}",
+                    DateTime.Now,
+                    e.Message,
+                    e.StackTrace
+                );
             }
         }
 
-        foreach (var exceptionalSchedule in _moduleScheduleForm.ExceptionalSchedules)
+        // Create the exceptional schedules
+        foreach (ExceptionalScheduleForm exceptionalSchedule in ModuleScheduleForm.ExceptionalSchedules)
         {
             try
             {
-                DateTime scheduleFrom = new DateTime(exceptionalSchedule.Date.Year, exceptionalSchedule.Date.Month,
-                    exceptionalSchedule.Date.Day, exceptionalSchedule.From.Hour, exceptionalSchedule.From.Minute, 0);
+                DateTime scheduleFrom = exceptionalSchedule.Date
+                    .AddHours(exceptionalSchedule.From.Hour)
+                    .AddMinutes(exceptionalSchedule.From.Minute);
 
-                DateTime scheduleTo = new DateTime(exceptionalSchedule.Date.Year, exceptionalSchedule.Date.Month,
-                    exceptionalSchedule.Date.Day, exceptionalSchedule.To.Hour, exceptionalSchedule.To.Minute, 0);
+                DateTime scheduleTo = exceptionalSchedule.Date
+                    .AddHours(exceptionalSchedule.To.Hour)
+                    .AddMinutes(exceptionalSchedule.To.Minute);
 
                 ScheduleCreateModel scheduleCreate = new ScheduleCreateModel()
                     {
@@ -425,124 +811,245 @@
                         EndAt = scheduleTo
                     };
 
-                var createdSchedule = await ModuleService.CreateScheduleAsync(Id.Value, scheduleCreate);
+                ResultModel<ScheduleModel> scheduleResult = await ModuleService.CreateScheduleAsync(Id.Value, scheduleCreate);
 
-                if (createdSchedule is null)
+                if (!scheduleResult.Success)
                 {
-                    Logger.LogError($"{DateTime.Now} - The creation of the exceptional schedule for date \"{scheduleFrom}\" " +
-                        $"failed");
+                    Logger.LogError(
+                        "The creation of the schedule for date {date} failed with status codes {code}.\n{msg}",
+                        scheduleCreate.StartAt.ToString("G"),
+                        scheduleResult.Code,
+                        scheduleResult.Message
+                    );
+
+                    ShowMessage(
+                        ToastType.Warning,
+                        "Échec de la création",
+                        $"La création de l'horaire pour le {scheduleCreate.StartAt.ToString("F")} a échoué.\n{scheduleResult.Message}",
+                        false
+                    );
+
+                    continue;
+                }
+
+                if (scheduleResult.Data is null)
+                {
+                    Logger.LogError(
+                        "The creation of the schedule for date {date} succeded but the returned data is null.\n{msg}",
+                        scheduleCreate.StartAt.ToString("G"),
+                        scheduleResult.Message
+                    );
+
+                    ShowMessage(
+                        ToastType.Warning,
+                        "Échec de la création",
+                        $"La création de l'horaire pour le {scheduleCreate.StartAt.ToString("F")} a réussi mais les données " +
+                        $"sont null.\n{scheduleResult.Message}",
+                        false
+                    );
+
+                    continue;
                 }
             }
             catch (Exception e)
             {
-                Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to create an exceptional schedule\n"
-                    + $"{e.Message}\n{e.StackTrace}");
+                Logger.LogError(
+                    "{date} - An exception occurred when trying to create an exceptional schedule:\n{eMsg}\n{eStr}",
+                    DateTime.Now,
+                    e.Message,
+                    e.StackTrace
+                );
             }
         }
 
-        Logger.LogInformation($"{DateTime.Now} - Form submitted");
+        PreloadService?.Hide();
+
+        ShowMessage(
+            ToastType.Success,
+            "Horaire",
+            "L'horaire du module a été crée",
+            true
+        );
     }
 
+    /// <summary>
+    /// Add a new empty <see cref="ExceptionalCloseForm"/> in <see cref="ModuleScheduleForm.ExceptionalCloses"/>
+    /// </summary>
     private void AddExceptionalClose()
     {
-        _moduleScheduleForm.ExceptionalCloses.Add(new ExceptionalCloseForm(_moduleScheduleForm.ExceptionalCloses.Count));
-        Logger.LogInformation($"{DateTime.Now} - The number of exceptional closes is " +
-            $"\"{_moduleScheduleForm.ExceptionalCloses.Count}\"");
+        ModuleScheduleForm.ExceptionalCloses.Add(new ExceptionalCloseForm(ModuleScheduleForm.ExceptionalCloses.Count));
     }
 
+    /// <summary>
+    /// Remove a <see cref="ExceptionalCloseForm"/> of <see cref="ModuleScheduleForm.ExceptionalCloses"/>
+    /// </summary>
+    /// <param name="id">The id of the <see cref="ExceptionalCloseForm"/> in the list</param>
     private void RemoveExceptionalClose(int id)
     {
         try
         {
-            var element = _moduleScheduleForm.ExceptionalCloses.Find(e => e.Id.Equals(id));
+            ExceptionalCloseForm? element = ModuleScheduleForm.ExceptionalCloses.Find(e => e.Id.Equals(id));
 
             if (element is null)
             {
-                Logger.LogWarning($"{DateTime.Now} - There is no element in the list with ID \"{id}\"");
+                Logger.LogWarning("{date} - There is no element in the list with ID \"{id}\"", DateTime.Now, id);
             }
             else
             {
-                _moduleScheduleForm.ExceptionalCloses.Remove(element);
+                ModuleScheduleForm.ExceptionalCloses.Remove(element);
                 StateHasChanged();
             }
         }
         catch (Exception e)
         {
-            Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to remove an exceptional close :\n" +
-                $"{e.Message}\n{e.StackTrace}");
+            Logger.LogError(
+                "{date} - An exception was thrown when trying to remove an exceptional close :\n{eMsg}\n{eStr}",
+                DateTime.Now,
+                e.Message,
+                e.StackTrace
+            );
         }
     }
 
+    /// <summary>
+    /// A a <see cref="ExceptionalScheduleForm"/> in <see cref="ModuleScheduleForm.ExceptionalSchedules"/>
+    /// </summary>
     private void AddExceptionalSchedule()
     {
-        _moduleScheduleForm.ExceptionalSchedules.Add(new ExceptionalScheduleForm(_moduleScheduleForm.ExceptionalSchedules.Count));
+        int nbExceptinalSchedules = ModuleScheduleForm.ExceptionalSchedules.Count;
 
-        StateHasChanged();
-
-        Logger.LogInformation($"{DateTime.Now} - The number of exceptional schedules is " +
-            $"\"{_moduleScheduleForm.ExceptionalSchedules.Count}\"");
+        ModuleScheduleForm.ExceptionalSchedules.Add(new ExceptionalScheduleForm(nbExceptinalSchedules));
     }
 
+    /// <summary>
+    /// Remove a <see cref="ExceptionalScheduleForm"/> from <see cref="ModuleScheduleForm.ExceptionalSchedules"/>
+    /// by the given id
+    /// </summary>
+    /// <param name="id">
+    /// The id of the <see cref="ExceptionalScheduleForm"/> in <see cref="ModuleScheduleForm.ExceptionalSchedules"/>
+    /// </param>
     private void RemoveExceptionalSchedule(int id)
     {
         try
         {
-            var element = _moduleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
+            ExceptionalScheduleForm? element = ModuleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
 
             if (element is null)
             {
-                Logger.LogWarning($"{DateTime.Now} - There is no element in the list with ID \"{id}\"");
+                Logger.LogWarning("{date} - There is no element in the list with ID \"{id}\"", DateTime.Now, id);
             }
             else
             {
-                _moduleScheduleForm.ExceptionalSchedules.Remove(element);
+                ModuleScheduleForm.ExceptionalSchedules.Remove(element);
                 StateHasChanged();
             }
         }
         catch (Exception e)
         {
-            Logger.LogError($"{DateTime.Now} - An exception was thrown when trying to remove an exceptional schedule :\n" +
-                $"{e.Message}\n{e.StackTrace}");
+            Logger.LogError(
+                "{date} - An exception was thrown when trying to remove an exceptional schedule :\n{eMsg}\n{eStr}",
+                DateTime.Now,
+                e.Message,
+                e.StackTrace
+            );
         }
     }
 
+    /// <summary>
+    /// Event handler for <see cref="RadzenDatePicker.Change"/> for the <see cref="ExceptionalScheduleForm.From"/>
+    /// with the given id in <see cref="ModuleScheduleForm.ExceptionalSchedules"/>
+    /// </summary>
+    /// <param name="value">The new datetime value</param>
+    /// <param name="name">The format name</param>
+    /// <param name="format">The format</param>
+    /// <param name="id">The id of the <see cref="ExceptionalScheduleForm"/></param>
     private void OnChangeFrom(DateTime? value, string name, string format, int id)
     {
-        if (value.HasValue)
+        if (!value.HasValue)
         {
-            Logger.LogInformation(value.Value.ToString());
+            Logger.LogWarning("{val} has no value", nameof(value));
 
-            var element = _moduleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
-
-            if (element is not null)
-            {
-                int index = _moduleScheduleForm.ExceptionalSchedules.IndexOf(element);
-
-                _moduleScheduleForm.ExceptionalSchedules[index].From = value.Value;
-
-                Logger.LogInformation($"{DateTime.Now} - {nameof(element.From)} new value " +
-                    $"{_moduleScheduleForm.ExceptionalSchedules[index].From.ToString()}");
-            }
+            return;
         }
+
+        ExceptionalScheduleForm? element = ModuleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
+
+        if (element is null)
+        {
+            Logger.LogError("The {type} with id \"{id}\" is null", typeof(ExceptionalScheduleForm), id);
+
+            return;
+        }
+
+        int index = ModuleScheduleForm.ExceptionalSchedules.IndexOf(element);
+
+        ModuleScheduleForm.ExceptionalSchedules[index].From = value.Value;
+
+        Logger.LogInformation(
+            "{date} - {name} new value {from}",
+            DateTime.Now,
+            nameof(element.From),
+            ModuleScheduleForm.ExceptionalSchedules[index].From.ToString()
+        );
     }
 
+    /// <summary>
+    /// Event handler for <see cref="RadzenDatePicker.Change"/> for the <see cref="ExceptionalScheduleForm.To"/>
+    /// with the given id in <see cref="ModuleScheduleForm.ExceptionalSchedules"/>
+    /// </summary>
+    /// <param name="value">The new datetime value</param>
+    /// <param name="name">The format name</param>
+    /// <param name="format">The format</param>
+    /// <param name="id">The id of the <see cref="ExceptionalScheduleForm"/></param>
     private void OnChangeTo(DateTime? value, string name, string format, int id)
     {
-        if (value.HasValue)
+        if (!value.HasValue)
         {
-            Logger.LogInformation(value.Value.ToString());
+            Logger.LogWarning("{val} has no value", nameof(value));
 
-            var element = _moduleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
-
-            if (element is not null)
-            {
-                int index = _moduleScheduleForm.ExceptionalSchedules.IndexOf(element);
-
-                _moduleScheduleForm.ExceptionalSchedules[index].To = value.Value;
-
-                Logger.LogInformation($"{DateTime.Now} - {nameof(element.To)} New value " +
-                    $"{_moduleScheduleForm.ExceptionalSchedules[index].To.ToString()}");
-            }
+            return;
         }
+
+        ExceptionalScheduleForm? element = ModuleScheduleForm.ExceptionalSchedules.Find(e => e.Id.Equals(id));
+
+        if (element is null)
+        {
+            Logger.LogError("The {type} with id \"{id}\" is null", typeof(ExceptionalScheduleForm), id);
+
+            return;
+        }
+
+
+        int index = ModuleScheduleForm.ExceptionalSchedules.IndexOf(element);
+
+        ModuleScheduleForm.ExceptionalSchedules[index].To = value.Value;
+
+        Logger.LogInformation(
+            "{date} - {name} new value {from}",
+            DateTime.Now,
+            nameof(element.To),
+            ModuleScheduleForm.ExceptionalSchedules[index].To.ToString()
+        );
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

@@ -9,7 +9,7 @@ namespace Web.DepotEice.BLL.IServices
 {
     public interface IOpeningHoursService
     {
-        Task<IEnumerable<OpeningHoursModel>> GetOpeningHoursAsync();
+        Task<ResultModel<IEnumerable<OpeningHoursModel>>> GetOpeningHoursAsync(int? day = null, int? month = null, int? year = null);
         Task<IEnumerable<OpeningHoursModel>> GetWeekOpeningHoursAsync(DateTime dateTime);
         Task<IEnumerable<DateTime>> GetClosedDatesAsync();
         Task<OpeningHoursModel> CreateOpeningHoursAsync(OpeningHoursCreateModel openingHours);

@@ -1,6 +1,7 @@
 ﻿@page "/depot/modules"
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
 @using Web.DepotEice.UIL.Models.Forms;
@@ -13,32 +14,34 @@
 <h3 class="text-center my-5">Modules</h3>
 
 <div class="container">
-    <div class="row">
-        @if (_isDirection)
-        {
-            <NavLink href="depot/modulerequests" class="text-dark">
-                Demandes d'acceptation aux modules (@_numberOfAcceptationDemands)
-            </NavLink>
-        }
-    </div>
+    <Authorize Role="@UserManager.DIRECTION_ROLE">
+        <Authorized>
+            <div class="row">
+                <NavLink href="depot/module-requests" class="text-dark">
+                    Demandes d'acceptation aux modules (@NumberOfAcceptationDemands)
+                </NavLink>
+            </div>
+        </Authorized>
+    </Authorize>
 
-    <EditForm class="py-3 border-bottom" Model="_moduleFilters" OnValidSubmit="( async () => await HandleFiltersValidSubmitAsync())">
-        <div class="input-group">
+    <EditForm class="py-3 border-bottom" Model="ModuleFilters" OnValidSubmit="( async () => await HandleFiltersValidSubmitAsync())">
+        <div class="input-group mb-3">
             <button class="btn btn-outline-danger" type="button" id="clear" @onclick="ClearFiltersAsync">
                 <i class="bi bi-x-lg"></i>
             </button>
             <InputText type="text" class="form-control" placeholder="Recherche" aria-label="Texte de recherche"
-                       aria-describedby="Recherche" @bind-Value="_moduleFilters.SearchText" />
+                       aria-describedby="Recherche" @bind-Value="ModuleFilters.SearchText" />
             <button class="btn btn-outline-secondary" type="submit" id="recherche">Recherche</button>
         </div>
 
-        @if (_isDirection)
-        {
-            <NavLink class="btn btn-outline-primary my-2" href="depot/managemodule">Créer un module</NavLink>
-        }
+        <Authorize Role="@UserManager.DIRECTION_ROLE">
+            <Authorized>
+                <NavLink class="btn btn-outline-primary" href="depot/manage-module">Créer un module</NavLink>
+            </Authorized>
+        </Authorize>
     </EditForm>
 
-    <InfiniteScrolling ItemsProvider="GetItemsAsync">
+    <InfiniteScrolling @ref="ModulesScrolling" ItemsProvider="GetItemsAsync">
         <ItemTemplate Context="module">
 
             <div class="container">
@@ -49,11 +52,13 @@
                     </p>
                     <span>@module.TeacherName</span>
                     <div class="row">
-                        <NavLink href="@module.ModuleUrl">Plus de détails</NavLink>
-                        @if (_isDirection)
-                        {
-                            <NavLink href="@module.ModuleManageUrl">Gérer l'horaire</NavLink>
-                        }
+                        <NavLink href="@($"{module.ModuleUrl}?ReturnUrl=/depot/modules")">Plus de détails</NavLink>
+
+                        <Authorize Role="@UserManager.DIRECTION_ROLE">
+                            <Authorized>
+                                <NavLink href="@module.ModuleManageUrl">Gérer l'horaire</NavLink>
+                            </Authorized>
+                        </Authorize>
                     </div>
                 </div>
             </div>
@@ -69,42 +74,136 @@
     </InfiniteScrolling>
 </div>
 
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+
 @code {
-    // TODO :
-    //  1. Les modules disponibles (liste)
-    //  2. Les utilisateurs demandant de rejoindre un module
-    private int _numberOfAcceptationDemands = 0;
-    private ModuleFiltersForm _moduleFilters = new();
-    private bool _isDirection = false;
+    /// <summary>
+    /// The list of toast messages to display (Components)
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
+    /// The module scrolling object
+    /// </summary>
+    public InfiniteScrolling<ModulePresentationModel>? ModulesScrolling { get; set; }
+
+    /// <summary>
+    /// Number of user requesting an acceptance to a module
+    /// </summary>
+    public int NumberOfAcceptationDemands { get; private set; } = 0;
+
+    /// <summary>
+    /// The object containing all the filters to apply on the search
+    /// </summary>
+    private ModuleFiltersForm ModuleFilters = new();
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO : Récupérer les utilisateurs ajoutés à un module mais qui n'ont pas encore le status accepté
+        ResultModel<IEnumerable<UserModuleRequestModel>> result = await ModuleService.GetUsersRequestingModules();
 
-        _isDirection = await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE);
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "Requesting the user asking for a module failed with status code \"{code}\".\n{msg}",
+                result.Code,
+                result.Message
+            );
 
-        _numberOfAcceptationDemands = (await ModuleService.GetUsersRequestingModules()).Count();
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "Requesting the users asking for a module succeded but the data is null.\n{msg}",
+                result.Message
+            );
+
+            return;
+        }
+
+        NumberOfAcceptationDemands = result.Data.Count();
     }
 
+    /// <summary>
+    /// Event handler for <see cref="EditForm.OnValidSubmit"/> event. Reload the modules scrolling object with the
+    /// new filters
+    /// </summary>
+    /// <returns></returns>
     private async Task HandleFiltersValidSubmitAsync()
     {
-
+        if (ModulesScrolling is not null)
+        {
+            await ModulesScrolling.ReloadAsync();
+        }
     }
 
+    /// <summary>
+    /// Event handler for the clear button. Clear all the filters and reload the modules scrolling object
+    /// </summary>
+    /// <returns></returns>
     private async Task ClearFiltersAsync()
     {
-        _moduleFilters = new();
+        ModuleFilters = new();
+
+        if (ModulesScrolling is not null)
+        {
+            await ModulesScrolling.ReloadAsync();
+        }
     }
 
+    /// <summary>
+    /// Event handler for the <see cref="InfiniteScrolling{T}.ItemsProvider"/> event. Get the modules from the
+    /// repository and map them to <see cref="ModulePresentationModel"/> objects
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     private async Task<IEnumerable<ModulePresentationModel>> GetItemsAsync(InfiniteScrollingItemsProviderRequest request)
     {
-        var modulesFromRepo = await ModuleService.GetModulesAsync();
+        ResultModel<IEnumerable<ModuleModel>> modulesResult = await ModuleService.GetModulesAsync();
 
-        if (!string.IsNullOrEmpty(_moduleFilters.SearchText))
+        if (!modulesResult.Success)
+        {
+            Logger.LogError(
+                "Requesting the modules failed with status code {code}.\n{msg}",
+                modulesResult.Code,
+                modulesResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des modules",
+                $"Le chargement des modules a échoué.\n{modulesResult.Message}",
+                false
+            );
+
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+
+        if (modulesResult.Data is null)
+        {
+            Logger.LogError(
+                "The modules request succeded but the data is null.\n{msg}",
+                modulesResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des modules",
+                $"Le chargement des modules a réussi mais aucune donnée n'a été retourné.\n{modulesResult.Message}",
+                false
+            );
+
+            return Enumerable.Empty<ModulePresentationModel>();
+        }
+
+        var modulesFromRepo = modulesResult.Data;
+
+        if (!string.IsNullOrEmpty(ModuleFilters.SearchText))
         {
             modulesFromRepo = modulesFromRepo.Where(m =>
-                m.Name.Contains(_moduleFilters.SearchText, StringComparison.InvariantCultureIgnoreCase) ||
-                m.Description.Contains(_moduleFilters.SearchText, StringComparison.InvariantCultureIgnoreCase));
+                m.Name.Contains(ModuleFilters.SearchText, StringComparison.InvariantCultureIgnoreCase) ||
+                m.Description.Contains(ModuleFilters.SearchText, StringComparison.InvariantCultureIgnoreCase));
         }
 
         if (modulesFromRepo.Count() == 0)
@@ -140,5 +239,26 @@
 
             return Enumerable.Empty<ModulePresentationModel>();
         }
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

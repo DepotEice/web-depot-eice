@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Web.DepotEice.UIL.Helpers;
 
-namespace Web.DepotEice.BLL.Models
+namespace Web.DepotEice.UIL.Models
 {
-    public class ArticleModel
+    public class ArticleDetailsModel
     {
         public int Id { get; set; }
         public int MainImageId { get; set; }
@@ -15,14 +11,13 @@ namespace Web.DepotEice.BLL.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
-        public bool IsPinned { get; set; }
-        public string UserId { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
 
-        public string ArticleUrl
+        public string ImageUrl
         {
             get
             {
-                return $"depot/manage-article/{Id}";
+                return $"{Utils.API_BASE_URL}/Files/ById/{Id}";
             }
         }
     }

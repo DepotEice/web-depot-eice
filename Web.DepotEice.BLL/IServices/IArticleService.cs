@@ -7,13 +7,56 @@ using Web.DepotEice.BLL.Models;
 
 namespace Web.DepotEice.BLL.IServices
 {
+    /// <summary>
+    /// The article service interface
+    /// </summary>
     public interface IArticleService
     {
-        Task<IEnumerable<ArticleModel>> GetArticlesAsync();
-        Task<ArticleModel?> GetArticleAsync(int id);
+        /// <summary>
+        /// Get articles by sending a GET request to the API
+        /// </summary>
+        /// <param name="pinned">Specify if only the pinned articles must be retrieved</param>
+        /// <param name="skip">The number of elements to skip</param>
+        /// <param name="top">The number of elements to keep</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="ArticleModel"/>
+        /// </returns>
+        Task<ResultModel<IEnumerable<ArticleModel>>> GetArticlesAsync(bool pinned = false, int skip = 0, int top = 100,
+            bool descending = false);
+
+        /// <summary>
+        /// Get the article by sending a GET requesting to the API
+        /// </summary>
+        /// <param name="id">The id of the article</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="ArticleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<ArticleModel>> GetArticleAsync(int id);
+
         Task<bool> CanPinArticleAsync();
-        Task<ArticleModel?> CreateArticleAsync(ArticleCreateModel articleCreate);
-        Task<ArticleModel?> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate);
+
+        /// <summary>
+        /// Create an article by sending a POST request to the API with the form
+        /// </summary>
+        /// <param name="articleCreate">The form to create an article</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ArticleModel"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<ArticleModel>> CreateArticleAsync(ArticleCreateModel articleCreate);
+
+        /// <summary>
+        /// Update an article by sending a PUT request with the article ID and the form with the new article
+        /// </summary>
+        /// <param name="id">The id of the article</param>
+        /// <param name="articleUpdate">The form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is the newly created <see cref="ArticleModel"/> 
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<ArticleModel>> UpdateArticleAsync(int id, ArticleCreateModel articleUpdate);
         Task<bool> DeleteArticleAsync(int id);
         Task<bool> RestoreArticleAsync(int id);
     }

@@ -18,7 +18,7 @@
         {
             get
             {
-                return $"/depot/managemodule/{Id}";
+                return $"/depot/manage-module/{Id}";
             }
 
         }

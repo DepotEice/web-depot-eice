@@ -13,194 +13,50 @@
 @inject UserManager UserManager;
 @inject IAppointmentService AppointmentService;
 @inject IMapper Mapper;
+@inject NavigationManager NavigationManager;
 
 <PageTitle>Rendez-vous</PageTitle>
 
 <h2 class="text-center my-5">Prendre rendez-vous</h2>
 
 <div class="container my-5 py-5 bg-light border border-1">
-    <div class="d-flex flex-column align-items-center justify-content-center mt-2">
 
-        <EditForm class="mt-3" Model="@_appointmentForm" OnValidSubmit="@OnValidationSubmit" style="width: 50%">
-            <DataAnnotationsValidator></DataAnnotationsValidator>
+    <AppointmentSelector AppointmentForm="AppointmentForm" ValidSubmit="OnValidationSubmit" Updatable="true"
+                         Modifiable="true" Cancellable="false"/>
 
-            <div class="mb-3">
-                <label for="date" class="form-label">Date</label>
-                <RadzenDatePicker TValue="DateTime?" Inline="true"
-                                  DateRender="@DateRenderOpenDates"
-                                  Change="@(args => OnChange(args, "Calendar", "MM/dd/yyyy"))"
-                                  Value="_appointmentForm.From" />
-                <ValidationMessage class="text-danger" For="@(() => _appointmentForm.From)" />
-            </div>
-
-            <div class="d-flex flex-wrap justify-content-center">
-
-                @for (int i = 0; i < _availableTimes.Count; i++)
-                {
-                    int x = i;
-
-                    <button class="btn btn-outline-secondary m-1 @(_selectedIndex == x ? "active" : "")" type="button"
-                        @onclick="(() => SelectIndex(x))">
-
-                        @_availableTimes[i].ToString("HH:mm")
-                        -
-                        @_availableTimes[i].AddMinutes(30).ToString("HH:mm")
-                    </button>
-                }
-
-            </div>
-
-            <div class="mb-3">
-                <span class="text-danger">@_validationMessage</span>
-            </div>
-            <div class="mb-3">
-                @if (UserManager.IsConnected)
-                {
-                    <button @onclick="OnValidationSubmit" type="submit" class="btn btn-outline-primary mx-auto">
-                        Prendre rendez-vous
-                    </button>
-                }
-                else
-                {
-                    <span class="text-danger">
-                        Pour prendre rendez-vous, veuillez vous connecter ou vous s'inscrire en cliquant
-                    </span>
-                    <NavLink href="/login" class="">ici</NavLink>
-                }
-
-            </div>
-        </EditForm>
-    </div>
 </div>
 
+<Modal @ref="ResultModal" />
+
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+
 @code {
-    private AppointmentForm _appointmentForm = new();
-    private IEnumerable<OpeningHoursModel> _openingHours = new List<OpeningHoursModel>();
-    private List<TimeOnly> _availableTimes = new List<TimeOnly>();
-    private int _selectedIndex = -1;
-    private TimeOnly _selectedTime;
-    private DateTime _minimumDateTime = DateTime.Now;
-    private string _validationMessage = string.Empty;
+    /// <summary>
+    /// The result modal
+    /// </summary>
+    public Modal ResultModal { get; private set; } = new();
 
-    protected override async Task OnInitializedAsync()
+    /// <summary>
+    /// The list of Toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
+    /// The appointment form.
+    /// </summary>
+    public AppointmentForm AppointmentForm { get; private set; } = new();
+
+    /// <summary>
+    /// The appointment returned by the API
+    /// </summary>
+    public AppointmentModel CreatedAppointment { get; set; } = new();
+
+    /// <summary>
+    /// Event handler when the user submit a valid form
+    /// </summary>
+    /// <returns></returns>
+    public async Task OnValidationSubmit(DateTime startDate)
     {
-        _openingHours = await OpeningHoursService.GetOpeningHoursAsync();
-        await LoadAvailableTimeSpans();
-    }
-
-    private void SelectIndex(int index)
-    {
-        _selectedIndex = index;
-
-        _selectedTime = _availableTimes[index];
-
-        Logger.LogInformation($"{DateTime.Now} - Selected index \"{index}\"");
-    }
-
-    private async Task LoadAvailableTimeSpans()
-    {
-        try
-        {
-            Logger.LogInformation($"{DateTime.Now} - {_appointmentForm.From.Date}");
-
-            OpeningHoursModel? openingHours = _openingHours.FirstOrDefault(oh =>
-               oh.OpenAt.Year == _appointmentForm.From.Year &&
-               oh.OpenAt.Month == _appointmentForm.From.Month &&
-               oh.OpenAt.Day == _appointmentForm.From.Day);
-
-            if (openingHours is null)
-            {
-                return;
-            }
-
-            List<TimeOnly> availableTimeSpans = new();
-
-            TimeSpan startTime = openingHours.OpenAt.TimeOfDay;
-            TimeSpan endTime = openingHours.CloseAt.TimeOfDay;
-
-            var appointments = (await AppointmentService.GetAppointmentsAsync())
-                .Where(a => a.StartAt.Year == _appointmentForm.From.Year &&
-                            a.StartAt.Month == _appointmentForm.From.Month &&
-                            a.StartAt.Day == _appointmentForm.From.Day);
-
-            for (TimeSpan ts = startTime; ts <= endTime.Subtract(new TimeSpan(0, 30, 0)); ts = ts.Add(new TimeSpan(0, 30, 0)))
-            {
-                if (!appointments.Any(a => a.StartAt.TimeOfDay == ts) && ts < DateTime.Now.TimeOfDay)
-                {
-                    availableTimeSpans.Add(new TimeOnly(ts.Hours, ts.Minutes, ts.Seconds));
-                }
-            }
-
-            Logger.LogInformation($"{DateTime.Now} - Availabel timespans contains {availableTimeSpans.Count} elements");
-
-            _availableTimes = availableTimeSpans;
-
-            StateHasChanged();
-        }
-        catch (Exception e)
-        {
-            Logger.LogError($"{DateTime.Now} - {e.Message} - {e.StackTrace}");
-        }
-    }
-
-    private void DateRenderOpenDates(DateRenderEventArgs args)
-    {
-        try
-        {
-            args.Disabled = args.Disabled ||
-                            args.Date.DayOfWeek == DayOfWeek.Sunday ||
-                            args.Date < DateTime.Now ||
-                            !_openingHours.Any(oh => oh.OpenAt.Year == args.Date.Year &&
-                                                oh.OpenAt.Month == args.Date.Month &&
-                                                oh.OpenAt.Day == args.Date.Day);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError($"{DateTime.Now} - {e.Message}");
-        }
-    }
-
-    private void DateRenderOpenDateTimes(DateRenderEventArgs args)
-    {
-        try
-        {
-            args.Disabled = args.Disabled ||
-                        !_openingHours.Any(oh => oh.OpenAt.Year == args.Date.Year &&
-                                                oh.OpenAt.Month == args.Date.Month &&
-                                                oh.OpenAt.Day == args.Date.Day &&
-                                                args.Date.TimeOfDay >= oh.OpenAt.TimeOfDay &&
-                                                args.Date.TimeOfDay <= oh.CloseAt.TimeOfDay);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError($"{DateTime.Now} - {e.Message}");
-        }
-    }
-
-    private async void OnChange(DateTime? value, string name, string format)
-    {
-        if (value is not null)
-        {
-            _appointmentForm.From = value.Value;
-
-
-            await LoadAvailableTimeSpans();
-            _selectedIndex = -1;
-            // Logger.LogInformation(_appointmentForm.From.ToString());
-            Logger.LogInformation($"{name} value changed to {value?.ToString(format)}");
-        }
-    }
-
-    public async Task OnValidationSubmit()
-    {
-        DateTime startDate = new DateTime(
-            _appointmentForm.From.Year,
-            _appointmentForm.From.Month,
-            _appointmentForm.From.Day,
-            _selectedTime.Hour,
-            _selectedTime.Minute,
-            _selectedTime.Second);
-
         AppointmentCreateModel appointment = new()
             {
                 StartAt = startDate,
@@ -209,13 +65,67 @@
 
         appointment.EndAt = appointment.StartAt.AddMinutes(30);
 
-        if (await AppointmentService.CreateAppointmentAsync(appointment))
+        ResultModel<AppointmentModel> result = await AppointmentService.CreateAppointmentAsync(appointment);
+
+        if (!result.Success)
         {
-            Logger.LogInformation($"{DateTime.Now} - Appointment created");
+            Logger.LogError($"{DateTime.Now} - {result.Message}");
+
+            string title = "Échec";
+            string body = "La prise de rendez-vous a échouée, veuillez recharger la page ou contacter l'administration";
+
+            ShowMessage(ToastType.Danger, title, body, false);
+
+            return;
+        }
+
+        Logger.LogInformation($"{DateTime.Now} - Successfully created: {result.Message}");
+
+        if (result.Data is null)
+        {
+            Logger.LogWarning("The returned appointment is null");
         }
         else
         {
-            Logger.LogWarning($"{DateTime.Now} - Appointment creation failed");
+            Dictionary<string, object> parameters = new()
+        {
+            { "Appointment", result.Data },
+            { "OnCloseCallback", EventCallback.Factory.Create(this, OnCloseModalAsync) }
+        };
+
+            await ResultModal.ShowAsync<AppointmentCreated>(title: "Rendez-vous crée", parameters: parameters);
         }
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
+    }
+
+    /// <summary>
+    /// Event handler when the user click on the close button of the modal
+    /// </summary>
+    /// <returns></returns>
+    private async Task OnCloseModalAsync()
+    {
+        await ResultModal.HideAsync();
+
+        NavigationManager.NavigateTo("profile/appointments");
     }
 }

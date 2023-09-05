@@ -1,97 +1,115 @@
 ﻿@page "/"
 @page "/index"
+@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Models;
 
 @inject ILogger<Index> Logger;
+@inject IArticleService ArticleService;
+@inject IMapper Mapper;
 
 <PageTitle>Accueil</PageTitle>
 
 <div class="banner">
-    @{
-        /*Banner*/
-    }
     <img src="https://www.etudierenhainaut.be/images/editeurs/119634258_988675168222129_1203433725708972538_o.webp"
          alt="banner" class="img-fluid" style="width:100%; height:100%" />
 </div>
 
-<div class="container body-content">
+<div class="container-fluid body-content">
 
-    @{
-        /*
-        * TODO : Load 6 or 12 pinned articles :
-        * - If there is less than 6 : skip this part
-        * - If there is more than 6 and less than 12 : Keep 6
-        * - If there is more than 12 : ERROR (Add a limit on the number of articles you can pin
-        * */
-    }
+    <div class="row py-5 mx-1">
+        @if (Articles is not null)
+        {
+            string colLg = PinnedArticles is not null && PinnedArticles.Count() > 0 ? "col-lg-8 border-end" : "col-lg";
 
-    <div class="d-flex py-5 flex-wrap justify-content-evenly align-content-evenly mt-2 mb-2 main-articles"
-         style="width: 100%; height: auto;">
+            <div class="@colLg">
 
-        @{
-            for (int i = 1; i <= 12; i++)
-            {
-                <div class="card m-1" style="width: 18rem;">
-                    <div class="card-body">
-                        <h5 class="card-title">Card title</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-                        <p class="card-text">
-                            Some quick example text to build on the card title and make up the bulk of the
-                            card's
-                            content.
-                        </p>
-                        <a href="#" class="card-link">Card link</a>
-                        <a href="#" class="card-link">Another link</a>
+                @foreach (var article in Articles)
+                {
+                    <div class="row justify-content-between p-2 mb-4 border-bottom me-2" style="">
+                        <div class="">
+                            <h1 class="display-6 fst-italic">
+                                <a class="link-dark " href="@($"/blog/article/{article.Id}")">
+                                    @article.Title
+                                </a>
+                            </h1>
+                            <p class="lead my-3">@((MarkupString)article.BodyNoHTML)</p>
+                            <p class="lead mb-0 align-bottom pb-4">
+                                <a href="@($"/blog/article/{article.Id}")" class="fw-bold">
+                                    Continuer à lire...
+                                </a>
+                            </p>
+                        </div>
                     </div>
-                </div>
-            }
+                }
+
+            </div>
+        }
+
+        @if (PinnedArticles is not null && PinnedArticles.Count() > 0)
+        {
+            <div class="col-lg-4 mt-3">
+                <h3 class="text-center">À ne pas rater</h3>
+
+                @foreach (var article in PinnedArticles)
+                {
+                    <div class="row justify-content-between p-2 my-4 mx-2">
+                        <h5 class="fst-italic">
+                            <a class="link-secondary" href="@($"/blog/article/{article.Id}")">
+                                @article.Title
+                            </a>
+                        </h5>
+                    </div>
+                }
+            </div>
         }
     </div>
 
-    @{
-        /*
-        * Adapt the display of the static informations :
-        * - Alternate the Circle shape left and right (The circle is the image) and the rectangle is the text
-        */
-    }
-
-    <div class="my-5">
-        <div class="row m-1 border-bottom py-5">
+    <div class="">
+        <div class="row m-1 py-5" style="background: #F7f7f7">
             <div class="col-lg-6">
                 <img src="https://www.etudierenhainaut.be/images/editeurs/20191015_132538.webp" alt="school"
                      style="border-radius: 50%;" class="img-fluid p-3" />
             </div>
-            <div class="col-lg-6 py-5" style="font-size:larger">
-                L'Ecole Industrielle et Commerciale d’Ecaussinnes propose des formations de niveau secondaire en
-                bureautique, art floral, loisirs créatifs, œnologie, anglais et espagnol mais également un
-                formation d’enseignement supérieur, le bachelier en informatique de gestion.
+            <div class="col-lg-6 d-flex align-items-center">
+                <span style="font-size:larger">
+                    L'Ecole Industrielle et Commerciale d’Ecaussinnes propose des formations de niveau secondaire en
+                    bureautique, art floral, loisirs créatifs, œnologie, anglais et espagnol mais également un
+                    formation d’enseignement supérieur, le bachelier en informatique de gestion.
 
-                Ces formations répondent aux besoins du marché du travail et correspondent aux demandes formulées
-                par les employeurs et les administrations.
+                    Ces formations répondent aux besoins du marché du travail et correspondent aux demandes formulées
+                    par les employeurs et les administrations.
+                </span>
             </div>
         </div>
 
-        <div class="row m-1 border-bottom py-5">
-            <div class="col-lg-6 py-5" style="font-size:larger">
-                Un certain nombre de ces formations font partie de la liste des métiers en pénurie du Forem et de la
-                Région Wallonne.
+        <div class="row m-1 py-5">
+            <div class="col-lg-6 d-flex align-items-center">
+                <span style="font-size:larger">
+                    Un certain nombre de ces formations font partie de la liste des métiers en pénurie du Forem et de la
+                    Région Wallonne.
 
-                La mise à l’emploi, notamment de nos informaticiens, est très rapide.
+                    La mise à l’emploi, notamment de nos informaticiens, est très rapide.
 
-                En tant qu’établissement d’enseignement supérieur, l’établissement fait partie du pôle hainuyer et de
-                l’Académie de Recherche et d’Enseignement Supérieur.
+                    En tant qu’établissement d’enseignement supérieur, l’établissement fait partie du pôle hainuyer et de
+                    l’Académie de Recherche et d’Enseignement Supérieur.
+                </span>
             </div>
             <div class="col-lg-6">
                 <img src="images/penurie.jpg" alt="penurie" style="border-radius: 50%;" class="img-fluid p-3" />
             </div>
         </div>
 
-        <div class="row m-1 py-5">
+        <div class="row m-1 py-5" style="background: #F7f7f7">
             <div class="col-lg-6">
                 <img src="images/teaching.jpg" alt="teaching" style="border-radius: 50%" class="img-fluid p-3" />
             </div>
-            <div class="col-lg-6 py-5" style="font-size:larger">
-                Ces instances ont pour rôle de réguler l’enseignement supérieur, assurer l’information relative à
-                celui-ci et favoriser les collaborations entre les différents acteurs de l’enseignement.
+            <div class="col-lg-6 d-flex align-items-center" style="font-size:larger">
+                <span style="font-size:larger">
+                    Ces instances ont pour rôle de réguler l’enseignement supérieur, assurer l’information relative à
+                    celui-ci et favoriser les collaborations entre les différents acteurs de l’enseignement.
+                </span>
             </div>
         </div>
     </div>
@@ -99,5 +117,87 @@
 </div>
 
 @code {
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
 
+    /// <summary>
+    /// List of articles
+    /// </summary>
+    public IEnumerable<ArticleIndexModel>? Articles { get; set; }
+
+    /// <summary>
+    /// List of pinned articles
+    /// </summary>
+    public IEnumerable<ArticleIndexModel>? PinnedArticles { get; set; }
+
+    /// <summary>
+    /// Initialization
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        PreloadService?.Show();
+
+        Articles = await GetArticlesAsync();
+        PinnedArticles = await GetPinnedArticlesAsync();
+
+        PreloadService?.Hide();
+    }
+
+    /// <summary>
+    /// Load the last 10 articles
+    /// </summary>
+    /// <returns>
+    ///  <see cref="IEnumerable{T}"/> where T is <see cref="ArticleIndexModel"/>
+    ///  <returns>
+    private async Task<IEnumerable<ArticleIndexModel>> GetArticlesAsync()
+    {
+        var result = await ArticleService.GetArticlesAsync(false, 0, 10);
+
+        if (!result.Success)
+        {
+            Logger.LogError($"Loading the articles failed with status code \"{result.Code}\".\n{result.Message}");
+
+            return Enumerable.Empty<ArticleIndexModel>();
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError($"The loaded data from the API is null.\n{result.Message}");
+
+            return Enumerable.Empty<ArticleIndexModel>();
+        }
+
+        return Mapper.Map<IEnumerable<ArticleIndexModel>>(result.Data);
+    }
+
+    /// <summary>
+    /// Load the pinned articles
+    /// </summary>
+    /// <returns>
+    ///  <see cref="IEnumerable{T}"/> where T is <see cref="ArticleIndexModel"/>
+    ///  <returns>
+    private async Task<IEnumerable<ArticleIndexModel>> GetPinnedArticlesAsync()
+    {
+        var result = await ArticleService.GetArticlesAsync(true, 0);
+
+        if (!result.Success)
+        {
+            Logger.LogError($"Loading the articles failed with status code \"{result.Code}\".\n{result.Message}");
+
+            return Enumerable.Empty<ArticleIndexModel>();
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError($"The loaded data from the API is null.\n{result.Message}");
+
+            return Enumerable.Empty<ArticleIndexModel>();
+        }
+
+        return Mapper.Map<IEnumerable<ArticleIndexModel>>(result.Data);
+    }
 }

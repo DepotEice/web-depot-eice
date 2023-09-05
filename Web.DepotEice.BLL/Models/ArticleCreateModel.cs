@@ -8,6 +8,7 @@ namespace Web.DepotEice.BLL.Models
 {
     public class ArticleCreateModel
     {
+        public int MainImageId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Body { get; set; } = string.Empty;
         public bool Pinned { get; set; }

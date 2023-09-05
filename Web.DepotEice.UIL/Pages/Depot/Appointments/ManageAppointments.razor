@@ -1,0 +1,141 @@
+﻿@page "/depot/manage-appointments"
+
+@using Web.DepotEice.UIL.Managers;
+@using Web.DepotEice.UIL.Models;
+@using static Web.DepotEice.UIL.Helpers.Utils;
+
+@inject AppointmentManager AppointmentManager;
+@inject ILogger<ManageAppointments> Logger;
+@inject DialogService DialogService;
+
+<Authorize Role="@UserManager.DIRECTION_ROLE">
+    <Authorized>
+        <h3 class="text-center my-5">Rendez-vous</h3>
+
+        <div class="container">
+
+            <RadzenScheduler @ref="@Scheduler" style="height: 768px;" SlotRender="OnSlotRender" LoadData="OnDataLoaded"
+                             TItem="AppointmentDisplayModel" Data="Appointments" StartProperty="StartTime"
+                             EndProperty="EndTime" TextProperty="UserFullName" SelectedIndex="(int)SelectedDateRange"
+                             AppointmentRender="OnAppointmentRender" Culture="System.Globalization.CultureInfo.CurrentCulture"
+                             TodayText="Aujourd'hui" AppointmentSelect="OnAppointmentSelected">
+
+                <RadzenDayView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Jour" TimeFormat="HH:mm" />
+                <RadzenWeekView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Semaine" TimeFormat="HH:mm" />
+                <RadzenMonthView Text="Mois" />
+
+            </RadzenScheduler>
+
+        </div>
+    </Authorized>
+    <Unauthorized>
+        <h3 class="my-5 text-center">Vous n'êtes pas autorisé à accéder à cette page</h3>
+    </Unauthorized>
+</Authorize>
+
+@code {
+    /// <summary>
+    /// The Radzen Scheduler reference
+    /// </summary>
+    public RadzenScheduler<AppointmentDisplayModel> Scheduler { get; set; } = new();
+
+    /// <summary>
+    /// The selected date range
+    /// </summary>
+    public DateRange SelectedDateRange { get; set; } = DateRange.Week;
+
+
+    /// <summary>
+    /// Selected date time
+    /// </summary>
+    public DateTime SelectedDateTime { get; private set; } = DateTime.Now;
+
+    /// <summary>
+    /// The list of appointments
+    /// </summary>
+    public List<AppointmentDisplayModel> Appointments { get; private set; } = new List<AppointmentDisplayModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAppointmentsAsync();
+    }
+
+    /// <summary>
+    /// Load the appointments for the selected date time
+    /// </summary>
+    /// <param name="range">The range</param>
+    /// <returns></returns>
+    private async Task LoadAppointmentsAsync()
+    {
+        Appointments = (await AppointmentManager.GetDisplayAppointmentsAsync(SelectedDateTime, SelectedDateRange)).ToList();
+    }
+
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.LoadData"> when the data is loaded
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    private async Task OnDataLoaded(SchedulerLoadDataEventArgs args)
+    {
+        SelectedDateTime = args.Start;
+
+        await LoadAppointmentsAsync();
+    }
+
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.AppointmentRender"/>se when the Appointments are rendered
+    /// </summary>
+    /// <param name="args"></param>
+    private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<AppointmentDisplayModel> args)
+    {
+        args.Attributes["style"] = $"background: {args.Data.RGBColor}";
+    }
+
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.SlotRender"/>se when the Slots are rendered
+    /// </summary>
+    /// <param name="args"></param>
+    private void OnSlotRender(SchedulerSlotRenderEventArgs args)
+    {
+        // Highlight today in month view
+        if (args.View.Text == "Mois" && args.Start.Date == DateTime.Today)
+        {
+            args.Attributes["style"] = "background: rgba(255,220,40,.2);";
+        }
+
+        // Highlight working hours (9-18)
+        if ((args.View.Text == "Semaine" || args.View.Text == "Jour") && args.Start.Hour >= 8 && args.Start.Hour < 22)
+        {
+            args.Attributes["style"] = "background: rgba(255,220,40,.2);";
+        }
+
+        switch (args.View.Text)
+        {
+            case "Jour":
+                SelectedDateRange = DateRange.Day;
+                break;
+            case "Semaine":
+                SelectedDateRange = DateRange.Week;
+                break;
+            case "Mois":
+                SelectedDateRange = DateRange.Month;
+                break;
+            default:
+                Logger.LogError("The view text value doesn't exist");
+                break;
+        }
+    }
+
+    private async Task OnAppointmentSelected(SchedulerAppointmentSelectEventArgs<AppointmentDisplayModel> args)
+    {
+        Logger.LogInformation("test");
+        bool result = await DialogService.OpenAsync<ManageAppointment>("Gérer", new Dictionary<string, object>() { { "Appointment", args.Data } });
+
+        if (result)
+        {
+            await LoadAppointmentsAsync();
+        }
+
+        await Scheduler.Reload();
+    }
+}

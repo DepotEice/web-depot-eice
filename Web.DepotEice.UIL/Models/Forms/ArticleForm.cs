@@ -4,6 +4,9 @@ namespace Web.DepotEice.UIL.Models.Forms
 {
     public class ArticleForm
     {
+        [Required(ErrorMessage = "L'article doit avoir une illustration!")]
+        public int? MainImageId { get; set; }
+
         [Required(AllowEmptyStrings = false, ErrorMessage = "Le titre est requis")]
         [MaxLength(100, ErrorMessage = "Le titre ne peut pas dépasser les 100 caractères")]
         public string Title { get; set; } = string.Empty;

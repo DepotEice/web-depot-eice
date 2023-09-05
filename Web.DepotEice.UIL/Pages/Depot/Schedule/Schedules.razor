@@ -2,130 +2,270 @@
 @page "/depot/"
 
 @using AutoMapper;
-@using Syncfusion.Blazor.Schedule
 @using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
+@using static Web.DepotEice.UIL.Helpers.Utils;
 
 @inject ILogger<Schedules> Logger;
 @inject IMapper Mapper;
 @inject IModuleService ModuleService;
-@inject UserManager UserManager;
 @inject IUserService UserService;
+@inject UserManager UserManager;
+@inject ScheduleManager ScheduleManager;
+@inject NavigationManager NavigationManager;
 
-<h3 class="text-center my-5">Calendrier</h3>
+<h3 class="text-center my-md-5">Calendrier</h3>
 
 <div class="container">
 
-    <SfSchedule TValue="UIL.Models.ScheduleModel" @bind-SelectedDate="_curentDate" StartHour="07:00">
-        <ScheduleEvents TValue="UIL.Models.ScheduleModel" OnPopupOpen="@OnPopupOpen"></ScheduleEvents>
-        <ScheduleQuickInfoTemplates>
-            <HeaderTemplate>
-                <h4 class="text-center my-3">@((context as ScheduleModel)?.ModuleName)</h4>
-            </HeaderTemplate>
+    <div class="">
+        <div class="mb-3">
+            <label class="form-label" for="modules-select">Module</label>
 
-            <ContentTemplate>
-                <div class="container">
-                    <div class="row mb-2">
-                        <label class="form-label">Intitulé</label>
-                        <input class="form-control" value="@((context as ScheduleModel)?.Title)" disabled />
-                    </div>
+            <select DisplayName="Une erreur est survenue" id="modules-select" class="form-select" @onchange="OnSelectedModuleChanged"
+                    selected="@SelectedModule?.Id">
+                <option value="null"></option>
 
-                    <div class="row mb-2">
-                        <label class="form-label">Détails</label>
-                        <textarea class="form-control" style="height:12rem" disabled>
-                            @((context as ScheduleModel)?.Details)
-                        </textarea>
-                    </div>
-                </div>
-            </ContentTemplate>
+                @foreach (var module in Modules)
+                {
+                    <option value="@module.Id">@module.Name</option>
+                }
+            </select>
+        </div>
 
-            <FooterTemplate>
-                <div class="row my-1">
-                    <NavLink class="float-end" href="@((context as ScheduleModel).ScheduleDetailsUrl)">
-                        Plus de détails
-                    </NavLink>
-                </div>
-            </FooterTemplate>
+        <div class="mb-3">
+            <label class="form-label" for="selected-date">Date</label>
+            <RadzenDatePicker TValue="DateTime" Value="SelectedDateTime" Inline="true" id="selected-date"
+                              class="form-control" Change="OnSelectedDateTimeChanged" />
+        </div>
+    </div>
 
-        </ScheduleQuickInfoTemplates>
-        <ScheduleTemplates>
-            <EditorTemplate>
-                <span>blablabla</span>
-            </EditorTemplate>
-        </ScheduleTemplates>
+    <RadzenScheduler @ref="@Scheduler" style="height: 50rem;" SlotRender="OnSlotRender" LoadData="OnDataLoaded"
+                     TItem="ScheduleDisplayModel" Data="SchedulesList" StartProperty="StartTime"
+                     EndProperty="EndTime" TextProperty="ModuleName" SelectedIndex="(int)SelectedDateRange"
+                     AppointmentRender="OnAppointmentRender" Culture="System.Globalization.CultureInfo.CurrentCulture"
+                     TodayText="Aujourd'hui" AppointmentSelect="OnAppointmentSelected">
 
+        <Template>
+            <div class="row">
+                <span class="fs-6 fw-bold mb-2">@context.ModuleName</span>
+                <span class="fst-italic mb-2">@context.Title</span>
+                <span>@context.Details</span>
+            </div>
+        </Template>
 
-        <ScheduleEventSettings DataSource="_schedules" AllowEditFollowingEvents="false" AllowEditing="_hasAdminRights"
-                               AllowDeleting="_hasAdminRights" AllowAdding="_hasAdminRights" EnableTooltip="true">
-            <Template>
-                <div class="container">
-                    <div class="row text-center">
-                        <span class="my-2">
-                            @((context as ScheduleModel)?.StartTime.ToString("H:m"))
-                            -
-                            @((context as ScheduleModel)?.EndTime.ToString("H:m"))
-                        </span>
+        <ChildContent>
+            <RadzenDayView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Jour" TimeFormat="HH:mm" />
+            <RadzenWeekView StartTime="new TimeSpan(7,0,0)" EndTime="new TimeSpan(23,0,0)" Text="Semaine" TimeFormat="HH:mm" />
+            <RadzenMonthView Text="Mois" />
+        </ChildContent>
 
-                        <span class="my-2 fw-bold">@((context as ScheduleModel)?.TeacherName)</span>
-                        <span class="my-2">@((context as ScheduleModel)?.ModuleName)</span>
-                        <span class="my-2">@((context as ScheduleModel)?.Title)</span>
-                    </div>
-                </div>
-            </Template>
-        </ScheduleEventSettings>
-
-        <ScheduleView>
-            <ScheduleView Option="View.Day"></ScheduleView>
-            <ScheduleView Option="View.Week"></ScheduleView>
-            <ScheduleView Option="View.Month"></ScheduleView>
-        </ScheduleView>
-    </SfSchedule>
+    </RadzenScheduler>
 
 </div>
 
-@code {
-    private bool _hasAdminRights = false;
-    private DateTime _curentDate = DateTime.Now;
-    private UIL.Models.ScheduleModel _schedule = new();
-    private List<ScheduleModel> _schedules = new List<ScheduleModel>();
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 
+@code {
+    /// <summary>
+    /// The Radzen Scheduler reference
+    /// </summary>
+    public RadzenScheduler<ScheduleDisplayModel> Scheduler { get; set; } = new();
+
+    /// <summary>
+    /// List of toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
+    /// The selected date range
+    /// </summary>
+    public DateRange SelectedDateRange { get; set; } = DateRange.Week;
+
+    /// <summary>
+    /// Selected date time
+    /// </summary>
+    public DateTime SelectedDateTime { get; private set; } = DateTime.Now;
+
+    /// <summary>
+    /// The list of appointments
+    /// </summary>
+    public IEnumerable<ScheduleDisplayModel> SchedulesList { get; private set; } = new List<ScheduleDisplayModel>();
+
+    public IEnumerable<ModuleModel> Modules { get; set; } = new List<ModuleModel>();
+
+    public ModuleModel? SelectedModule { get; set; }
+
+    /// <summary>
+    /// Initialization of the component
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        _hasAdminRights = (await UserManager.IsInRoleAsync("DIRECTION") || await UserManager.IsInRoleAsync("TEACHER"));
-
-        var schedulesFromRepo = await ModuleService.GetSchedulesAsync();
-
-        foreach (var schedule in schedulesFromRepo)
-        {
-            Logger.LogInformation($"{schedule}");
-
-            UIL.Models.ScheduleModel scheduleModel = Mapper.Map<UIL.Models.ScheduleModel>(schedule);
-
-            var module = await ModuleService.GetModuleAsync(schedule.ModuleId);
-            var user = await UserService.GetUserAsync(module.TeacherId);
-
-            if (user is not null)
-            {
-                scheduleModel.TeacherName = $"{user.LastName.ToUpper()} {user.FirstName}";
-            }
-
-            scheduleModel.ModuleName = module.Name;
-
-            Logger.LogInformation($"{scheduleModel.StartTime} {scheduleModel.EndTime}");
-
-            _schedules.Add(scheduleModel);
-        }
-
-        // TODO : Retrieve the schedules
-        //  1. Get Schedules to which the user is subscribed
+        await LoadModulesAsync();
+        await LoadSchedulesAsync();
     }
 
-    public void OnPopupOpen(PopupOpenEventArgs<ScheduleModel> args)
+    private async Task LoadSchedulesAsync()
     {
-        if (args.Type == PopupType.Editor)
+        SchedulesList = await ScheduleManager.GetSchedulesAsync(SelectedDateTime, SelectedDateRange, SelectedModule?.Id);
+    }
+
+    private async Task LoadModulesAsync()
+    {
+        ResultModel<IEnumerable<ModuleModel>> modulesResult = await ModuleService.GetModulesAsync();
+
+        if (!modulesResult.Success)
         {
-            args.Cancel = true;
+            Logger.LogError(
+                "Requesting the modules failed with status code {code}.\n{msg}",
+                modulesResult.Code,
+                modulesResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des modules",
+                $"Le chargement des modules a échoué.\n{modulesResult.Message}",
+                false
+            );
+
+            return;
         }
+
+        if (modulesResult.Data is null)
+        {
+            Logger.LogError(
+                "The modules request succeded but the data is null.\n{msg}",
+                modulesResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des modules",
+                $"Le chargement des modules a réussi mais aucune donnée n'a été retourné.\n{modulesResult.Message}",
+                false
+            );
+
+            return;
+        }
+
+        Modules = modulesResult.Data;
+    }
+
+    private void OnSelectedModuleChanged(ChangeEventArgs args)
+    {
+        if (args is not null && args.Value is not null && int.TryParse(args.Value.ToString(), out int id))
+        {
+            SelectedModule = Modules.SingleOrDefault(m => m.Id == id);
+        }
+        else
+        {
+            SelectedModule = null;
+        }
+
+        Scheduler.Reload();
+    }
+
+    private void OnSelectedDateTimeChanged(DateTime? value)
+    {
+        if (value.HasValue)
+        {
+            if (SelectedDateRange == DateRange.Month)
+            {
+                DateTime currentDate = Scheduler.CurrentDate;
+                Scheduler.CurrentDate = new DateTime(value.Value.Year, value.Value.Month, currentDate.Day);
+            }
+            else
+            {
+                Scheduler.CurrentDate = value.Value;
+            }
+
+            Scheduler.Reload();
+        }
+    }
+
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.SlotRender"/>se when the Slots are rendered
+    /// </summary>
+    /// <param name="args"></param>
+    private void OnSlotRender(SchedulerSlotRenderEventArgs args)
+    {
+        // Highlight today in month view
+        if (args.View.Text == "Mois" && args.Start.Date == DateTime.Today)
+        {
+            args.Attributes["style"] = "background: rgba(255,220,40,.2);";
+        }
+
+        // Highlight working hours (9-18)
+        if ((args.View.Text == "Semaine" || args.View.Text == "Jour") && args.Start.Hour >= 8 && args.Start.Hour < 22)
+        {
+            args.Attributes["style"] = "background: rgba(255,220,40,.2);";
+        }
+
+        switch (args.View.Text)
+        {
+            case "Jour":
+                SelectedDateRange = DateRange.Day;
+                break;
+            case "Semaine":
+                SelectedDateRange = DateRange.Week;
+                break;
+            case "Mois":
+                SelectedDateRange = DateRange.Month;
+                break;
+            default:
+                Logger.LogError("The view text value doesn't exist");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.LoadData"> when the data is loaded
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    private async Task OnDataLoaded(SchedulerLoadDataEventArgs args)
+    {
+        SelectedDateTime = args.Start;
+
+        await LoadSchedulesAsync();
+    }
+
+    /// <summary>
+    /// Event handler <see cref="RadzenScheduler{TItem}.AppointmentRender"/>se when the Appointments are rendered
+    /// </summary>
+    /// <param name="args"></param>
+    private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<ScheduleDisplayModel> args)
+    {
+        args.Attributes["style"] = $"background: {args.Data.RGBColor}";
+    }
+
+    private void OnAppointmentSelected(SchedulerAppointmentSelectEventArgs<ScheduleDisplayModel> args)
+    {
+        NavigationManager.NavigateTo($"/depot/schedules/{args.Data.Id}/details");
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

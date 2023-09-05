@@ -21,6 +21,7 @@ namespace Web.DepotEice.UIL.Managers
         private readonly IAuthService _authService;
         private readonly IRoleService _roleService;
         private readonly IModuleService _moduleService;
+        private readonly IUserService _userService;
 
         public bool IsConnected
         {
@@ -34,7 +35,7 @@ namespace Web.DepotEice.UIL.Managers
 
         public UserManager(ILogger<UserManager> logger, IMapper mapper, ILocalStorageService localStorageService,
             ISyncLocalStorageService syncLocalStorageService, IAuthService authService, IRoleService roleService,
-            IModuleService moduleService)
+            IModuleService moduleService, IUserService userService)
         {
             if (logger is null)
             {
@@ -71,6 +72,11 @@ namespace Web.DepotEice.UIL.Managers
                 throw new ArgumentNullException(nameof(moduleService));
             }
 
+            if (userService is null)
+            {
+                throw new ArgumentNullException(nameof(userService));
+            }
+
             _logger = logger;
             _mapper = mapper;
             _localStorageService = localStorageService;
@@ -78,6 +84,7 @@ namespace Web.DepotEice.UIL.Managers
             _authService = authService;
             _roleService = roleService;
             _moduleService = moduleService;
+            _userService = userService;
         }
 
         public async Task<bool> SignInAsync(SignInForm signInForm)
@@ -254,6 +261,22 @@ namespace Web.DepotEice.UIL.Managers
             var result = await _moduleService.UserHasRoleAsync(role, moduleId);
 
             return result;
+        }
+
+        /// <summary>
+        /// Get the id of the current user
+        /// </summary>
+        /// <returns></returns>
+        public async Task<string?> GetCurrentUserId()
+        {
+            UserModel? user = await _userService.GetUserAsync();
+
+            if (user is null)
+            {
+                return string.Empty;
+            }
+
+            return user.Id;
         }
     }
 }

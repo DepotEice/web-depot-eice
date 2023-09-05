@@ -48,6 +48,7 @@ namespace Company.WebApplication1
             builder.Services.AddScoped<IModuleService, ModuleService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IFileService, FileService>();
+            builder.Services.AddScoped<IMessageService, MessageService>();
 
             builder.Services.AddScoped<UserManager>();
             builder.Services.AddScoped<AppointmentManager>();

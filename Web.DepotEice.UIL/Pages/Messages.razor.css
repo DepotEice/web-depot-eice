@@ -49,3 +49,19 @@
 .replier {
     align-self: flex-start;
 }
+
+.profile-picture-img {
+    -moz-border-radius: 50%;
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+    width: 2.5rem;
+}
+
+.btn-send {
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.msg-body {
+    height: 15rem;
+    border-radius: 0.5rem 0 0 0.5rem;
+}

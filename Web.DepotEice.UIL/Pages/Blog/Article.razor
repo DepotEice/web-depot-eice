@@ -10,7 +10,7 @@
 @inject IArticleService ArticleService;
 @inject IUserService UserService;
 
-<div class="container-fluid py-5">
+<div class="container-fluid pb-3">
 
     <img class="img-fluid mb-3" src="@ArticleDetails.ImageUrl" alt="@ArticleDetails.Title" style="min-width: 100%" />
 
@@ -23,9 +23,10 @@
         par @ArticleDetails.Author
     </p>
 
-    <hr/>
-
-    @((MarkupString)ArticleDetails.Body)
+    <hr />
+    <div style="overflow: hidden">
+        @((MarkupString)ArticleDetails.Body)
+    </div>
 </div>
 
 @code {

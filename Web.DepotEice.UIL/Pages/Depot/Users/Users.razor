@@ -1,18 +1,52 @@
 ﻿@page "/depot/users"
+@using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 
 @inject NavigationManager NavigationManager;
 @inject UserManager UserManager;
 
-<h3>Users</h3>
+<Authorize Role="@UserManager.DIRECTION_ROLE">
+    <Authorized>
+        <div class="my-5">
+            <Grid TItem="UserModel" Data="UsersList" AllowFiltering="true" AllowPaging="true" Responsive="true"
+                  ItemsPerPageText="Utilisateurs par page" PageSizeSelectorItems="new int[] { 10, 20, 50 }"
+                  PaginationItemsTextFormat="{0} - {1} des {2} utilisateurs" EmptyText="Aucun n'utilisateur n'a fait de demande"
+                  AllowSelection="true" class="table table-hover table-bordered table-striped" SelectedItemsChanged="SelectedItemsChanged">
+
+                <GridColumn TItem="UserModel" HeaderText="ID" PropertyName="Id">
+                    @context.Id
+                </GridColumn>
+
+                <GridColumn TItem="UserModel" HeaderText="Prénom" PropertyName="FirstName">
+                    @context.FirstName
+                </GridColumn>
+
+                <GridColumn TItem="UserModel" HeaderText="Nom" PropertyName="LastName">
+                    @context.LastName
+                </GridColumn>
+
+                <GridColumn TItem="UserModel" HeaderText="Email de l'école" PropertyName="SchoolEmail">
+                    @context.SchoolEmail
+                </GridColumn>
+
+            </Grid>
+        </div>
+    </Authorized>
+    <Unauthorized>
+        <h3>Vous n'êtes pas authorisé à accéder à cette page</h3>
+    </Unauthorized>
+</Authorize>
 
 @code {
+    public List<UserModel> UsersList { get; set; } = new List<UserModel>();
+
     protected override async Task OnInitializedAsync()
     {
-        if (!await UserManager.IsInRoleAsync(UserManager.DIRECTION_ROLE))
-        {
-            NavigationManager.NavigateTo("unauthorized");
-            return;
-        }
+
+    }
+
+    private void SelectedItemsChanged(HashSet<UserModel> selectedUsers)
+    {
+
     }
 }

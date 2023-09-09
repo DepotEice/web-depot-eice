@@ -34,7 +34,13 @@ namespace Web.DepotEice.BLL.IServices
         /// <exception cref="ArgumentNullException"></exception>
         Task<ResultModel<UserModel>> GetUserAsync(string? userId);
 
-        Task<UserModel?> GetUserAsync();
+        /// <summary>
+        /// Get the current user by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        Task<ResultModel<UserModel>> GetUserAsync();
         Task<UserModel?> UpdateUserAsync(UserUpdateModel userUpdateModel);
 
         /// <summary>
@@ -55,5 +61,13 @@ namespace Web.DepotEice.BLL.IServices
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModel"/>
         /// </returns>
         Task<ResultModel<IEnumerable<UserModel>>> GetUsersAsync();
+
+        /// <summary>
+        /// Get all the students by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        Task<ResultModel<IEnumerable<UserModel>>> GetStudentsAsync();
     }
 }

@@ -278,5 +278,37 @@ namespace Web.DepotEice.BLL.IServices
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="ArgumentNullException"></exception>
         Task<ResultModel<bool>> SetUserModuleStatusAsync(int moduleId, string userId, bool status);
+
+        /// <summary>
+        /// Get the list of students in a module
+        /// </summary>
+        /// <param name="moduleId">The id of the module</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        Task<ResultModel<IEnumerable<UserModel>>> GetModuleStudentsAsync(int moduleId);
+
+        /// <summary>
+        /// Add a user to a module by sending a PUT request to the API. The user status is directly set to accepted.
+        /// This endpoint is only accessible by the direction
+        /// </summary>
+        /// <param name="moduleId">The id of the module</param>
+        /// <param name="userId">The id of the user</param>
+        /// <returns>
+        /// true if the request is successful, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<bool>> AddUserToModuleAsync(int moduleId, string userId);
+
+        /// <summary>
+        /// Remove a user from a module by sending a DELETE request to the API. This endpoint is only accessible by the
+        /// direction
+        /// </summary>
+        /// <param name="moduleId"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<bool>> RemoveUserOfModuleAsync(int moduleId, string userId);
     }
 }

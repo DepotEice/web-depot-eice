@@ -269,14 +269,30 @@ namespace Web.DepotEice.UIL.Managers
         /// <returns></returns>
         public async Task<string?> GetCurrentUserId()
         {
-            UserModel? user = await _userService.GetUserAsync();
+            ResultModel<UserModel> result = await _userService.GetUserAsync();
 
-            if (user is null)
+            if (!result.Success)
             {
-                return string.Empty;
+                _logger.LogError(
+                    "Getting current user failed with status code {code} and message {msg}",
+                    result.Code,
+                    result.Message
+                );
+
+                return null;
             }
 
-            return user.Id;
+            if (result.Data is null)
+            {
+                _logger.LogError(
+                    "Getting current user succeeded but the data is null and message is {msg}",
+                    result.Message
+                );
+
+                return null;
+            }
+
+            return result.Data.Id;
         }
     }
 }

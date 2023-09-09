@@ -142,15 +142,30 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        UserModel? userModel = await UserService.GetUserAsync();
+        ResultModel<UserModel> result = await UserService.GetUserAsync();
 
-        if (userModel is null)
+        if (!result.Success)
         {
-            Logger.LogError($"{DateTime.Now} - The current user couldn't be retrieved from the API");
+            Logger.LogError(
+                "Requesting the current user failed with status code {code}.\n{msg}",
+                result.Code,
+                result.Message
+            );
+
             return;
         }
 
-        ProfileUpdate = Mapper.Map<ProfileUpdateForm>(userModel);
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "Requesting the current user succeeded but the data returned is null.\n{msg}",
+                result.Message
+            );
+
+            return;
+        }
+
+        ProfileUpdate = Mapper.Map<ProfileUpdateForm>(result.Data);
     }
 
     /// <summary>

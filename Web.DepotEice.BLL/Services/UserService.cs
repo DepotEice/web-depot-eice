@@ -268,5 +268,38 @@ namespace Web.DepotEice.BLL.Services
 
             return result;
         }
+
+        /// <summary>
+        /// Get all the available users from the API by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<UserModel>>> GetUsersAsync()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync("Users/available");
+
+            ResultModel<IEnumerable<UserModel>> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation(
+                    "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}",
+                    nameof(GetUsersAsync),
+                    e.Message
+                );
+            }
+
+            return result;
+        }
     }
 }

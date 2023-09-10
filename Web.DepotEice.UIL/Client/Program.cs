@@ -26,15 +26,21 @@ namespace Company.WebApplication1
             builder.Services.AddBlazorBootstrap();
 
 #if DEBUG
+            // Read the app base url from the secrets.json file. If the value is not found, use the default value.
+            string apiBaseUrl = builder.Configuration["API_BASE_URL"] ?? "https://localhost:7205/api/";
+
             builder.Services.AddScoped(
-                sp => new HttpClient { BaseAddress = new Uri("https://localhost:7205/api/") }
+                sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) }
             );
 #else
+            string apiBaseUrl = Environment.GetEnvironmentVariable("API_BASE_URL") ??
+                            throw new NullReferenceException("There is no environment variable API_BASE_URL");
+
             builder.Services.AddScoped(
                 sp =>
                     new HttpClient
                     {
-                        BaseAddress = new Uri("https://api-depot-eice.azurewebsites.net/api/")
+                        BaseAddress = new Uri(apiBaseUrl)
                     }
             );
 #endif

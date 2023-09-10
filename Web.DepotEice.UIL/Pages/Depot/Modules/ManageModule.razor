@@ -62,6 +62,76 @@
         </div>
     </EditForm>
 
+    <Authorize Role="@UserManager.DIRECTION_ROLE">
+        <Authorized>
+            <div class="my-3">
+                <h3 class="text-center">Élèves</h3>
+
+                <div class="d-flex flex-row">
+                    <div class="col me-2">
+                        <h4 class="text-center">Élèves disponibles</h4>
+
+                        <div class="my-1 d-flex flex-row">
+                            <div class="border border-1 d-flex flex-column align-content-start selections-available-students">
+
+                                @if (AvailableUsers is not null && AvailableUsers.Count() > 0)
+                                {
+                                    foreach (var user in AvailableUsers)
+                                    {
+                                        <InputCheckbox @bind-Value="user.Selected" id="@($"available-user-{user.Id}")"
+                                                       style="display: none;" />
+
+                                        <label for="@($"available-user-{user.Id}")"
+                                               class="p-2 border-bottom fw-semibold selection-item @(user.Selected ? "selected": "")">
+                                            @user.FullName
+                                        </label>
+                                    }
+                                }
+                            </div>
+
+                            <button @onclick="AddStudentsToModule" class="btn btn-outline-secondary"
+                                    style="border-radius: 0 0.5rem 0.5rem 0;" disabled="@(!Id.HasValue)">
+                                <i class="bi bi-caret-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col ms-2">
+                        <h4 class="text-center">Élèves inscris</h4>
+
+                        <div class="my-1 d-flex flex-row">
+                            <button @onclick="RemoveStudentsFromModule" class="btn btn-outline-secondary"
+                                    style="border-radius: 0.5rem 0 0 0.5rem" disabled="@(!Id.HasValue)">
+                                <i class="bi bi-caret-left"></i>
+                            </button>
+
+                            <div class="border border-1 d-flex flex-column align-content-start selection-registered-students">
+
+                                @if (RegisteredUsers is not null && RegisteredUsers.Count() > 0)
+                                {
+                                    foreach (var user in RegisteredUsers)
+                                    {
+                                        <InputCheckbox @bind-Value="user.Selected" id="@($"available-user-{user.Id}")"
+                                                       style="display: none;" />
+
+                                        <label for="@($"available-user-{user.Id}")"
+                                               class="p-2 border-bottom fw-semibold selection-item @(user.Selected ? "selected": "")">
+                                            @user.FullName
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <hr />
+        </Authorized>
+    </Authorize>
+
     <h3 class="text-center">Horaire du module</h3>
 
     <EditForm Model="ModuleScheduleForm" OnValidSubmit="HandleValidModuleScheduleSubmitAsync">
@@ -229,6 +299,16 @@
     /// </summary>
     public ModuleScheduleForm ModuleScheduleForm { get; private set; } = new();
 
+    /// <summary>
+    /// List of available users for this module (students only)
+    /// </summary>
+    public IEnumerable<UserSelectionModel> AvailableUsers { get; private set; } = Enumerable.Empty<UserSelectionModel>();
+
+    /// <summary>
+    /// List of registered users for this module (students only)
+    /// </summary>
+    public IEnumerable<UserSelectionModel> RegisteredUsers { get; private set; } = Enumerable.Empty<UserSelectionModel>();
+
     // TODO : Change the page so the teacher also can access the data except the Teacher in charge field
 
     protected override async Task OnInitializedAsync()
@@ -242,6 +322,9 @@
 
             return;
         }
+
+        await LoadModuleUsersAsync();
+        await LoadAvailableUsersAsync();
 
         if (Id.HasValue)
         {
@@ -424,6 +507,219 @@
         Teachers = Mapper.Map<IEnumerable<UserSelectionModel>>(result.Data);
 
         return true;
+    }
+
+    /// <summary>
+    /// Load all the available student users in the application
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadAvailableUsersAsync()
+    {
+        ResultModel<IEnumerable<UserModel>> result = await UserService.GetStudentsAsync();
+
+        if (!result.Success)
+        {
+            Logger.LogError($"The students request failed with status codes \"{result.Code}\".\n{result.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des étudiants",
+                $"Le chargement de la liste des étudiants a échoué.\n{result.Message}",
+                false);
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError($"The students request succeeded but data result is null.\n{result.Message}");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Chargement des étudiants",
+                $"Le chargement de la liste des étudiants est réussi mais les données retournées sont null.\n{result.Message}",
+                false
+            );
+
+            return;
+        }
+
+        AvailableUsers = Mapper
+            .Map<IEnumerable<UserSelectionModel>>(result.Data.Where(u => !RegisteredUsers.Any(ur => ur.Id.Equals(u.Id))));
+    }
+
+    /// <summary>
+    /// Load all the users currently in the module
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadModuleUsersAsync()
+    {
+        if (!Id.HasValue)
+        {
+            Logger.LogError("The id of the module is not defined!");
+
+            ShowMessage(
+                ToastType.Danger,
+                "Échec",
+                "Le chargement des étudiants a échoué car l'identifiant du module n'est pas défini.",
+                false
+            );
+
+            return;
+        }
+
+        ResultModel<IEnumerable<UserModel>> result = await ModuleService.GetModuleStudentsAsync(Id.Value);
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "The module students request failed with status codes \"{code}\".\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Échec",
+                $"Le chargement des étudiants a échoué.\n{result.Message}",
+                false
+            );
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "The module students request succeeded but data result is null.\n{msg}",
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Échec",
+                $"Le chargement des étudiants a réussi mais les données retournées sont null.\n{result.Message}",
+                false
+            );
+
+            return;
+        }
+
+        RegisteredUsers = Mapper.Map<IEnumerable<UserSelectionModel>>(result.Data);
+    }
+
+    /// <summary>
+    /// Add the selected students in the available students list to the registered students list
+    /// </summary>
+    /// <returns></returns>
+    private async Task AddStudentsToModule()
+    {
+        if (!Id.HasValue || Id.Value <= 0)
+        {
+            Logger.LogError(
+                "The id of the module is not defined!"
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Échec",
+                "Le chargement des étudiants a échoué car l'identifiant du module n'est pas défini.",
+                false
+            );
+
+            return;
+        }
+
+        var selectedUsers = AvailableUsers.Where(u => u.Selected).ToList();
+
+        for (int i = 0; i < selectedUsers.Count(); i++)
+        {
+            var user = selectedUsers[i];
+
+            ResultModel<bool> result = await ModuleService.AddUserToModuleAsync(Id.Value, user.Id);
+
+            if (!result.Success || !result.Data)
+            {
+                Logger.LogError(
+                    "The user \"{user}\" could not be added to the module \"{module}\".\n{msg}",
+                    user,
+                    Id.Value,
+                    result.Message
+                );
+
+                ShowMessage(
+                    ToastType.Danger,
+                    "Échec",
+                    $"L'ajout de l'utilisateur \"{user.FullName}\" au module \"{Id.Value}\" a échoué.\n{result.Message}",
+                    false
+                );
+
+                continue;
+            }
+
+            (AvailableUsers as List<UserSelectionModel>)?.Remove(user);
+        }
+
+        await LoadModuleUsersAsync();
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Remove the selected students in the registered users list
+    /// </summary>
+    /// <returns></returns>
+    private async Task RemoveStudentsFromModule()
+    {
+        if (!Id.HasValue || Id.Value <= 0)
+        {
+            Logger.LogError(
+                "The id of the module is not defined!"
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Échec",
+                "Le chargement des étudiants a échoué car l'identifiant du module n'est pas défini.",
+                false
+            );
+
+            return;
+        }
+
+        var selectedUsers = RegisteredUsers.Where(u => u.Selected).ToList();
+
+        for (int i = 0; i < selectedUsers.Count(); i++)
+        {
+            var user = selectedUsers[i];
+
+            ResultModel<bool> result = await ModuleService.RemoveUserOfModuleAsync(Id.Value, user.Id);
+
+            if (!result.Success || !result.Data)
+            {
+                Logger.LogError(
+                    "The user \"{user}\" could not be remove from the module \"{module}\".\n{msg}",
+                    user,
+                    Id.Value,
+                    result.Message
+                );
+
+                ShowMessage(
+                    ToastType.Danger,
+                    "Échec",
+                    $"La suppression de l'utilisateur \"{user.FullName} \" du module \"{Id.Value}\" a échoué.\n{result.Message}",
+                    false
+                );
+
+                continue;
+            }
+
+            (RegisteredUsers as List<UserSelectionModel>)?.Remove(user);
+        }
+
+        await LoadAvailableUsersAsync();
+
+        StateHasChanged();
     }
 
     /// <summary>

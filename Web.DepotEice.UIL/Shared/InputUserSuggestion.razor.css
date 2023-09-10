@@ -1,0 +1,28 @@
+﻿body {
+    padding: 0;
+    margin: 0;
+}
+
+.autocomplete {
+    width: 50rem;
+    overflow: hidden;
+}
+
+.suggestions {
+    background: #eeeeee;
+    position: absolute;
+    width: 50rem;
+    z-index: 1;
+}
+
+.suggestions-item:hover {
+    cursor: pointer;
+    background: #e0e0e0
+}
+
+.item-img {
+    -moz-border-radius: 50%;
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+    width: 2.5rem;
+}

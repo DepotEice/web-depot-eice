@@ -1,1 +1,24 @@
-﻿
+﻿.selection-item:hover {
+    background-color: #e6e6e6;
+    cursor: pointer;
+}
+
+.selection-item:active {
+    background-color: #a0a0a0;
+}
+
+.selected {
+    background-color: #e9e9e9;
+}
+
+.selections-available-students {
+    height: 25rem;
+    width: 100%;
+    border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.selection-registered-students {
+    height: 25rem;
+    width: 100%;
+    border-radius: 0 0.5rem 0.5rem 0;
+}

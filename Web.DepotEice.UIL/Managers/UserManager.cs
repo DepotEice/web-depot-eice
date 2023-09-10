@@ -21,6 +21,7 @@ namespace Web.DepotEice.UIL.Managers
         private readonly IAuthService _authService;
         private readonly IRoleService _roleService;
         private readonly IModuleService _moduleService;
+        private readonly IUserService _userService;
 
         public bool IsConnected
         {
@@ -34,7 +35,7 @@ namespace Web.DepotEice.UIL.Managers
 
         public UserManager(ILogger<UserManager> logger, IMapper mapper, ILocalStorageService localStorageService,
             ISyncLocalStorageService syncLocalStorageService, IAuthService authService, IRoleService roleService,
-            IModuleService moduleService)
+            IModuleService moduleService, IUserService userService)
         {
             if (logger is null)
             {
@@ -71,6 +72,11 @@ namespace Web.DepotEice.UIL.Managers
                 throw new ArgumentNullException(nameof(moduleService));
             }
 
+            if (userService is null)
+            {
+                throw new ArgumentNullException(nameof(userService));
+            }
+
             _logger = logger;
             _mapper = mapper;
             _localStorageService = localStorageService;
@@ -78,6 +84,7 @@ namespace Web.DepotEice.UIL.Managers
             _authService = authService;
             _roleService = roleService;
             _moduleService = moduleService;
+            _userService = userService;
         }
 
         public async Task<bool> SignInAsync(SignInForm signInForm)
@@ -209,6 +216,36 @@ namespace Web.DepotEice.UIL.Managers
             return result;
         }
 
+        /// <summary>
+        /// Verify if the current user is in one of the roles
+        /// </summary>
+        /// <param name="roles">The array of roles to check</param>
+        /// <returns>
+        /// true If the user has one of the roles, false Otherwise
+        /// </returns>
+        public async Task<bool> IsInRoleAsync(string[] roles)
+        {
+            var resultModel = await _roleService.GetRolesAsync();
+
+            if (!resultModel.Success)
+            {
+                _logger.LogError($"Getting current user's role failed");
+
+                return false;
+            }
+
+            if (resultModel.Data is null)
+            {
+                _logger.LogError($"Current user's roles data is null");
+
+                return false;
+            }
+
+            bool result = resultModel.Data.Any(r => roles.Contains(r.Name));
+
+            return result;
+        }
+
         public async Task<bool> HasRole(string role, int moduleId)
         {
             if (string.IsNullOrEmpty(role))
@@ -224,6 +261,38 @@ namespace Web.DepotEice.UIL.Managers
             var result = await _moduleService.UserHasRoleAsync(role, moduleId);
 
             return result;
+        }
+
+        /// <summary>
+        /// Get the id of the current user
+        /// </summary>
+        /// <returns></returns>
+        public async Task<string?> GetCurrentUserId()
+        {
+            ResultModel<UserModel> result = await _userService.GetUserAsync();
+
+            if (!result.Success)
+            {
+                _logger.LogError(
+                    "Getting current user failed with status code {code} and message {msg}",
+                    result.Code,
+                    result.Message
+                );
+
+                return null;
+            }
+
+            if (result.Data is null)
+            {
+                _logger.LogError(
+                    "Getting current user succeeded but the data is null and message is {msg}",
+                    result.Message
+                );
+
+                return null;
+            }
+
+            return result.Data.Id;
         }
     }
 }

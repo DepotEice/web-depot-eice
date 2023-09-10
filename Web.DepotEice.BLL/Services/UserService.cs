@@ -217,13 +217,38 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<UserModel?> GetUserAsync()
+        /// <summary>
+        /// Get the current user by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        public async Task<ResultModel<UserModel>> GetUserAsync()
         {
             HttpResponseMessage response = await _httpClient.GetAsync($"Users/me");
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<UserModel> result = new ResultModel<UserModel>()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
 
-            return await response.Content.ReadFromJsonAsync<UserModel>();
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<UserModel>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}\n{eStr}",
+                    nameof(GetUserAsync),
+                    e.Message,
+                    e.StackTrace
+                );
+            }
+
+            return result;
         }
 
         public async Task<UserModel?> UpdateUserAsync(UserUpdateModel userUpdateModel)
@@ -264,6 +289,72 @@ namespace Web.DepotEice.BLL.Services
             {
                 _logger.LogWarning($"{nameof(DeleteUserAsync)}: An exception was thrown when trying to " +
                                        $"read from json.\n{e.Message}");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get all the available users from the API by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<UserModel>>> GetUsersAsync()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync("Users/available");
+
+            ResultModel<IEnumerable<UserModel>> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation(
+                    "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}",
+                    nameof(GetUsersAsync),
+                    e.Message
+                );
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get all the students by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModel"/>
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<UserModel>>> GetStudentsAsync()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync("Users/students");
+
+            ResultModel<IEnumerable<UserModel>> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation(
+                    "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}",
+                    nameof(GetStudentsAsync),
+                    e.Message
+                );
             }
 
             return result;

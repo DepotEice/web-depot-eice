@@ -1,14 +1,600 @@
 ﻿@page "/messages"
 
-<Authorize Role="Guest">
+@using AutoMapper;
+@using Blazored.LocalStorage;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Managers;
+@using Microsoft.AspNetCore.SignalR.Client;
+
+@inject ILogger<Messages> Logger;
+@inject IMapper Mapper;
+@inject IMessageService MessageService;
+@inject UserManager UserManager;
+@inject NavigationManager NavigationManager;
+@inject ILocalStorageService LocalStorageService;
+@inject IUserService UserService;
+
+<Authorize>
     <Authorized>
-        <h1>Vous êtes authorisé à accéder à la page</h1>
+        <div class="container-fluid d-flex flex-row vh-100 my-3">
+            <div class="col-3" style="overflow-y: scroll; overflow-x: hidden;">
+                <div class="modal-dialog-scrollable">
+                    <div class="d-flex flex-row">
+
+                        <InputText @bind-Value="ConversationSearch" type="text" class="form-control me-1 search-input"
+                                   id="inlineFormInputGroup" placeholder="Search"
+                                   aria-label="search" />
+                        <button class="add" href="#" type="button" @onclick="CreateConversation">
+                            <i class="bi bi-plus-circle fs-2 add-icon"></i>
+                        </button>
+
+                    </div>
+
+                    <div class="border-end" style="border-radius: 0 0.5rem 0 0">
+                        <div class="chat-list">
+
+                            @if (Conversations is not null && Conversations.Count() > 0)
+                            {
+                                foreach (ConversationModel conversation in Conversations)
+                                {
+                                    string readStatus = "";
+
+                                    if (conversation.Messages is not null && conversation.Messages.Count() > 0)
+                                    {
+                                        @if (conversation.Messages.LastOrDefault(m => m.ReceiverId.Equals(CurrentUserId)) is null)
+                                        {
+                                            readStatus = "transparent";
+                                        }
+                                        else
+                                        {
+                                            if (conversation.Messages.Last(m => m.ReceiverId.Equals(CurrentUserId)).Read)
+                                            {
+                                                readStatus = "transparent";
+                                            }
+                                            else
+                                            {
+                                                readStatus = "#e6e6e6";
+                                            }
+                                        }
+                                    }
+
+                                    <a class="d-block my-1 p-3 chat-box" style="background: @readStatus" @onclick="() => SelectedConversation = conversation">
+
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+
+                                                @if (conversation.UserWithProfilePictureId is null)
+                                                {
+                                                    <img class="profile-picture-img" alt="user img"
+                                                         src="https://localhost:7205/api/Files/DefaultProfilePicture" />
+                                                }
+                                                else
+                                                {
+                                                    <img class="profile-picture-img" alt="user img"
+                                                         src="@($"https://localhost:7205/api/Files/ById/{conversation.UserWithProfilePictureId}")" />
+                                                }
+
+                                                <span class="active"></span>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <span class="fs-2">@conversation.UserWithFullName</span>
+                                            </div>
+                                        </div>
+                                        <div class="">
+                                            @if (conversation?.Messages?.LastOrDefault() is not null)
+                                            {
+                                                MessageModel lastMessage = conversation.Messages.Last();
+
+                                                string content = lastMessage.Content.Length > 30
+                                                ? lastMessage.Content.Substring(0, 20) + "..."
+                                                : lastMessage.Content;
+
+                                                if (lastMessage.SenderId.Equals(CurrentUserId))
+                                                {
+                                                    <span>Vous : @content</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@(conversation.UserWithFullName): @content</span>
+                                                }
+                                            }
+                                        </div>
+                                    </a>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-center fst-italic">Vous n'avez pas de conversation en cours</span>
+                            }
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col ms-2" style="overflow: hidden">
+                <div class="modal-content" style="height:100%;">
+                    <div class="row border-bottom">
+                        <div class="col-8">
+
+                            @if (SelectedConversation is not null)
+                            {
+                                <div class="d-flex align-items-center">
+                                    @if (SelectedConversation.UserWithProfilePictureId is null)
+                                    {
+                                        <img class="profile-picture-img" alt="user img"
+                                             src="https://localhost:7205/api/Files/DefaultProfilePicture" />
+                                    }
+                                    else
+                                    {
+                                        <img class="profile-picture-img" alt="user img"
+                                             src="@($"https://localhost:7205/api/Files/ById/{SelectedConversation.UserWithProfilePictureId}")" />
+                                    }
+
+                                    <div class="flex-grow-1 ms-3">
+                                        @if (string.IsNullOrEmpty(SelectedConversation.UserWithId))
+                                        {
+                                            <InputUserSuggestion Value="@UserSearch" OnUserSelected="OnUserSelected" />
+                                        }
+                                        else
+                                        {
+                                            <span class="fs-4">@SelectedConversation.UserWithFullName</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="col-4 d-flex align-content-start justify-content-end dropstart">
+                            <ul>
+                                <li class="navbar nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column-reverse my-3" style="height: 100%; overflow-y: scroll">
+
+                        @if (SelectedConversation is not null)
+                        {
+                            foreach (MessageModel message in SelectedConversation.Messages)
+                            {
+                                <div class="d-flex flex-column @(CurrentUserId.Equals(message.SenderId) ? "sender" : "replier")"
+                                     style="max-width: 50%">
+                                    <span class="chat-message"> @message.Content</span>
+                                    <div class="d-flex flex-row">
+                                        @if (SelectedConversation.Messages.ElementAt(0).Id == message.Id &&
+                                       CurrentUserId.Equals(message.SenderId))
+                                        {
+                                            <span class="align-self-start mx-2">@(message.Read ? "Lu" : "Délivré")</span>
+                                        }
+                                        <span class="align-self-end mx-2">@message.SentAt.ToString("g")</span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+
+                    <div class="d-flex flex-row">
+
+                        <InputTextArea @bind-Value="MessageContent" class="form-control msg-body" aria-label="message…"
+                                       placeholder="Écrivez votre message" style="height: 10rem; border-radius: 0.5rem 0 0 0.5rem;" />
+
+                        <button class="btn btn-outline-primary btn-send" type="submit" @onclick="OnSendMessageClicked">
+                            <i class="bi bi-send"></i> Envoyer
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+        </div>
     </Authorized>
     <Unauthorized>
         <h1>Vous n'êtes pas authorisé à accéder à la page</h1>
     </Unauthorized>
 </Authorize>
 
-@code {
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 
+@code {
+    /// <summary>
+    /// The list of Toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
+    /// List of all conversations
+    /// </summary>
+    public IEnumerable<ConversationModel> Conversations { get; set; } = Enumerable.Empty<ConversationModel>();
+
+    /// <summary>
+    /// The id of the user currently logged in
+    /// </summary>
+    public string CurrentUserId { get; set; } = string.Empty;
+
+    private ConversationModel? _selectedConversation;
+    /// <summary>
+    /// The selected conversation by the user
+    /// </summary>
+    public ConversationModel? SelectedConversation
+    {
+        get
+        {
+            return _selectedConversation;
+        }
+        private set
+        {
+            _selectedConversation = value;
+
+            if (value is not null)
+            {
+                if (value.Messages.Count() > 0)
+                {
+                    var lastMessage = value.Messages.LastOrDefault(m => m.ReceiverId.Equals(CurrentUserId));
+
+                    if (lastMessage is not null && !lastMessage.Read)
+                    {
+                        HubConnection?.SendAsync("acknowledgeConversation", value.UserWithId, value.UserId);
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// The message to send
+    /// </summary>
+    public string MessageContent { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The input to search for available users in the app
+    /// </summary>
+    public string UserSearch { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The private field for <see cref="ConversationSearch"/>
+    /// </summary>
+    private string _conversationSearch = string.Empty;
+
+    /// <summary>
+    /// The input to search for a conversation in the list of conversations
+    /// </summary>
+    public string ConversationSearch
+    {
+        get
+        {
+            return _conversationSearch;
+        }
+        private set
+        {
+            _conversationSearch = value;
+
+            if (string.IsNullOrEmpty(value))
+            {
+                Logger.LogInformation("The value is null. Reloading conversations from server");
+
+                LoadConversationsAsync().RunSynchronously();
+            }
+            else
+            {
+                Conversations = Conversations.Where(c => c.UserWithFullName.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+            }
+        }
+    }
+
+    /// <summary>
+    /// The hubconnection to SignalR
+    /// </summary>
+    public HubConnection? HubConnection { get; private set; }
+
+    /// <summary>
+    /// Initialization of the component
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        string? userId = await UserManager.GetCurrentUserId();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            NavigationManager.NavigateTo("/auth/login");
+
+            return;
+        }
+
+        string? token = await LocalStorageService.GetItemAsStringAsync("token");
+
+        if (string.IsNullOrEmpty(token))
+        {
+            if (await UserManager.SignOutAsync())
+            {
+                NavigationManager.NavigateTo($"/login?ReturnUrl=/messages", true);
+            }
+            else
+            {
+                ShowMessage(
+                    ToastType.Danger,
+                    "Token d'accès",
+                    "Impossible de récupérer le token d'accès, se déconnecter et se rediriger vers la page de connexion",
+                    false
+                );
+            }
+
+            return;
+        }
+
+        CurrentUserId = userId;
+
+        await LoadConversationsAsync();
+
+        if (Conversations.Count() > 0)
+        {
+            SelectedConversation = Conversations.FirstOrDefault();
+        }
+        else
+        {
+            SelectedConversation = new();
+        }
+
+        HubConnection = new HubConnectionBuilder()
+            .WithUrl($"https://localhost:7205/hub/chat?access_token={token}")
+            .Build();
+
+        // Listen message received on chanel "receiveMessage"
+        // This chanel listens to received messages by other users
+        HubConnection.On<MessageModel>("receiveMessage", async (message) =>
+        {
+            Logger.LogInformation(
+                "Message received from \"{senderId}\" with content.\n{content}",
+                message.SenderId,
+                message.Content
+            );
+
+            if (message.SenderId.Equals(SelectedConversation?.UserWithId))
+            {
+                (SelectedConversation?.Messages as List<MessageModel>)?.Insert(0, message);
+            }
+            else
+            {
+                ConversationModel? conversation = Conversations.FirstOrDefault(c => c.UserWithId.Equals(message.SenderId));
+
+                if (conversation is null)
+                {
+                    ResultModel<UserModel> result = await UserService.GetUserAsync(message.SenderId);
+
+                    if (!result.Success || result.Data is null)
+                    {
+                        Logger.LogError(
+                            "Request failed with status code {code} and message.\n{msg}",
+                            result.Code,
+                            result.Message
+                        );
+
+                        ShowMessage(
+                            ToastType.Danger,
+                            "Échec de la récupération",
+                            $"Une erreur est survenu lors de la récupération des infos de sender.\n{result.Message}",
+                            false
+                        );
+
+                        return;
+                    }
+
+                    string[] urlsplit = result.Data.ProfilePictureUrl.Split('/');
+
+                    if (!int.TryParse(urlsplit[urlsplit.Length - 1], out int pictureId))
+                    {
+                        Logger.LogWarning(
+                            "User \"{id}\" doesn't have a profile picture.\nURL: {url}",
+                            result.Data.Id,
+                            result.Data.ProfilePictureUrl
+                        );
+                    }
+
+                    (Conversations as List<ConversationModel>)?.Insert(0, new ConversationModel()
+                        {
+                            UserId = CurrentUserId,
+                            UserWithId = result.Data.Id,
+                            UserWithFullName = $"{result.Data.FirstName} {result.Data.LastName}",
+                            UserWithProfilePictureId = pictureId > 0 ? pictureId : null
+                        });
+
+                    (Conversations.ElementAt(0).Messages as List<MessageModel>)?.Insert(0, message);
+                }
+                else
+                {
+                    (conversation.Messages as List<MessageModel>)?.Insert(0, message);
+                }
+            }
+
+            await HubConnection.SendAsync("acknowledgeMessage", message.Id);
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        HubConnection.On<MessageModel>("messageSent", (message) =>
+        {
+            Logger.LogInformation("Inserting sent message");
+
+            if (SelectedConversation is not null)
+            {
+                if (SelectedConversation.Messages is null)
+                {
+                    SelectedConversation.Messages = new List<MessageModel>();
+                }
+            }
+
+            (SelectedConversation?.Messages as List<MessageModel>)?.Insert(0, message);
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        HubConnection.On<string>("newUserConnected", userId =>
+        {
+            Logger.LogInformation("User with id \"{id}\" logged in", userId);
+        });
+
+        HubConnection.On<string>("sendMessageError", message =>
+        {
+            Logger.LogError(
+                "An error occurred while trying to send a message.\n{0}",
+                message
+            );
+
+            ShowMessage(ToastType.Danger, "Échec de l'envoi", message, false);
+        });
+
+        await HubConnection.StartAsync();
+    }
+
+    /// <summary>
+    /// Load all the conversations
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadConversationsAsync()
+    {
+        ResultModel<IEnumerable<ConversationModel>> result = await MessageService.GetConversationsAsync();
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "Requesting the conversations failed with status code {code}.\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Conversations",
+                $"La récupération des conversations a échoué.\n{result.Message}",
+                false
+            );
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "Requesting the conversations succeeded but the returned data is null.\n{msg}",
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Conversations",
+                $"La récupération des conversations a réussi mais les données retournées sont null.\n{result.Message}",
+                false
+            );
+
+            return;
+        }
+
+        Conversations = result.Data;
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Create a new empty conversation
+    /// </summary>
+    /// <param name="args"></param>
+    private void CreateConversation(MouseEventArgs args)
+    {
+        SelectedConversation = new();
+    }
+
+    private async Task SendAsync()
+    {
+        if (HubConnection is not null)
+        {
+            await HubConnection.SendAsync("SendMessage", SelectedConversation?.UserWithId, MessageContent);
+
+            MessageContent = string.Empty;
+        }
+    }
+
+    private void OnUserSelected(UserModel user)
+    {
+        Logger.LogInformation(
+            "{fn} triggered. User id \"{id}\"",
+            nameof(OnUserSelected),
+            user.Id
+        );
+
+        ConversationModel? conversation = Conversations.SingleOrDefault(c => c.UserWithId.Equals(user.Id));
+
+        if (conversation is not null)
+        {
+            SelectedConversation = conversation;
+        }
+        else
+        {
+            string[] urlsplit = user.ProfilePictureUrl.Split('/');
+
+            if (!int.TryParse(urlsplit[urlsplit.Length - 1], out int pictureId))
+            {
+                Logger.LogWarning(
+                    "User \"{id}\" doesn't have a profile picture.\nURL: {url}",
+                    user.Id,
+                    user.ProfilePictureUrl
+                );
+            }
+
+            (Conversations as List<ConversationModel>)?.Insert(0, new()
+                {
+                    UserId = CurrentUserId,
+                    UserWithFullName = $"{user.FirstName} {user.LastName}",
+                    UserWithId = user.Id,
+                    UserWithProfilePictureId = pictureId > 0 ? pictureId : null,
+                    Messages = Enumerable.Empty<MessageModel>()
+                });
+
+            SelectedConversation = Conversations.ElementAt(0);
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Event handler triggered when the user click on the send message button
+    /// </summary>
+    /// <param name="args"></param>
+    private async Task OnSendMessageClicked(MouseEventArgs args)
+    {
+        await SendAsync();
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
+    }
 }

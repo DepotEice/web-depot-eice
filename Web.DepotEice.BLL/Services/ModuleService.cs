@@ -1009,5 +1009,119 @@ namespace Web.DepotEice.BLL.Services
 
             return result;
         }
+
+        /// <summary>
+        /// Get the list of students in a module
+        /// </summary>
+        /// <param name="moduleId">The id of the module</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<IEnumerable<UserModel>>> GetModuleStudentsAsync(int moduleId)
+        {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
+            string queryUri = $"Modules/{moduleId}/Students";
+
+            HttpResponseMessage response = await _httpClient.GetAsync(queryUri);
+
+            ResultModel<IEnumerable<UserModel>> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<UserModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{exMsg}",
+                    nameof(GetModuleStudentsAsync),
+                    ex.Message
+                );
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Add a user to a module by sending a PUT request to the API. The user status is directly set to accepted.
+        /// This endpoint is only accessible by the direction
+        /// </summary>
+        /// <param name="moduleId">The id of the module</param>
+        /// <param name="userId">The id of the user</param>
+        /// <returns>
+        /// true if the request is successful, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> AddUserToModuleAsync(int moduleId, string userId)
+        {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            string queryUri = $"Modules/{moduleId}/Students/{userId}";
+
+            HttpResponseMessage response = await _httpClient.PutAsync(queryUri, null);
+
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = response.IsSuccessStatusCode
+            };
+
+            return result;
+        }
+
+        /// <summary>
+        /// Remove a user from a module by sending a DELETE request to the API. This endpoint is only accessible by the
+        /// direction
+        /// </summary>
+        /// <param name="moduleId"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> RemoveUserOfModuleAsync(int moduleId, string userId)
+        {
+            if (moduleId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleId));
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            string queryUri = $"Modules/{moduleId}/Students/{userId}";
+
+            HttpResponseMessage response = await _httpClient.DeleteAsync(queryUri);
+
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = response.IsSuccessStatusCode
+            };
+
+            return result;
+        }
     }
 }

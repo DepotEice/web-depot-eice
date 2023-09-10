@@ -80,6 +80,8 @@ else
                 return;
             }
 
+            Logger.LogInformation("Request result \"{result}\"", result.Data);
+
             IsAuthorized = result.Data;
         }
         else

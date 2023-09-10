@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Radzen;
 using Web.DepotEice.BLL.IServices;
 using Web.DepotEice.BLL.Services;
+using Web.DepotEice.UIL.Helpers;
 using Web.DepotEice.UIL.Managers;
 
 namespace Company.WebApplication1
@@ -27,20 +28,20 @@ namespace Company.WebApplication1
 
 #if DEBUG
             // Read the app base url from the secrets.json file. If the value is not found, use the default value.
-            string apiBaseUrl = builder.Configuration["API_BASE_URL"] ?? "https://localhost:7205/api/";
+            Utils.API_BASE_URL = builder.Configuration["API_BASE_URL"] ?? "https://localhost:7205/api/";
 
             builder.Services.AddScoped(
-                sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) }
+                sp => new HttpClient { BaseAddress = new Uri(Utils.API_BASE_URL) }
             );
 #else
-            string apiBaseUrl = Environment.GetEnvironmentVariable("API_BASE_URL") ??
+            Utils.API_BASE_URL = Environment.GetEnvironmentVariable("API_BASE_URL") ??
                             throw new NullReferenceException("There is no environment variable API_BASE_URL");
 
             builder.Services.AddScoped(
                 sp =>
                     new HttpClient
                     {
-                        BaseAddress = new Uri(apiBaseUrl)
+                        BaseAddress = new Uri(Utils.API_BASE_URL)
                     }
             );
 #endif

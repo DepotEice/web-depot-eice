@@ -6,6 +6,7 @@
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Microsoft.AspNetCore.SignalR.Client;
+@using Web.DepotEice.UIL.Helpers;
 
 @inject ILogger<Messages> Logger;
 @inject IMapper Mapper;
@@ -67,12 +68,12 @@
                                                 @if (conversation.UserWithProfilePictureId is null)
                                                 {
                                                     <img class="profile-picture-img" alt="user img"
-                                                         src="https://localhost:7205/api/Files/DefaultProfilePicture" />
+                                                         src="@($"{Utils.API_BASE_URL}/Files/DefaultProfilePicture")" />
                                                 }
                                                 else
                                                 {
                                                     <img class="profile-picture-img" alt="user img"
-                                                         src="@($"https://localhost:7205/api/Files/ById/{conversation.UserWithProfilePictureId}")" />
+                                                         src="@($"{Utils.API_BASE_URL}/Files/ById/{conversation.UserWithProfilePictureId}")" />
                                                 }
 
                                                 <span class="active"></span>
@@ -123,12 +124,12 @@
                                     @if (SelectedConversation.UserWithProfilePictureId is null)
                                     {
                                         <img class="profile-picture-img" alt="user img"
-                                             src="https://localhost:7205/api/Files/DefaultProfilePicture" />
+                                             src="@($"{Utils.API_BASE_URL}/Files/DefaultProfilePicture")" />
                                     }
                                     else
                                     {
                                         <img class="profile-picture-img" alt="user img"
-                                             src="@($"https://localhost:7205/api/Files/ById/{SelectedConversation.UserWithProfilePictureId}")" />
+                                             src="@($"{Utils.API_BASE_URL}/Files/ById/{SelectedConversation.UserWithProfilePictureId}")" />
                                     }
 
                                     <div class="flex-grow-1 ms-3">

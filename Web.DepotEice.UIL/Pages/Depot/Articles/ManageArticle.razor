@@ -6,6 +6,7 @@
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models.Forms;
+@using Web.DepotEice.UIL.Helpers;
 
 @inject ILogger<ManageArticle> Logger;
 @inject IArticleService ArticleService;
@@ -25,7 +26,7 @@
 
             @if (Article.MainImageId.HasValue)
             {
-                <img class="img-fluid mb-3" src="@($"{ApiBaseAddress}/Files/ById/{Article.MainImageId}")"
+                <img class="img-fluid mb-3" src="@($"{Utils.API_BASE_URL}/Files/ById/{Article.MainImageId}")"
                      alt="Article illustration" style="object-fit: fill;" />
             }
 
@@ -49,7 +50,7 @@
 
             <div class="row my-3">
 
-                <RadzenHtmlEditor @bind-Value=@Article.Body style="height: 40rem;" UploadUrl="@($"{ApiBaseAddress}/Files/Article")"
+                <RadzenHtmlEditor @bind-Value=@Article.Body style="height: 40rem;" UploadUrl="@($"{Utils.API_BASE_URL}/Files/Article")"
                                   Culture="System.Globalization.CultureInfo.CurrentUICulture" UploadHeaders="@Headers">
 
                 </RadzenHtmlEditor>
@@ -80,12 +81,6 @@
     public ArticleForm Article { get; private set; } = new();
 
     public List<ToastMessage> ToastMessages { get; private set; } = new();
-
-#if DEBUG
-    private string ApiBaseAddress = "https://localhost:7205/api";
-#else
-    private string ApiBaseAddress = "https://api-depot-eice.azurewebsites.net/api";
-#endif
 
     public string GetFileRoute { get; private set; } = string.Empty;
 

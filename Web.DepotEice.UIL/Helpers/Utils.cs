@@ -44,8 +44,7 @@ namespace Web.DepotEice.UIL.Helpers
         /// <summary>
         /// API Base url
         /// </summary>
-        public static string API_BASE_URL = Environment.GetEnvironmentVariable("API_BASE_URL")
-            ?? "https://localhost:7205/api";
+        public static string API_BASE_URL { get; set; } = "https://localhost:7205/api";
 
         /// <summary>
         /// Helper method to iterate through each day within a range

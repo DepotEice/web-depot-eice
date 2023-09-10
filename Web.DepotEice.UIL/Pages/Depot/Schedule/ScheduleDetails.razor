@@ -5,6 +5,7 @@
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models;
+@using Web.DepotEice.UIL.Helpers;
 
 @inject ILogger<ScheduleDetails> Logger;
 @inject IMapper Mapper;
@@ -75,7 +76,7 @@
             @foreach (var file in Schedule.ScheduleFiles)
             {
                 <div class="input-group mb-3">
-                    <a href="@($"{ApiBaseAddress}/Files/ByFileName/{file.FileName}")" class="form-control" download>
+                    <a href="@($"{Utils.API_BASE_URL}/Files/ByFileName/{file.FileName}")" class="form-control" download>
                         @file.FileName
                     </a>
                     <Authorize Role="@UserManager.TEACHER_ROLE">
@@ -135,12 +136,6 @@
     /// List of files to upload
     /// </summary>
     public List<IBrowserFile> FilesToUpload { get; set; } = new();
-
-#if DEBUG
-    public string ApiBaseAddress { get; private set; } = "https://localhost:7205/api";
-#else
-    public string ApiBaseAddress { get; private set; } = "https://api-depot-eice.azurewebsites.net/api";
-#endif
 
     /// <summary>
     /// Initialization of the component

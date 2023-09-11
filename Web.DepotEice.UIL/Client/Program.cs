@@ -34,7 +34,8 @@ namespace Company.WebApplication1
                 sp => new HttpClient { BaseAddress = new Uri(Utils.API_BASE_URL) }
             );
 #else
-            Utils.API_BASE_URL = await Utils.GetSecret();
+            Utils.API_BASE_URL = Environment.GetEnvironmentVariable("API_BASE_URL") ??
+                            throw new NullReferenceException("There is no environment variable API_BASE_URL");
 
             builder.Services.AddScoped(
                 sp =>

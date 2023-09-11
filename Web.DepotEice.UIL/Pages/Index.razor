@@ -1,6 +1,7 @@
 ﻿@page "/"
 @page "/index"
 @using AutoMapper;
+@using System.Collections;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Models;
@@ -139,6 +140,12 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())
+        {
+            Logger.LogInformation("  {0} = {1}", de.Key, de.Value);
+        }
+
+
         PreloadService?.Show();
 
         Articles = await GetArticlesAsync();

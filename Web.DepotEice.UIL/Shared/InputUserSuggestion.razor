@@ -1,5 +1,6 @@
 ﻿@using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Helpers;
 
 @inject IUserService UserService;
 @inject ILogger<InputUserSuggestion> Logger;
@@ -20,12 +21,12 @@
                         @if (user.ProfilePictureUrl is null)
                         {
                             <img class="item-img" alt="user img"
-                                 src="https://localhost:7205/api/Files/DefaultProfilePicture" />
+                            src="@($"{Utils.API_BASE_URL}Files/DefaultProfilePicture")" />
                         }
                         else
                         {
                             <img class="item-img" alt="user img"
-                                 src="@user.ProfilePictureUrl" />
+                                 src="@($"{Utils.API_BASE_URL}{user.ProfilePictureUrl}")" />
                         }
 
                         <span class="fs-4">@user.LastName @user.FirstName</span>

@@ -4,6 +4,7 @@
 @using AutoMapper;
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Helpers;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models.Forms;
 
@@ -20,7 +21,8 @@
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
         <div class="mb-3">
-            <ImageUploader ImageSource="@ProfileUpdate.ProfilePictureUrl" ProfilePictureUpdate="HandleProfilePictureUpdate" />
+            <ImageUploader ImageSource="@($"{Utils.API_BASE_URL}{ProfileUpdate.ProfilePictureUrl}")"
+                           ProfilePictureUpdate="HandleProfilePictureUpdate" />
         </div>
 
         <div class="mb-3 d-flex flex-lg-row justify-content-between">

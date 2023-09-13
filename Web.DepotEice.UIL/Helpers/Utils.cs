@@ -49,9 +49,9 @@ namespace Web.DepotEice.UIL.Helpers
         /// </summary>
         public static string API_BASE_URL { get; set; }
 #if DEBUG
-           = "https://localhost:7205/api";
+           = "https://localhost:7205/api/";
 #else
-           = "https://www.api.tfe-depot-eice.be/api";
+           = "https://www.api.tfe-depot-eice.be/api/";
 #endif
 
         /// <summary>

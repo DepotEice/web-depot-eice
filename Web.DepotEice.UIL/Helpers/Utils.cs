@@ -54,6 +54,13 @@ namespace Web.DepotEice.UIL.Helpers
            = "https://www.api.tfe-depot-eice.be/api/";
 #endif
 
+        public static string BASE_URL { get; set; }
+#if DEBUG
+           = "https://localhost:7205/";
+#else
+           = "https://www.api.tfe-depot-eice.be/";
+#endif
+
         /// <summary>
         /// Helper method to iterate through each day within a range
         /// </summary>

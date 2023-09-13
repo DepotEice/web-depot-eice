@@ -350,7 +350,7 @@
         }
 
         HubConnection = new HubConnectionBuilder()
-            .WithUrl($"https://localhost:7205/hub/chat?access_token={token}")
+            .WithUrl($"{Utils.BASE_URL}hub/chat?access_token={token}")
             .Build();
 
         // Listen message received on chanel "receiveMessage"

@@ -75,7 +75,7 @@ namespace Web.DepotEice.BLL.Services
             }
 
             HttpResponseMessage response =
-                await _httpClient.GetAsync($"Auth/RequestNewPassword?email={email}");
+                await _httpClient.GetAsync($"Auth/RequestPassword?email={email}");
 
             response.EnsureSuccessStatusCode();
 
@@ -89,7 +89,7 @@ namespace Web.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(signUpModel));
             }
 
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/SignUp", signUpModel);
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/Register", signUpModel);
 
             if (response.StatusCode != System.Net.HttpStatusCode.NoContent)
             {
@@ -131,7 +131,7 @@ namespace Web.DepotEice.BLL.Services
             }
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
-                $"Users/Password?token={token}",
+                $"Users/ResetPassword?token={token}",
                 passwordResetModel
             );
 

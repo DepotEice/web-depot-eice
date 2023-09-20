@@ -73,12 +73,15 @@ namespace Web.DepotEice.BLL.IServices
         Task<ResultModel<bool>> DeleteUserAsync(string? userId = null);
 
         /// <summary>
-        /// Get all the available users from the API by sending a GET request to the API
+        /// Get all users from the API by sending a GET request to the API. <br />
+        /// Get all the available users if the admin parameter is false, otherwise get all the users. <br />
+        /// To retrieve all users, including the deleted ones, the user must be admin
         /// </summary>
+        /// <param name="all">Specify if all the users (including the deleted one) should be loaded</param>
         /// <returns>
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModel"/>
         /// </returns>
-        Task<ResultModel<IEnumerable<UserModel>>> GetUsersAsync();
+        Task<ResultModel<IEnumerable<UserModel>>> GetUsersAsync(bool all = false);
 
         /// <summary>
         /// Get all the students by sending a GET request to the API

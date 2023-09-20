@@ -1,17 +1,39 @@
 ﻿@page "/depot/users"
+@using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 
 @inject NavigationManager NavigationManager;
 @inject UserManager UserManager;
+@inject IUserService UserService;
+@inject ILogger<Users> Logger;
 
 <Authorize Role="@UserManager.DIRECTION_ROLE">
     <Authorized>
         <div class="my-5">
+
+            <div class="d-flex flex-row justify-content-between mb-3">
+                <div class="d-flex flex-row">
+                    <InputCheckbox @bind-Value="DisplayDeleted" @onclick="OnDisplayDeletedClick" id="display-deleted"
+                                   class="form-check me-2" placeholder="Afficher les utilisateurs supprimés" />
+
+                    <label class="form-check-label d-flex align-items-center" for="display-deleted">
+                        Inclure les utilisateurs supprimés
+                    </label>
+                </div>
+
+                <div class="">
+                    <button class="btn btn-danger" @onclick="OnDeleteUsersClick">
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+
             <Grid TItem="UserModel" Data="UsersList" AllowFiltering="true" AllowPaging="true" Responsive="true"
                   ItemsPerPageText="Utilisateurs par page" PageSizeSelectorItems="new int[] { 10, 20, 50 }"
-                  PaginationItemsTextFormat="{0} - {1} des {2} utilisateurs" EmptyText="Aucun n'utilisateur n'a fait de demande"
-                  AllowSelection="true" class="table table-hover table-bordered table-striped" SelectedItemsChanged="SelectedItemsChanged">
+                  PaginationItemsTextFormat="{0} - {1} des {2} utilisateurs" EmptyText="Aucun utilisateur trouvé"
+                  AllowSelection="true" class="table table-hover table-bordered table-striped"
+                  SelectedItemsChanged="SelectedItemsChanged">
 
                 <GridColumn TItem="UserModel" HeaderText="ID" PropertyName="Id">
                     @context.Id
@@ -29,6 +51,20 @@
                     @context.SchoolEmail
                 </GridColumn>
 
+                <GridColumn TItem="UserModel" HeaderText="Email personnel" PropertyName="PersonalEmail">
+                    @context.Email
+                </GridColumn>
+
+                <GridColumn TItem="UserModel" HeaderText="" Filterable="false">
+                    <div class="d-flex justify-content-center align-content-center">
+                        <button @onclick="() => OnUserMoreInfoClick(context.Id)" class="btn btn-outline-secondary"
+                                type="button">
+                            <Icon Name="IconName.CardList"></Icon>
+                        </button>
+                    </div>
+                </GridColumn>
+
+                @*TODO: Include user roles*@
             </Grid>
         </div>
     </Authorized>
@@ -37,16 +73,197 @@
     </Unauthorized>
 </Authorize>
 
-@code {
-    public List<UserModel> UsersList { get; set; } = new List<UserModel>();
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
 
+@code {
+    [Inject]
+    public PreloadService? PreloadService { get; private set; }
+
+    /// <summary>
+    /// The list of Toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
+    /// The list of users displayed in the grid
+    /// </summary>
+    public IEnumerable<UserModel> UsersList { get; private set; } = new List<UserModel>();
+
+    /// <summary>
+    /// List of selected users
+    /// </summary>
+    public IEnumerable<UserModel> SelectedUsers { get; private set; } = new List<UserModel>();
+
+    /// <summary>
+    /// Specify if the deleted users should be displayed
+    /// </summary>
+    public bool DisplayDeleted { get; private set; } = true;
+
+    /// <summary>
+    /// Initialize the component
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-
+        await LoadUsersAsync();
     }
 
+    /// <summary>
+    /// Load all users from the database
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadUsersAsync()
+    {
+        ResultModel<IEnumerable<UserModel>> result = await UserService.GetUsersAsync(true);
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "The request to get the users failed with status code {code}\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Echec de la récupération des utilisateurs",
+                result.Message!,
+                true
+            );
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "The request to get the users failed with status code {code}\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Echec de la récupération des utilisateurs",
+                "Une erreur inconnue est survenue",
+                true
+            );
+
+            return;
+        }
+
+        UsersList = DisplayDeleted ? result.Data : result.Data.Where(u => u.DeletedAt is null);
+    }
+
+    /// <summary>
+    /// Event handler triggered when the display deleted checkbox is clicked. Reload the list of users with the
+    /// deleted users if the checkbox is checked
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    private async Task OnDisplayDeletedClick(MouseEventArgs args)
+    {
+        DisplayDeleted = !DisplayDeleted;
+        await LoadUsersAsync();
+    }
+
+    /// <summary>
+    /// Event handler triggered when the delete button is clicked. Delete all the selected users
+    /// </summary>
+    /// <param name="args">Mouse event arguments</param>
+    /// <returns></returns>
+    private async Task OnDeleteUsersClick(MouseEventArgs args)
+    {
+        PreloadService?.Show();
+
+        foreach (UserModel user in SelectedUsers)
+        {
+            ResultModel<bool> result = await UserService.DeleteUserAsync(user.Id);
+
+            if (!result.Success || !result.Data)
+            {
+                Logger.LogError(
+                    "Request to delete user \"{id}\" failed with status code {code}.\n{msg}",
+                    user.Id,
+                    result.Code,
+                    result.Message
+                );
+
+                ShowMessage(
+                    ToastType.Danger,
+                    "Echec de la suppression",
+                    $"La suppression de l'utilisateur {user.LastName}, {user.FirstName} a échoué.\n{result.Message}",
+                    false
+                );
+
+                continue;
+            }
+
+            Logger.LogInformation("Deleteing user \"{id}\" succeeded.", user.Id);
+        }
+
+        ShowMessage(
+            ToastType.Info,
+            "Suppression",
+            $"Les utilisateurs sélectionné ont bien été supprimé",
+            true
+        );
+
+        await LoadUsersAsync();
+
+        PreloadService?.Hide();
+    }
+
+    /// <summary>
+    /// Event handler triggered when the selected items changed
+    /// </summary>
+    /// <param name="selectedUsers">The hashset containing all the selected users in the grid</param>
     private void SelectedItemsChanged(HashSet<UserModel> selectedUsers)
     {
+        SelectedUsers = selectedUsers.ToList();
+    }
 
+    /// <summary>
+    /// Event handler triggered when the user more info button is clicked. Opens the dialog allowing user information
+    /// update
+    /// </summary>
+    /// <param name="userId">The id of the user to update</param>
+    /// <returns></returns>
+    private async Task OnUserMoreInfoClick(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            Logger.LogError("The user id is null or empty");
+
+            ShowMessage(
+                ToastType.Warning,
+                "Échec",
+                "Impossible d'ouvrir les informations de l'utilisateur, aucun id fournit",
+                false
+            );
+
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

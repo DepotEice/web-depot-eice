@@ -41,7 +41,17 @@ namespace Web.DepotEice.BLL.IServices
         /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/>
         /// </returns>
         Task<ResultModel<UserModel>> GetUserAsync();
-        Task<UserModel?> UpdateUserAsync(UserUpdateModel userUpdateModel);
+
+        /// <summary>
+        /// Update the user by sending a PUT request to the API
+        /// </summary>
+        /// <param name="userUpdateModel">The user form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/> which is the updated user data. Null if 
+        /// the update failed
+        /// </returns>
+        /// <exception cref="NullReferenceException"></exception>
+        Task<ResultModel<UserModel>> UpdateUserAsync(UserUpdateModel userUpdateModel);
 
         /// <summary>
         /// Update the user profile picture

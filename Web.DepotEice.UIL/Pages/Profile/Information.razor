@@ -13,11 +13,13 @@
 @inject IMapper Mapper;
 @inject UserManager UserManager;
 
+<PageTitle>EICE - Informations</PageTitle>
+
 <h3 class="text-center my-5">Informations générales</h3>
 
 <div class="container">
 
-    <EditForm Model="ProfileUpdate">
+    <EditForm Model="ProfileUpdate" OnValidSubmit="OnSubmitClicked">
         <DataAnnotationsValidator></DataAnnotationsValidator>
 
         <div class="mb-3">
@@ -30,16 +32,16 @@
                 <label for="firstName" class="form-label">
                     Prénom
                 </label>
-                <InputText id="firstName" class="form-control" aria-describedby="firstName"
-                @bind-Value="@ProfileUpdate.FirstName" disabled />
+                <InputText @bind-Value="@ProfileUpdate.FirstName" id="firstName" class="form-control"
+                           aria-describedby="firstName" disabled />
                 <ValidationMessage class="text-danger" For="(() => ProfileUpdate.FirstName)"></ValidationMessage>
             </div>
             <div class="ms-1 col-lg">
                 <label for="lastName" class="form-label">
                     Nom de famille
                 </label>
-                <InputText id="lastName" class="form-control" aria-describedby="lastName"
-                @bind-Value="@ProfileUpdate.LastName" disabled />
+                <InputText @bind-Value="@ProfileUpdate.LastName" id="lastName" class="form-control"
+                           aria-describedby="lastName" disabled />
                 <ValidationMessage class="text-danger" For="(() => ProfileUpdate.LastName)"></ValidationMessage>
             </div>
         </div>
@@ -48,8 +50,8 @@
             <label for="email" class="form-label">
                 Adresse email
             </label>
-            <InputText id="emailAddress" class="form-control" aria-describedby="emailAddress"
-            @bind-Value="@ProfileUpdate.Email" disabled />
+            <InputText @bind-Value="@ProfileUpdate.Email" id="emailAddress" class="form-control"
+                       aria-describedby="emailAddress" disabled />
             <ValidationMessage class="text-danger" For="(() => ProfileUpdate.Email)"></ValidationMessage>
         </div>
 
@@ -57,8 +59,8 @@
             <label for="email" class="form-label">
                 Addresse email de l'école
             </label>
-            <InputText id="schoolEmailAddress" class="form-control" aria-describedby="schoolEmailAddress"
-            @bind-Value="ProfileUpdate.SchoolEmail" disabled />
+            <InputText @bind-Value="ProfileUpdate.SchoolEmail" id="schoolEmailAddress" class="form-control"
+                       aria-describedby="schoolEmailAddress" disabled />
             <ValidationMessage class="text-danger" For="(() => ProfileUpdate.SchoolEmail)"></ValidationMessage>
         </div>
 
@@ -100,8 +102,8 @@
                 <label for="mobileNumber" class="form-label">
                     Mobile
                 </label>
-                <InputText id="mobileNumber" class="form-control" aria-describedby="mobileNumber"
-                @bind-Value="ProfileUpdate.MobileNumber" />
+                <InputText @bind-Value="ProfileUpdate.MobileNumber" id="mobileNumber" class="form-control"
+                           aria-describedby="mobileNumber" />
                 <ValidationMessage class="text-danger" For="(() => ProfileUpdate.MobileNumber)"></ValidationMessage>
             </div>
 
@@ -109,14 +111,14 @@
                 <label for="phoneNumber" class="form-label">
                     Téléphone
                 </label>
-                <InputText id="phoneNumber" class="form-control" aria-describedby="phoneNumber"
-                @bind-Value="ProfileUpdate.PhoneNumber" />
+                <InputText @bind-Value="ProfileUpdate.PhoneNumber" id="phoneNumber" class="form-control"
+                           aria-describedby="phoneNumber" />
                 <ValidationMessage class="text-danger" For="(() => ProfileUpdate.PhoneNumber)"></ValidationMessage>
             </div>
         </div>
 
         <div class="mb-3">
-            <button type="submit" class="btn btn-outline-primary mx-auto" @onclick="OnSubmitClicked">
+            <button type="submit" class="btn btn-outline-primary mx-auto">
                 Enregistrer
             </button>
             <button type="button" class="btn btn-light mx-auto">
@@ -127,7 +129,20 @@
 
 </div>
 
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+
 @code {
+    /// <summary>
+    /// Preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; private set; }
+
+    /// <summary>
+    /// The list of toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; private set; } = new();
+
     /// <summary>
     /// The profile update form
     /// </summary>
@@ -144,6 +159,8 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        PreloadService?.Show();
+
         ResultModel<UserModel> result = await UserService.GetUserAsync();
 
         if (!result.Success)
@@ -153,6 +170,15 @@
                 result.Code,
                 result.Message
             );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Erreur",
+                "Une erreur est survenue lors de la récupération de vos informations. Veuillez réessayer plus tard.",
+                true
+            );
+
+            PreloadService?.Hide();
 
             return;
         }
@@ -164,30 +190,83 @@
                 result.Message
             );
 
+            ShowMessage(
+                ToastType.Danger,
+                "Erreur",
+                "Aucune donnée retournée par le serveur. Veuillez réessayer plus tard.",
+                true
+            );
+
+            PreloadService?.Hide();
+
             return;
         }
 
         ProfileUpdate = Mapper.Map<ProfileUpdateForm>(result.Data);
+
+        PreloadService?.Hide();
     }
 
     /// <summary>
-    /// Submit event handler
+    /// Event handler triggered when the form is valid and the user clicked on the submit button
     /// </summary>
-    private void OnSubmitClicked()
+    private async Task OnSubmitClicked()
     {
-        Logger.LogInformation($"{DateTime.Now} - The user clicked on the submit button");
-
-        if (ProfileUpdate is null)
-        {
-            Logger.LogError($"{DateTime.Now} - The profile update form is null");
-            return;
-        }
-
-        Logger.LogInformation($"{DateTime.Now} - The profile update form is valid");
+        PreloadService?.Show();
 
         UserUpdateModel userModel = Mapper.Map<UserUpdateModel>(ProfileUpdate);
 
-        UserService.UpdateUserAsync(userModel);
+        ResultModel<UserModel> result = await UserService.UpdateUserAsync(userModel);
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "Updating the current user failed with status code {code}.\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Mise à jour des informations",
+                "Une erreur est survenue lors de la mise à jour de vos informations. Veuillez réessayer plus tard.",
+                true
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "Updating the current user succeeded but the data returned is null.\n{msg}",
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Mise à jour des informations",
+                "Aucune donnée retournée par le serveur. Veuillez réessayer plus tard.",
+                true
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        ProfileUpdate = Mapper.Map<ProfileUpdateForm>(result.Data);
+
+        ShowMessage(
+            ToastType.Success,
+            "Mise à jour des informations",
+            "Vos informations ont été mises à jour avec succès.",
+            true
+        );
+
+        PreloadService?.Hide();
     }
 
     private async Task HandleProfilePictureUpdate(byte[] bytes, string contentType)
@@ -201,5 +280,26 @@
         Logger.LogInformation($"{DateTime.Now} - The profile picture bytes are valid");
 
         await UserService.UpdateProfilePictureAsync(bytes, contentType);
+    }
+
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
+
+        ToastMessages.Add(toastMessage);
     }
 }

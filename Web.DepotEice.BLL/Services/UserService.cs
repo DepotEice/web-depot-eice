@@ -251,7 +251,16 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<UserModel?> UpdateUserAsync(UserUpdateModel userUpdateModel)
+        /// <summary>
+        /// Update the user by sending a PUT request to the API
+        /// </summary>
+        /// <param name="userUpdateModel">The user form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/> which is the updated user data. Null if 
+        /// the update failed
+        /// </returns>
+        /// <exception cref="NullReferenceException"></exception>
+        public async Task<ResultModel<UserModel>> UpdateUserAsync(UserUpdateModel userUpdateModel)
         {
             if (userUpdateModel is null)
             {
@@ -263,9 +272,28 @@ namespace Web.DepotEice.BLL.Services
                 userUpdateModel
             );
 
-            responseMessage.EnsureSuccessStatusCode();
+            ResultModel<UserModel> result = new ResultModel<UserModel>()
+            {
+                Code = responseMessage.StatusCode,
+                Success = responseMessage.IsSuccessStatusCode,
+                Message = await responseMessage.Content.ReadAsStringAsync()
+            };
 
-            return await responseMessage.Content.ReadFromJsonAsync<UserModel>();
+            try
+            {
+                result.Data = await responseMessage.Content.ReadFromJsonAsync<UserModel>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    "{fn}: An exception was thrown when trying to read from json.\n{eMsg}\n{eStr}",
+                    nameof(UpdateUserAsync),
+                    e.Message,
+                    e.StackTrace
+                );
+            }
+
+            return result;
         }
 
         public async Task<ResultModel<bool>> DeleteUserAsync(string? userId = null)

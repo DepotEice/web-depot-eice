@@ -135,25 +135,41 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<bool> ResetPassword(PasswordResetModel passwordResetModel, string token)
+        /// <summary>
+        /// Reset the user password by sending a POST request to the API
+        /// </summary>
+        /// <param name="passwordResetModel">The password form to reset the password</param>
+        /// <param name="token">The token to validate the password reset</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>. The data is valid if the request is successful.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> ResetPasswordAsync(PasswordResetModel passwordResetModel, string token)
         {
-            _logger.LogInformation("UpdatePassword");
-
             if (passwordResetModel is null)
             {
-                _logger.LogWarning("UpdatePassword: passwordUpdate is null");
-
                 throw new ArgumentNullException(nameof(passwordResetModel));
             }
 
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
-                $"Users/ResetPassword?token={token}",
+                $"Auth/ResetPassword?token={token}",
                 passwordResetModel
             );
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = response.IsSuccessStatusCode
+            };
 
-            return true;
+            return result;
         }
 
         /// <summary>

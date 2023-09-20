@@ -24,7 +24,17 @@ namespace Web.DepotEice.BLL.IServices
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
         Task<ResultModel<bool>> ActivateAsync(string tokenId, string tokenValue);
-        Task<bool> ResetPassword(PasswordResetModel passwordResetModel, string token);
+
+        /// <summary>
+        /// Reset the user password by sending a POST request to the API
+        /// </summary>
+        /// <param name="passwordResetModel">The password form to reset the password</param>
+        /// <param name="token">The token to validate the password reset</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>. The data is valid if the request is successful.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<bool>> ResetPasswordAsync(PasswordResetModel passwordResetModel, string token);
 
         /// <summary>
         /// Validate the current token

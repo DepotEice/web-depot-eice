@@ -304,28 +304,26 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
+        /// <summary>
+        /// Delete the user by sending a DELETE request to the API
+        /// </summary>
+        /// <param name="userId">(Optional) The id of the user to delete</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/> which is true if the user was deleted, false otherwise
+        /// </returns>
         public async Task<ResultModel<bool>> DeleteUserAsync(string? userId = null)
         {
             string url = string.IsNullOrEmpty(userId) ? "Users" : $"Users?id={userId}";
 
             HttpResponseMessage response = await _httpClient.DeleteAsync(url);
 
-            ResultModel<bool> result = new ResultModel<bool>()
+            ResultModel<bool> result = new()
             {
                 Code = response.StatusCode,
                 Message = await response.Content.ReadAsStringAsync(),
-                Success = response.IsSuccessStatusCode
+                Success = response.IsSuccessStatusCode,
+                Data = response.IsSuccessStatusCode
             };
-
-            try
-            {
-                result.Data = await response.Content.ReadFromJsonAsync<bool>();
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning($"{nameof(DeleteUserAsync)}: An exception was thrown when trying to " +
-                                       $"read from json.\n{e.Message}");
-            }
 
             return result;
         }

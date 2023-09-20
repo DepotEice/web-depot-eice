@@ -62,6 +62,14 @@ namespace Web.DepotEice.BLL.IServices
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
         Task<ResultModel<Stream>> UpdateProfilePictureAsync(byte[] imageContent, string contentType);
+
+        /// <summary>
+        /// Delete the user by sending a DELETE request to the API
+        /// </summary>
+        /// <param name="userId">(Optional) The id of the user to delete</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/> which is true if the user was deleted, false otherwise
+        /// </returns>
         Task<ResultModel<bool>> DeleteUserAsync(string? userId = null);
 
         /// <summary>

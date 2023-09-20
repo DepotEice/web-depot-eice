@@ -1,11 +1,13 @@
 ﻿@page "/Profile/Delete"
 
 @using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
 
 @inject IUserService UserService;
 @inject UserManager UserManager;
 @inject NavigationManager NavigationManager;
+@inject ILogger<Delete> Logger;
 
 <h3 class="text-center my-5">Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible</h3>
 <div class="d-flex justify-content-center">
@@ -19,17 +21,33 @@
 
     private async Task OnDeleteAccountClicked()
     {
-        var resultModel = await UserService.DeleteUserAsync();
+        ResultModel<bool> resultModel = await UserService.DeleteUserAsync();
 
         if (!resultModel.Success)
         {
-            ShowMessage(ToastType.Danger, "Echec de la suppression", resultModel.Message!, true);
+            Logger.LogError(
+                "The request to delete the user account failed with status code {code}\n{msg}",
+                resultModel.Code,
+                resultModel.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Echec de la suppression",
+                resultModel.Message!, true
+            );
+
             return;
         }
 
         await UserManager.SignOutAsync();
 
-        ShowMessage(ToastType.Success, "Compte supprimé", "Votre compte a bien été supprimé, vous serez redirigé dans un instant", true);
+        ShowMessage(
+            ToastType.Success,
+            "Compte supprimé",
+            "Votre compte a bien été supprimé, vous serez redirigé dans un instant",
+            true
+        );
 
         NavigationManager.NavigateTo("", true);
     }

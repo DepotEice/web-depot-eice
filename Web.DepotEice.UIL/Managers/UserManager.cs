@@ -153,16 +153,6 @@ namespace Web.DepotEice.UIL.Managers
             }
         }
 
-        public async Task<bool> RequestNewPassword(string email)
-        {
-            if (string.IsNullOrEmpty(email))
-            {
-                throw new ArgumentNullException(nameof(email));
-            }
-
-            return await _authService.RequestNewPassword(email);
-        }
-
         /// <summary>
         /// Verify if the current user is in the role
         /// </summary>

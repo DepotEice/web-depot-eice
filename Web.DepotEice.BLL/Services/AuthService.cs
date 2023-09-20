@@ -67,7 +67,16 @@ namespace Web.DepotEice.BLL.Services
             return token.Token;
         }
 
-        public async Task<bool> RequestNewPassword(string email)
+        /// <summary>
+        /// Request a new password by sending a GET request to the API
+        /// </summary>
+        /// <param name="email">The email address associated to the account</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>. If the request was successful, the data will 
+        /// be true, otherwise false.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> RequestPasswordAsync(string email)
         {
             if (string.IsNullOrEmpty(email))
             {
@@ -77,9 +86,15 @@ namespace Web.DepotEice.BLL.Services
             HttpResponseMessage response =
                 await _httpClient.GetAsync($"Auth/RequestPassword?email={email}");
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = response.IsSuccessStatusCode
+            };
 
-            return true;
+            return result;
         }
 
         public async Task<bool> SignUpAsync(SignUpModel signUpModel)

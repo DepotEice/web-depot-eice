@@ -11,7 +11,17 @@ namespace Web.DepotEice.BLL.IServices
     {
         Task<string> SignInAsync(SignInModel signInModel);
         Task<bool> SignUpAsync(SignUpModel signUpModel);
-        Task<bool> RequestNewPassword(string email);
+
+        /// <summary>
+        /// Request a new password by sending a GET request to the API
+        /// </summary>
+        /// <param name="email">The email address associated to the account</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>. If the request was successful, the data will 
+        /// be true, otherwise false.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<bool>> RequestPasswordAsync(string email);
 
         /// <summary>
         /// Activate the user account by sending a POST request to the API

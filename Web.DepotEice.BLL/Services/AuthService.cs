@@ -99,24 +99,40 @@ namespace Web.DepotEice.BLL.Services
             return true;
         }
 
-        public async Task<bool> Activate(string userId, string token)
+        /// <summary>
+        /// Activate the user account by sending a POST request to the API
+        /// </summary>
+        /// <param name="tokenId">The id of the user</param>
+        /// <param name="tokenValue">The activation token</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>. If the activation (status code 200) was 
+        /// successful, the data will be true, otherwise false.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> ActivateAsync(string tokenId, string tokenValue)
         {
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(tokenId))
             {
-                throw new ArgumentNullException(nameof(userId));
+                throw new ArgumentNullException(nameof(tokenId));
             }
 
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(tokenValue))
             {
-                throw new ArgumentNullException(nameof(token));
+                throw new ArgumentNullException(nameof(tokenValue));
             }
 
             HttpResponseMessage response =
-                await _httpClient.PostAsync($"Auth/Activate?id={userId}&token={token}", null);
+                await _httpClient.PostAsync($"Auth/Activate?tokenId={tokenId}&tokenValue={tokenValue}", null);
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = response.IsSuccessStatusCode
+            };
 
-            return true;
+            return result;
         }
 
         public async Task<bool> ResetPassword(PasswordResetModel passwordResetModel, string token)

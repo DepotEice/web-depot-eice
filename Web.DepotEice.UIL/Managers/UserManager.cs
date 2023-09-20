@@ -163,21 +163,6 @@ namespace Web.DepotEice.UIL.Managers
             return await _authService.RequestNewPassword(email);
         }
 
-        public async Task<bool> Activate(string userId, string token)
-        {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentNullException(nameof(userId));
-            }
-
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new ArgumentNullException(nameof(token));
-            }
-
-            return await _authService.Activate(userId, token);
-        }
-
         /// <summary>
         /// Verify if the current user is in the role
         /// </summary>

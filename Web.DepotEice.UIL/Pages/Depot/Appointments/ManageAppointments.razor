@@ -129,7 +129,10 @@
     private async Task OnAppointmentSelected(SchedulerAppointmentSelectEventArgs<AppointmentDisplayModel> args)
     {
         Logger.LogInformation("test");
-        bool result = await DialogService.OpenAsync<ManageAppointment>("Gérer", new Dictionary<string, object>() { { "Appointment", args.Data } });
+        bool result = await DialogService.OpenAsync<ManageAppointment>(
+            "Gérer",
+            new Dictionary<string, object>() { { "Appointment", args.Data } }
+        );
 
         if (result)
         {

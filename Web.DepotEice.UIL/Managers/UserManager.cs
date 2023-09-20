@@ -7,6 +7,9 @@ using Web.DepotEice.UIL.Models.Forms;
 
 namespace Web.DepotEice.UIL.Managers
 {
+    /// <summary>
+    /// User manager handling user authentication, logout, if he is logged in, etc.
+    /// </summary>
     public class UserManager
     {
         public const string GUEST_ROLE = "Guest";
@@ -23,6 +26,9 @@ namespace Web.DepotEice.UIL.Managers
         private readonly IModuleService _moduleService;
         private readonly IUserService _userService;
 
+        /// <summary>
+        /// Specify if the user is connected or not
+        /// </summary>
         public bool IsConnected
         {
             get
@@ -33,6 +39,18 @@ namespace Web.DepotEice.UIL.Managers
             }
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="mapper"></param>
+        /// <param name="localStorageService"></param>
+        /// <param name="syncLocalStorageService"></param>
+        /// <param name="authService"></param>
+        /// <param name="roleService"></param>
+        /// <param name="moduleService"></param>
+        /// <param name="userService"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public UserManager(ILogger<UserManager> logger, IMapper mapper, ILocalStorageService localStorageService,
             ISyncLocalStorageService syncLocalStorageService, IAuthService authService, IRoleService roleService,
             IModuleService moduleService, IUserService userService)
@@ -106,7 +124,7 @@ namespace Web.DepotEice.UIL.Managers
             {
                 SignInModel signInModel = _mapper.Map<SignInModel>(signInForm);
 
-                ResultModel<string> result = await _authService.SignInAsync(signInModel);
+                ResultModel<SignInResponseModel> result = await _authService.SignInAsync(signInModel);
 
                 if (!result.Success)
                 {
@@ -119,7 +137,9 @@ namespace Web.DepotEice.UIL.Managers
                     return false;
                 }
 
-                if (string.IsNullOrEmpty(result.Data))
+                string? token = result.Data?.Token;
+
+                if (string.IsNullOrEmpty(token))
                 {
                     _logger.LogError(
                         "Signing in succeeded but the data is null and message is {msg}",
@@ -129,7 +149,7 @@ namespace Web.DepotEice.UIL.Managers
                     return false;
                 }
 
-                await _localStorageService.SetItemAsStringAsync("token", result.Data);
+                await _localStorageService.SetItemAsStringAsync("token", token);
 
                 return !string.IsNullOrEmpty(await _localStorageService.GetItemAsStringAsync("token"));
             }

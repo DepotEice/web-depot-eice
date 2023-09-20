@@ -52,6 +52,12 @@
 
 @code {
     /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; private set; }
+
+    /// <summary>
     /// The optional return url. Navigate to this url if the user is successfully authenticated
     /// </summary>
     [Parameter]
@@ -74,6 +80,8 @@
     /// <returns></returns>
     private async Task OnValidationSubmit()
     {
+        PreloadService?.Show();
+
         bool result = await UserManager.SignInAsync(SignInForm);
 
         if (!result)
@@ -84,5 +92,7 @@
         {
             NavigationManager.NavigateTo(ReturnUrl ?? "", forceLoad: true);
         }
+
+        PreloadService?.Hide();
     }
 }

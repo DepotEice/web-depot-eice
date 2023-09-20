@@ -18,7 +18,7 @@ namespace Web.DepotEice.BLL.IServices
         /// token
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        Task<ResultModel<string>> SignInAsync(SignInModel signInModel);
+        Task<ResultModel<SignInResponseModel>> SignInAsync(SignInModel signInModel);
         Task<bool> SignUpAsync(SignUpModel signUpModel);
 
         /// <summary>

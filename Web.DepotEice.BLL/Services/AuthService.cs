@@ -56,7 +56,7 @@ namespace Web.DepotEice.BLL.Services
         /// token
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public async Task<ResultModel<string>> SignInAsync(SignInModel signInModel)
+        public async Task<ResultModel<SignInResponseModel>> SignInAsync(SignInModel signInModel)
         {
             if (signInModel is null)
             {
@@ -65,7 +65,7 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/Login", signInModel);
 
-            ResultModel<string> result = new()
+            ResultModel<SignInResponseModel> result = new()
             {
                 Code = response.StatusCode,
                 Success = response.IsSuccessStatusCode,
@@ -74,7 +74,7 @@ namespace Web.DepotEice.BLL.Services
 
             try
             {
-                result.Data = await response.Content.ReadFromJsonAsync<string>();
+                result.Data = await response.Content.ReadFromJsonAsync<SignInResponseModel>();
             }
             catch (Exception ex)
             {

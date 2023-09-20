@@ -166,41 +166,29 @@ namespace Web.DepotEice.UIL.Managers
             }
         }
 
+        /// <summary>
+        /// Log out the user by deleting the JWT token from the local storage
+        /// </summary>
+        /// <returns>
+        /// true If the sign out is successful, false Otherwise
+        /// </returns>
         public async Task<bool> SignOutAsync()
         {
             try
             {
                 await _localStorageService.RemoveItemAsync("token");
-
-                return string.IsNullOrEmpty(await _localStorageService.GetItemAsStringAsync("token"));
             }
             catch (Exception e)
             {
-                _logger.LogError(e.Message);
-                return false;
-            }
-        }
-
-        public async Task<bool> SignUpAsync(RegisterForm registerForm)
-        {
-            if (registerForm is null)
-            {
-                throw new ArgumentNullException(nameof(registerForm));
+                _logger.LogError(
+                    "An exception was thrown during {fn}.\n{eMsg}\n{eStr}",
+                    nameof(SignOutAsync),
+                    e.Message,
+                    e.StackTrace
+                );
             }
 
-            try
-            {
-                SignUpModel signUpModel = _mapper.Map<SignUpModel>(registerForm);
-
-                bool result = await _authService.SignUpAsync(signUpModel);
-
-                return result;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e.Message);
-                return false;
-            }
+            return string.IsNullOrEmpty(await _localStorageService.GetItemAsStringAsync("token"));
         }
 
         /// <summary>

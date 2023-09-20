@@ -19,7 +19,17 @@ namespace Web.DepotEice.BLL.IServices
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
         Task<ResultModel<SignInResponseModel>> SignInAsync(SignInModel signInModel);
-        Task<bool> SignUpAsync(SignUpModel signUpModel);
+
+        /// <summary>
+        /// Register the user by sending a POST request to the API
+        /// </summary>
+        /// <param name="signUpModel">The register form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>. If the request was successful, the data will
+        /// be true
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<bool>> SignUpAsync(SignUpModel signUpModel);
 
         /// <summary>
         /// Request a new password by sending a GET request to the API

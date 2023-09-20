@@ -119,7 +119,16 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<bool> SignUpAsync(SignUpModel signUpModel)
+        /// <summary>
+        /// Register the user by sending a POST request to the API
+        /// </summary>
+        /// <param name="signUpModel">The register form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="bool"/>. If the request was successful, the data will
+        /// be true
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> SignUpAsync(SignUpModel signUpModel)
         {
             if (signUpModel is null)
             {
@@ -128,12 +137,15 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/Register", signUpModel);
 
-            if (response.StatusCode != System.Net.HttpStatusCode.NoContent)
+            ResultModel<bool> result = new()
             {
-                return false;
-            }
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = response.IsSuccessStatusCode
+            };
 
-            return true;
+            return result;
         }
 
         /// <summary>

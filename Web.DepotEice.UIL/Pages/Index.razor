@@ -140,12 +140,6 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())
-        {
-            Logger.LogInformation("  {0} = {1}", de.Key, de.Value);
-        }
-
-
         PreloadService?.Show();
 
         Articles = await GetArticlesAsync();

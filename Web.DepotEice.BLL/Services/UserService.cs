@@ -48,25 +48,25 @@ namespace Web.DepotEice.BLL.Services
         }
 
         /// <summary>
-        /// Update the user profile picture
+        /// Update the user profile picture by sending a POST request to the API
         /// </summary>
         /// <param name="imageContent">byte content of the image</param>
         /// <param name="contentType">content type</param>
-        /// <returns><see cref="ResultModel{UserModel?}"/></returns>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="Stream"/> which is the updated user profile picture stream
+        /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public async Task<ResultModel<Stream?>> UpdateProfilePictureAsync(byte[] imageContent, string contentType)
+        public async Task<ResultModel<Stream>> UpdateProfilePictureAsync(byte[] imageContent, string contentType)
         {
-            _logger.LogInformation($"{nameof(UpdateProfilePictureAsync)}");
-
             if (imageContent is null)
             {
                 throw new ArgumentNullException(nameof(imageContent));
             }
 
-            if (string.IsNullOrWhiteSpace(contentType))
+            if (string.IsNullOrWhiteSpace(contentType) || string.IsNullOrEmpty(contentType))
             {
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(contentType));
+                throw new ArgumentNullException(nameof(contentType));
             }
 
             try
@@ -83,7 +83,7 @@ namespace Web.DepotEice.BLL.Services
 
                 HttpResponseMessage response = await _httpClient.PostAsync("Users/UpdateProfilePicture", content);
 
-                ResultModel<Stream?> result = new ResultModel<Stream?>()
+                ResultModel<Stream> result = new()
                 {
                     Code = response.StatusCode,
                     Message = await response.Content.ReadAsStringAsync(),
@@ -96,16 +96,24 @@ namespace Web.DepotEice.BLL.Services
                 }
                 catch (Exception e)
                 {
-                    _logger.LogInformation($"{nameof(UpdateProfilePictureAsync)}: An exception was thrown, cannot " +
-                        $"read the result as json.\n{e.Message}");
+                    _logger.LogInformation(
+                        "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}\n{eStr}",
+                        nameof(UpdateProfilePictureAsync),
+                        e.Message,
+                        e.StackTrace
+                    );
                 }
 
                 return result;
             }
             catch (Exception e)
             {
-                _logger.LogWarning($"{nameof(UpdateProfilePictureAsync)}: An exception was thrown when trying " +
-                    $"to upload profile picture to the server.\n{e.Message}");
+                _logger.LogWarning(
+                    "{fn}: An exception was thrown when trying to upload profile picture to the server.\n{eMsg}\n{eStr}",
+                    nameof(UpdateProfilePictureAsync),
+                    e.Message,
+                    e.StackTrace
+                );
 
                 throw;
             }

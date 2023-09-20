@@ -269,17 +269,86 @@
         PreloadService?.Hide();
     }
 
+    /// <summary>
+    /// Event Handler triggered when the profile picture is changed
+    /// </summary>
+    /// <param name="bytes">The content of the image</param>
+    /// <param name="contentType">The content type</param>
+    /// <returns></returns>
     private async Task HandleProfilePictureUpdate(byte[] bytes, string contentType)
     {
+        PreloadService?.Show();
+
         if (bytes is null)
         {
-            Logger.LogError($"{DateTime.Now} - The profile picture bytes are null");
+            Logger.LogError("{date} - The profile picture bytes are null", DateTime.Now);
+
+            ShowMessage(
+                ToastType.Danger,
+                "Photo de profile",
+                "La photo de profile est invalide, aucune données n'a été envoyée.",
+                true
+            );
+
+            PreloadService?.Hide();
+
             return;
         }
 
-        Logger.LogInformation($"{DateTime.Now} - The profile picture bytes are valid");
+        if (string.IsNullOrEmpty(contentType) || string.IsNullOrWhiteSpace(contentType))
+        {
+            Logger.LogError("{date} - The profile picture content type is null or empty", DateTime.Now);
 
-        await UserService.UpdateProfilePictureAsync(bytes, contentType);
+            ShowMessage(
+                ToastType.Danger,
+                "Photo de profile",
+                "La photo de profile est invalide, aucune données n'a été envoyée.",
+                true
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        ResultModel<Stream> result = await UserService.UpdateProfilePictureAsync(bytes, contentType);
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "Updating the profile picture failed with status code {code}.\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Photo de profile",
+                "Une erreur est survenue lors de la mise à jour de votre photo de profile. Veuillez réessayer plus tard.",
+                true
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (result.Data is null || result.Data.Length <= 0)
+        {
+            Logger.LogWarning(
+                "No data was returned by the server when updating the profile picture.\n{msg}",
+                result.Message
+            );
+        }
+
+        ShowMessage(
+            ToastType.Success,
+            "Photo de profile",
+            "Votre photo de profile a été mise à jour avec succès.",
+            true
+        );
+
+        PreloadService?.Hide();
     }
 
     /// <summary>

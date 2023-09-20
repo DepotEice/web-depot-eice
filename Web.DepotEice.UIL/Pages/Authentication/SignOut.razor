@@ -1,32 +1,60 @@
 ﻿@page "/signout"
+
 @using Web.DepotEice.UIL.Managers
 
 @inject UserManager UserManager
 @inject NavigationManager NavigationManager
+@inject ILogger<SignOut> Logger;
 
-<h3 class="text-center my-5">@_displayMessage</h3>
+<PageTitle>EICE - Déconnexion</PageTitle>
+
+<h3 class="text-center my-5">@DisplayMessage</h3>
 
 @code {
-    private string _displayMessage = string.Empty;
-    private bool _signedOutSuccessfully = false;
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; private set; }
 
+    /// <summary>
+    /// The result message displayed to the user
+    /// </summary>
+    public string DisplayMessage { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Initialize the component
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        PreloadService?.Show();
+
         bool result = await UserManager.SignOutAsync();
 
-        if (result)
+        if (!result)
         {
-            _displayMessage = "Vous vous êtes correctement déconnecté";
+            Logger.LogError("An error occured while signing out the user. The user was not signed out");
+
+            DisplayMessage = "Une erreur est survenue et la déconnexion a échouée";
+
+            PreloadService?.Hide();
+
+            return;
         }
-        else
-        {
-            _displayMessage = "Une erreur est survenue et la déconnexion a échouée";
-        }
+
+        DisplayMessage = "Vous vous êtes correctement déconnecté";
+
+        PreloadService?.Hide();
     }
 
+    /// <summary>
+    /// Event triggered after the component has been rendered
+    /// </summary>
+    /// <param name="firstRender"></param>
     protected override void OnAfterRender(bool firstRender)
     {
-        if(firstRender)
+        if (firstRender)
         {
             NavigationManager.NavigateTo("/", forceLoad: true);
         }

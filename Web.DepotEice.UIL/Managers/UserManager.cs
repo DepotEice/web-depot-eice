@@ -87,6 +87,14 @@ namespace Web.DepotEice.UIL.Managers
             _userService = userService;
         }
 
+        /// <summary>
+        /// Sign in the user and save the JWT token in the local storage
+        /// </summary>
+        /// <param name="signInForm">The login form</param>
+        /// <returns>
+        /// true If the sign in is successful, false Otherwise
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public async Task<bool> SignInAsync(SignInForm signInForm)
         {
             if (signInForm is null)
@@ -98,20 +106,42 @@ namespace Web.DepotEice.UIL.Managers
             {
                 SignInModel signInModel = _mapper.Map<SignInModel>(signInForm);
 
-                string result = await _authService.SignInAsync(signInModel);
+                ResultModel<string> result = await _authService.SignInAsync(signInModel);
 
-                if (string.IsNullOrEmpty(result))
+                if (!result.Success)
                 {
+                    _logger.LogError(
+                        "Signing in failed with status code {code} and message {msg}",
+                        result.Code,
+                        result.Message
+                    );
+
                     return false;
                 }
 
-                await _localStorageService.SetItemAsStringAsync("token", result);
+                if (string.IsNullOrEmpty(result.Data))
+                {
+                    _logger.LogError(
+                        "Signing in succeeded but the data is null and message is {msg}",
+                        result.Message
+                    );
+
+                    return false;
+                }
+
+                await _localStorageService.SetItemAsStringAsync("token", result.Data);
 
                 return !string.IsNullOrEmpty(await _localStorageService.GetItemAsStringAsync("token"));
             }
             catch (Exception e)
             {
-                _logger.LogError(e.Message);
+                _logger.LogError(
+                    "An exception was thrown during {fn}\n{eMsg}\n{eStr}",
+                    nameof(SignInAsync),
+                    e.Message,
+                    e.StackTrace
+                );
+
                 return false;
             }
         }

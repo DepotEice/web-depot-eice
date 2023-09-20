@@ -9,7 +9,16 @@ namespace Web.DepotEice.BLL.IServices
 {
     public interface IAuthService
     {
-        Task<string> SignInAsync(SignInModel signInModel);
+        /// <summary>
+        /// Sign in the user by sending a POST request to the API and return the JWT token if the request is successful
+        /// </summary>
+        /// <param name="signInModel">The login form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="string"/>. If the request is successful, get the JWT
+        /// token
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<string>> SignInAsync(SignInModel signInModel);
         Task<bool> SignUpAsync(SignUpModel signUpModel);
 
         /// <summary>

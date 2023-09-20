@@ -47,7 +47,16 @@ namespace Web.DepotEice.BLL.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        public async Task<string> SignInAsync(SignInModel signInModel)
+        /// <summary>
+        /// Sign in the user by sending a POST request to the API and return the JWT token if the request is successful
+        /// </summary>
+        /// <param name="signInModel">The login form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is a <see cref="string"/>. If the request is successful, get the JWT
+        /// token
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<string>> SignInAsync(SignInModel signInModel)
         {
             if (signInModel is null)
             {
@@ -55,16 +64,29 @@ namespace Web.DepotEice.BLL.Services
             }
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"Auth/Login", signInModel);
-            response.EnsureSuccessStatusCode();
 
-            var token = await response.Content.ReadFromJsonAsync<SignInResponseModel>();
-
-            if (token is null)
+            ResultModel<string> result = new()
             {
-                return string.Empty;
+                Code = response.StatusCode,
+                Success = response.IsSuccessStatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<string>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{eMsg}\n{eStr}",
+                    nameof(SignInAsync),
+                    ex.Message,
+                    ex.StackTrace
+                );
             }
 
-            return token.Token;
+            return result;
         }
 
         /// <summary>

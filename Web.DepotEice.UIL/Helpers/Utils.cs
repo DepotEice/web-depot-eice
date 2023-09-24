@@ -76,5 +76,75 @@ namespace Web.DepotEice.UIL.Helpers
                 yield return dt;
             }
         }
+
+        /// <summary>
+        /// Determine how the date time comparison will be done
+        /// </summary>
+        public enum DateTimeComparison
+        {
+            Year,
+            Month,
+            Day,
+            YearMonth,
+            MonthDay,
+            YearMonthDay,
+            Hour,
+            Minute,
+            Second,
+            HourMinute,
+            MinuteSecond,
+            HourMinuteSecond,
+            All
+        }
+
+        /// <summary>
+        /// Verify if the date is equal to the other date
+        /// </summary>
+        /// <param name="date">The datetime</param>
+        /// <param name="other">The datetime to compare to</param>
+        /// <param name="dateTimeComparison">The comparison type</param>
+        /// <returns>
+        /// true If the date is equal to the other date, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public static bool Equals(this DateTime date, DateTime other, DateTimeComparison dateTimeComparison = DateTimeComparison.All)
+        {
+            switch (dateTimeComparison)
+            {
+                case DateTimeComparison.Year:
+                    return date.Year == other.Year;
+                case DateTimeComparison.Month:
+                    return date.Month == other.Month;
+                case DateTimeComparison.Day:
+                    return date.Day == other.Day;
+                case DateTimeComparison.YearMonth:
+                    return date.Year == other.Year && date.Month == other.Month;
+                case DateTimeComparison.MonthDay:
+                    return date.Month == other.Month && date.Day == other.Day;
+                case DateTimeComparison.YearMonthDay:
+                    return date.Year == other.Year && date.Month == other.Month && date.Day == other.Day;
+                case DateTimeComparison.Hour:
+                    return date.Hour == other.Hour;
+                case DateTimeComparison.Minute:
+                    return date.Minute == other.Minute;
+                case DateTimeComparison.Second:
+                    return date.Second == other.Second;
+                case DateTimeComparison.HourMinute:
+                    return date.Hour == other.Hour && date.Minute == other.Minute;
+                case DateTimeComparison.MinuteSecond:
+                    return date.Minute == other.Minute && date.Second == other.Second;
+                case DateTimeComparison.HourMinuteSecond:
+                    return date.Hour == other.Hour && date.Minute == other.Minute && date.Second == other.Second;
+                case DateTimeComparison.All:
+                    return date.Year == other.Year && date.Month == other.Month && date.Day == other.Day &&
+                           date.Hour == other.Hour && date.Minute == other.Minute && date.Second == other.Second;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(dateTimeComparison),
+                        dateTimeComparison,
+                        "The comparison value doesn't exist"
+                    );
+            }
+        }
     }
 }

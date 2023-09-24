@@ -12,13 +12,24 @@ using Web.DepotEice.BLL.Models;
 
 namespace Web.DepotEice.BLL.Services
 {
+    /// <summary>
+    /// Opening hours service
+    /// </summary>
     public class OpeningHoursService : IOpeningHoursService
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<OpeningHoursService> _logger;
         private readonly ISyncLocalStorageService _localStorageService;
 
-        public OpeningHoursService(HttpClient httpClient, ILogger<OpeningHoursService> logger, ISyncLocalStorageService localStorageService)
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="httpClient"></param>
+        /// <param name="logger"></param>
+        /// <param name="localStorageService"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public OpeningHoursService(HttpClient httpClient, ILogger<OpeningHoursService> logger,
+            ISyncLocalStorageService localStorageService)
         {
             if (httpClient is null)
             {
@@ -56,7 +67,11 @@ namespace Web.DepotEice.BLL.Services
         /// <returns>
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="OpeningHoursModel"/>
         /// </returns>
-        public async Task<ResultModel<IEnumerable<OpeningHoursModel>>> GetOpeningHoursAsync(int? day = null, int? month = null, int? year = null)
+        public async Task<ResultModel<IEnumerable<OpeningHoursModel>>> GetOpeningHoursAsync(
+            int? day = null,
+            int? month = null,
+            int? year = null
+        )
         {
             string queryUri = "OpeningHours?";
 
@@ -90,60 +105,26 @@ namespace Web.DepotEice.BLL.Services
             }
             catch (Exception e)
             {
-                _logger.LogInformation($"{nameof(GetOpeningHoursAsync)}: An exception was thrown, cannot " +
-                        $"read the result as json.\n{e.Message}");
+                _logger.LogInformation(
+                    "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}",
+                    nameof(GetOpeningHoursAsync),
+                    e.Message
+                );
             }
 
             return result;
         }
 
-        public async Task<IEnumerable<OpeningHoursModel>> GetWeekOpeningHoursAsync(DateTime dateTime)
-        {
-            IEnumerable<OpeningHoursModel>? openingHours = (await GetOpeningHoursAsync()).Data;
-
-            int actualDay = (int)dateTime.DayOfWeek;
-
-            return openingHours.Where(oh =>
-                (oh.OpenAt.Year == dateTime.Year && oh.OpenAt.Month == dateTime.Month) &&
-                (oh.OpenAt.Day >= dateTime.Day - actualDay && oh.OpenAt.Day <= dateTime.Day + (7 - actualDay)));
-        }
-
-        public async Task<IEnumerable<DateTime>> GetClosedDatesAsync()
-        {
-            IEnumerable<OpeningHoursModel> openingHours = (await GetOpeningHoursAsync()).Data;
-
-            if (openingHours.Count() == 0)
-            {
-                return Enumerable.Empty<DateTime>();
-            }
-
-            var firstOpeningHours = openingHours.First();
-            var lastOpeningHours = openingHours.Last();
-
-            DateTime firstDayOpen = new DateTime(
-                firstOpeningHours.OpenAt.Year,
-                firstOpeningHours.OpenAt.Month,
-                firstOpeningHours.OpenAt.Day);
-
-            DateTime lastDayOpen = new DateTime(
-                lastOpeningHours.CloseAt.Year,
-                lastOpeningHours.CloseAt.Month,
-                lastOpeningHours.CloseAt.Day);
-
-            List<DateTime> closedDateTimes = new List<DateTime>();
-
-            for (DateTime dti = firstDayOpen; dti <= lastDayOpen; dti.AddDays(1))
-            {
-                if (dti.DayOfWeek != DayOfWeek.Sunday)
-                {
-                    closedDateTimes.Append(dti);
-                }
-            }
-
-            return closedDateTimes;
-        }
-
-        public async Task<OpeningHoursModel> CreateOpeningHoursAsync(OpeningHoursCreateModel openingHours)
+        /// <summary>
+        /// Create an opening hours by sending a POST request to the API
+        /// </summary>
+        /// <param name="openingHours">The data to create the opening hours</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="OpeningHoursModel"/>. The created opening hours if it 
+        /// was created, null otherwise
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<OpeningHoursModel>> CreateOpeningHoursAsync(OpeningHoursCreateModel openingHours)
         {
             if (openingHours is null)
             {
@@ -152,30 +133,55 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("OpeningHours", openingHours);
 
-            response.EnsureSuccessStatusCode();
-
-            OpeningHoursModel? createdOpeningHours = await response.Content.ReadFromJsonAsync<OpeningHoursModel>();
-
-            if (createdOpeningHours is null)
+            ResultModel<OpeningHoursModel> result = new()
             {
-                throw new NullReferenceException(nameof(createdOpeningHours));
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<OpeningHoursModel>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation(
+                    "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}",
+                    nameof(CreateOpeningHoursAsync),
+                    e.Message
+                );
             }
 
-            return createdOpeningHours;
+            return result;
         }
 
-        public async Task<bool> DeleteOpeningHoursAsync(OpeningHoursModel openingHours)
+        /// <summary>
+        /// Delete an opening hours by sending a DELETE request to the API
+        /// </summary>
+        /// <param name="id">The id of the opening hours</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. True if the opening hours was deleted, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public async Task<ResultModel<bool>> DeleteOpeningHoursAsync(int id)
         {
-            if (openingHours is null)
+            if (id <= 0)
             {
-                throw new ArgumentNullException(nameof(openingHours));
+                throw new ArgumentOutOfRangeException(nameof(id));
             }
 
-            HttpResponseMessage response = await _httpClient.DeleteAsync($"OpeningHours/{openingHours.Id}");
+            HttpResponseMessage response = await _httpClient.DeleteAsync($"OpeningHours/{id}");
 
-            response.EnsureSuccessStatusCode();
+            ResultModel<bool> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Data = response.IsSuccessStatusCode
+            };
 
-            return true;
+            return result;
         }
     }
 }

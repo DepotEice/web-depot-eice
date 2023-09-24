@@ -3,9 +3,12 @@
 @using Web.DepotEice.BLL.IServices
 @using Web.DepotEice.BLL.Models
 @using Web.DepotEice.Helpers
+@using Web.DepotEice.UIL.Helpers;
 @using Web.DepotEice.UIL.Managers;
 @using Web.DepotEice.UIL.Models.Forms
+@using Web.DepotEice.UIL.Models;
 @using Web.DepotEice.UIL.ViewModels
+@using static Web.DepotEice.UIL.Helpers.Utils;
 
 @inject ILogger<ManageOpeningHours> Logger;
 @inject IOpeningHoursService OpeningHoursService;
@@ -48,7 +51,9 @@
                             <h4 class="text-center align-bottom">Fermeture exceptionnelle</h4>
                         </div>
                         <div class="col-2">
-                            <button class="btn btn-outline-secondary float-end" type="button" @onclick="AddExceptionalClose">+</button>
+                            <button @onclick="AddExceptionalClose" class="btn btn-outline-secondary float-end" type="button">
+                                <Icon Name="IconName.PlusCircle"></Icon>
+                            </button>
                         </div>
                     </div>
 
@@ -72,8 +77,9 @@
                                 </div>
                             </div>
                             <div class="col-lg-1 mx-2 my-1">
-                                <button class="btn btn-outline-danger" @onclick="@(() => RemoveExceptionalClose(item.Id))">
-                                    <i class="bi bi-trash"></i>
+                                <button @onclick="@(() => RemoveExceptionalClose(item.Id))" class="btn btn-outline-danger"
+                                        type="button">
+                                    <Icon Name="IconName.Trash"></Icon>
                                 </button>
                             </div>
                         </div>
@@ -83,6 +89,11 @@
 
                 <button class="btn btn-outline-primary float-end">Enregistrer</button>
 
+                <button @onclick="OnResetOpeningHoursAsync" class="btn btn-outline-danger float-end mx-2"
+                        type="button">
+                    Réinitaliser
+                </button>
+
             </EditForm>
         </div>
     </Authorized>
@@ -91,33 +102,85 @@
     </Unauthorized>
 </Authorize>
 
+<Toasts Class="p-3" Messages="ToastMessages" Delay="5000" />
+
 @code {
+    /// <summary>
+    /// Preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
+
+    /// <summary>
+    /// The list of Toast messages
+    /// </summary>
+    public List<ToastMessage> ToastMessages { get; set; } = new();
+
+    /// <summary>
+    /// View model
+    /// </summary>
     private CreateOpeningHoursViewModel viewModel = new();
 
+    /// <summary>
+    /// Initialization of the component
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
-    { 
+    {
+        PreloadService?.Show();
+
         ResultModel<IEnumerable<OpeningHoursModel>> openingHoursResult = await OpeningHoursService.GetOpeningHoursAsync();
 
-        var openingHoursfromRepo = openingHoursResult.Data;
-
-        if (openingHoursfromRepo is null)
+        if (!openingHoursResult.Success)
         {
-            Logger.LogError("Impossible de récupérer les heures d'ouvertures");
+            Logger.LogError(
+                "Requesting the opening hours failed with status code {code}.\n{msg}",
+                openingHoursResult.Code,
+                openingHoursResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Récupération des horaires",
+                $"La récupération des horaires a échoué.\n{openingHoursResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
 
             return;
         }
 
-        var firstDay = openingHoursfromRepo.First().OpenAt;
-        var lastDay = openingHoursfromRepo.Last().CloseAt;
+        if (openingHoursResult.Data is null)
+        {
+            Logger.LogError(
+                "Get opening hours request succeeded but no data was returned.\n{msg}",
+                openingHoursResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Récupération des horaires",
+                $"La récupération des horaires a réussi mais aucune donnée n'a été retournée.\n{openingHoursResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        IEnumerable<OpeningHoursModel> openingHoursfromRepo = openingHoursResult.Data.OrderBy(oh => oh.OpenAt);
+
+        DateTime firstDay = openingHoursfromRepo.First().OpenAt;
+        DateTime lastDay = openingHoursfromRepo.Last().CloseAt;
 
         viewModel.StartDate = new DateTime(firstDay.Year, firstDay.Month, firstDay.Day);
         viewModel.EndDate = new DateTime(lastDay.Year, lastDay.Month, lastDay.Day);
 
-        var firstMonday = openingHoursfromRepo.FirstOrDefault(oh => oh.OpenAt.DayOfWeek.Equals(DayOfWeek.Monday));
-
-        foreach (var day in viewModel.DayTimeSelectors)
+        foreach (DayTimeSelectorModel day in viewModel.DayTimeSelectors)
         {
-            var val = openingHoursfromRepo.FirstOrDefault(oh => oh.OpenAt.DayOfWeek == (DayOfWeek)day.DayOfWeek);
+            OpeningHoursModel? val = openingHoursfromRepo.FirstOrDefault(oh => oh.OpenAt.DayOfWeek == (DayOfWeek)day.DayOfWeek);
 
             if (val is null)
             {
@@ -135,8 +198,7 @@
 
         for (DateTime dti = firstDay; dti <= lastDay; dti = dti.AddDays(1))
         {
-            bool exist = openingHoursfromRepo.Any(oh =>
-                oh.OpenAt.Year == dti.Year && oh.OpenAt.Month == dti.Month && oh.OpenAt.Day == dti.Day);
+            bool exist = openingHoursfromRepo.Any(oh => oh.OpenAt.Equals(dti, DateTimeComparison.YearMonthDay));
 
             bool isSelected = viewModel.DayTimeSelectors.Any(dts =>
                 dts.IsSelected && (DayOfWeek)dts.DayOfWeek == dti.DayOfWeek);
@@ -150,8 +212,7 @@
 
                 for (DateTime cdt = dti.AddDays(1); cdt < lastDay && !closureOver; cdt = cdt.AddDays(1))
                 {
-                    bool cdtExist = openingHoursfromRepo.Any(oh =>
-                        oh.OpenAt.Year == cdt.Year && oh.OpenAt.Month == cdt.Month && oh.OpenAt.Day == cdt.Day);
+                    bool cdtExist = openingHoursfromRepo.Any(oh => oh.OpenAt.Equals(cdt, DateTimeComparison.YearMonthDay));
 
                     if (cdtExist)
                     {
@@ -181,17 +242,24 @@
         }
     }
 
+    /// <summary>
+    /// Event handler triggered when add an exception closing time button is clicked
+    /// </summary>
     private void AddExceptionalClose()
     {
         viewModel.ExceptionalCloses.Add(new ExceptionalCloseForm(viewModel.ExceptionalCloses.Count));
-        Logger.LogInformation($"{viewModel.ExceptionalCloses.Count}");
     }
 
+    /// <summary>
+    /// Event handler triggered when remove an exception closing time button is clicked
+    /// </summary>
+    /// <param name="id"></param>
     private void RemoveExceptionalClose(int id)
     {
         try
         {
-            var element = viewModel.ExceptionalCloses.Find(e => e.Id.Equals(id));
+            ExceptionalCloseForm? element = viewModel.ExceptionalCloses.Find(e => e.Id.Equals(id));
+
             if (element is null)
             {
                 Logger.LogWarning("{date} - There is no element in the list with ID \"{id}\"", DateTime.Now, id);
@@ -205,63 +273,180 @@
         {
             Logger.LogError("{date} - {exception}", DateTime.Now, e.Message);
         }
-
     }
 
-    public async Task SubmitForm()
+    /// <summary>
+    /// Event handler triggered when the reset button is clicked
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    private async Task OnResetOpeningHoursAsync(MouseEventArgs args)
     {
-        List<OpeningHoursCreateModel> openingHoursToCreate = new List<OpeningHoursCreateModel>();
-
-        foreach (var item in viewModel.DayTimeSelectors)
-        {
-            Logger.LogInformation("{item}", item);
-        }
+        PreloadService?.Show();
 
         ResultModel<IEnumerable<OpeningHoursModel>> openingHoursResult = await OpeningHoursService.GetOpeningHoursAsync();
 
-        var openingHoursFromRepo = openingHoursResult.Data;
-
-        if (openingHoursFromRepo is null)
+        if (!openingHoursResult.Success)
         {
-            Logger.LogError("Impossible de récupérer les heures d'ouvertures");
+            Logger.LogError(
+                "Requesting the opening hours failed with status code {code}.\n{msg}",
+                openingHoursResult.Code,
+                openingHoursResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Récupération des horaires",
+                $"La récupération des horaires a échoué.\n{openingHoursResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
             return;
         }
 
+        if (openingHoursResult.Data is null)
+        {
+            Logger.LogError(
+                "Get opening hours request succeeded but no data was returned.\n{msg}",
+                openingHoursResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Récupération des horaires",
+                $"La récupération des horaires a réussi mais aucune donnée n'a été retournée.\n{openingHoursResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        IEnumerable<OpeningHoursModel> openingHoursFromRepo = openingHoursResult.Data;
+
+        foreach (OpeningHoursModel openingHours in openingHoursFromRepo)
+        {
+            ResultModel<bool> deleteResult = await OpeningHoursService.DeleteOpeningHoursAsync(openingHours.Id);
+
+            if (!deleteResult.Success || !deleteResult.Data)
+            {
+                Logger.LogError(
+                    "Delete opening hours request for \"{id}\" failed with status code {code}.\n{msg}",
+                    openingHours.Id,
+                    deleteResult.Code,
+                    deleteResult.Message
+                );
+
+                ShowMessage(
+                    ToastType.Danger,
+                    "Suppression des horaires",
+                    $"La suppression des horaires a échoué.\n{deleteResult.Message}",
+                    false
+                );
+            }
+        }
+
+        NavigationManager.NavigateTo("/depot/manageOpeningHours", true);
+
+        PreloadService?.Hide();
+    }
+
+    /// <summary>
+    /// Event handler triggered when the form is submitted and valid
+    /// </summary>
+    /// <returns></returns>
+    public async Task SubmitForm()
+    {
+        PreloadService?.Show();
+
+        List<OpeningHoursCreateModel> openingHoursToCreate = new List<OpeningHoursCreateModel>();
+
+        ResultModel<IEnumerable<OpeningHoursModel>> openingHoursResult = await OpeningHoursService.GetOpeningHoursAsync();
+
+        if (!openingHoursResult.Success)
+        {
+            Logger.LogError(
+                "Requesting the opening hours failed with status code {code}.\n{msg}",
+                openingHoursResult.Code,
+                openingHoursResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Récupération des horaires",
+                $"La récupération des horaires a échoué.\n{openingHoursResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        if (openingHoursResult.Data is null)
+        {
+            Logger.LogError(
+                "Get opening hours request succeeded but no data was returned.\n{msg}",
+                openingHoursResult.Message
+            );
+
+            ShowMessage(
+                ToastType.Danger,
+                "Récupération des horaires",
+                $"La récupération des horaires a réussi mais aucune donnée n'a été retournée.\n{openingHoursResult.Message}",
+                false
+            );
+
+            PreloadService?.Hide();
+
+            return;
+        }
+
+        IEnumerable<OpeningHoursModel> openingHoursFromRepo = openingHoursResult.Data;
+
         try
         {
-            if (viewModel.StartDate < DateTime.Now)
+            foreach (OpeningHoursModel item in openingHoursFromRepo)
             {
-                openingHoursFromRepo = openingHoursFromRepo.Where(oh => oh.OpenAt >= DateTime.Now);
-            }
+                ResultModel<bool> result = await OpeningHoursService.DeleteOpeningHoursAsync(item.Id);
 
-
-            foreach (var item in openingHoursFromRepo)
-            {
-                var result = await OpeningHoursService.DeleteOpeningHoursAsync(item);
-
-                if (result)
+                if (!result.Success || !result.Data)
                 {
-                    Logger.LogInformation("{date} - Opening Hours with ID \"{id}\" successfully deleted",
-                        DateTime.Now, item.Id);
-                }
-                else
-                {
-                    Logger.LogError("{date} - Couldn't delete opening hours with ID \"{id}\"",
-                        DateTime.Now, item.Id);
+                    Logger.LogError(
+                        "Delete opening hours request for \"{id}\" failed with status code {code}.\n{msg}",
+                        item.Id,
+                        result.Code,
+                        result.Message
+                    );
+
+                    ShowMessage(
+                        ToastType.Danger,
+                        "Suppression des horaires",
+                        $"La suppression des horaires a échoué.\n{result.Message}",
+                        false
+                    );
                 }
             }
         }
         catch (Exception e)
         {
-            Logger.LogError("{date} - An exception was thrown when trying to delete an opening hours : {e}",
-                DateTime.Now, e.Message);
+            Logger.LogError(
+                "{date} - An exception was thrown when trying to delete an opening hours.\n{eMsg}\n{eStr}",
+                DateTime.Now,
+                e.Message,
+                e.StackTrace
+            );
         }
 
 
         for (DateTime dti = viewModel.StartDate; dti <= viewModel.EndDate; dti = dti.AddDays(1))
         {
-            var daySelector = viewModel.DayTimeSelectors
-            .FirstOrDefault(dts => dts.IsSelected && dts.DayOfWeek == (DaysOfTheWeekFr)dti.DayOfWeek);
+            DayTimeSelectorModel? daySelector =
+                viewModel.DayTimeSelectors
+                    .FirstOrDefault(dts => dts.IsSelected && dts.DayOfWeek == (DaysOfTheWeekFr)dti.DayOfWeek);
 
             bool isExceptionalyClosed = viewModel.ExceptionalCloses.Any(e => dti >= e.From && dti <= e.To);
 
@@ -275,29 +460,61 @@
             }
         }
 
-        foreach (var openingHours in openingHoursToCreate)
+        foreach (OpeningHoursCreateModel openingHours in openingHoursToCreate)
         {
             try
             {
-                var createdOpeningHours = await OpeningHoursService.CreateOpeningHoursAsync(openingHours);
+                ResultModel<OpeningHoursModel> createResult =
+                    await OpeningHoursService.CreateOpeningHoursAsync(openingHours);
 
-                if (createdOpeningHours is null)
+                if (!createResult.Success || createResult.Data is null)
                 {
-                    Logger.LogError("{date} - Creating opening hours for \"{dateFrom}\" failed",
-                        DateTime.Now, openingHours.OpenAt);
-                }
+                    Logger.LogError(
+                        "{date} - Creating opening hours for \"{dateFrom}\" failed with status {code}.\n{msg}",
+                        DateTime.Now,
+                        openingHours.OpenAt,
+                        createResult.Code,
+                        createResult.Message
+                    );
 
-                Logger.LogInformation("{date} - OpeningHours in the list start from \"{start}\" to \"{end}\"",
-                    DateTime.Now, openingHours.OpenAt, openingHours.CloseAt);
+                    continue;
+                }
             }
             catch (Exception e)
             {
-                Logger.LogError("{date} - {exception}", DateTime.Now, e.Message);
+                Logger.LogError(
+                    "An exception was thrown while trying to create opening hours {start} to {end}.\n{eMsg}\n{eStr}",
+                    openingHours.OpenAt.ToString("F"),
+                    openingHours.CloseAt.ToString("F"),
+                    e.Message,
+                    e.StackTrace
+                );
             }
         }
 
-        Logger.LogInformation("Form submitted");
+        NavigationManager.NavigateTo("/depot/manageOpeningHours", true);
+
+        PreloadService?.Hide();
     }
 
+    /// <summary>
+    /// Add a new toast message to the list of toast messages
+    /// </summary>
+    /// <param name="toastType">The toast message type</param>
+    /// <param name="title">The title of the toast message</param>
+    /// <param name="message">The body message</param>
+    /// <param name="autoHide">Decide if the toast should hide after a delay</param>
+    private void ShowMessage(ToastType toastType, string title, string message, bool autoHide)
+    {
+        var toastMessage = new ToastMessage()
+            {
+                Type = toastType,
+                Title = title,
+                Message = message,
+                AutoHide = autoHide,
+                HelpText = $"{DateTime.Now}",
+            };
 
+        ToastMessages.Add(toastMessage);
+    }
 }

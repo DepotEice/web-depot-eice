@@ -9,16 +9,25 @@ using System.Text;
 using System.Threading.Tasks;
 using Web.DepotEice.BLL.IServices;
 using Web.DepotEice.BLL.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Web.DepotEice.BLL.Services
 {
+    /// <summary>
+    /// Address service
+    /// </summary>
     public class AddressService : IAddressService
     {
         private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
         private readonly ISyncLocalStorageService _localStorageService;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="httpClient"></param>
+        /// <param name="localStorageService"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public AddressService(ILogger<AddressService> logger, HttpClient httpClient, ISyncLocalStorageService localStorageService)
         {
             if (logger is null)
@@ -48,6 +57,15 @@ namespace Web.DepotEice.BLL.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
+        /// <summary>
+        /// Create a new address by sending a POST request to the API with the address data
+        /// </summary>
+        /// <param name="addressCreate">The new address data</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="AddressModel"/> which is the created address data. Null if
+        /// nothing was created or if the request failed
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public async Task<ResultModel<AddressModel>> CreateAddressAsync(AddressCreateModel addressCreate)
         {
             if (addressCreate is null)
@@ -68,7 +86,15 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
-        public async Task<ResultModel<AddressModel>> DeleteAddressAsync(int id)
+        /// <summary>
+        /// Delete the address by sending a DELETE request to the API with the address ID
+        /// </summary>
+        /// <param name="id">The id of the address to delete</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/>. True if the address was deleted, false otherwise
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        public async Task<ResultModel<bool>> DeleteAddressAsync(int id)
         {
             if (id <= 0)
             {
@@ -77,17 +103,26 @@ namespace Web.DepotEice.BLL.Services
 
             HttpResponseMessage response = await _httpClient.DeleteAsync($"Addresses/{id}");
 
-            ResultModel<AddressModel> result = new ResultModel<AddressModel>()
+            ResultModel<bool> result = new ResultModel<bool>()
             {
                 Code = response.StatusCode,
                 Message = await response.Content.ReadAsStringAsync(),
-                Data = null,
+                Data = response.IsSuccessStatusCode,
                 Success = response.IsSuccessStatusCode
             };
 
             return result;
         }
 
+        /// <summary>
+        /// Get an address by sending a GET request to the API with the address ID
+        /// </summary>
+        /// <param name="id">The id of the address to retrieve</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="AddressModel"/> which is the address data. Null if the
+        /// data was not found or if the request failed
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public async Task<ResultModel<AddressModel>> GetAddressAsync(int id)
         {
             if (id <= 0)
@@ -111,13 +146,24 @@ namespace Web.DepotEice.BLL.Services
             catch (Exception ex)
             {
                 _logger.LogError(
-                    $"{nameof(GetAddressAsync)}: an exception was thrown while converting result to json.\n{ex.Message}");
+                    "{fn}: an exception was thrown while converting result to json.\n{eMsg}",
+                    nameof(GetAddressAsync),
+                    ex.Message
+                );
+
                 result.Data = null;
             }
 
             return result;
         }
 
+        /// <summary>
+        /// Get the current user's addresses by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="AddressModel"/>.
+        /// The list of addresses. Null if the request failed
+        /// </returns>
         public async Task<ResultModel<IEnumerable<AddressModel>>> GetAddressesAsync()
         {
             HttpResponseMessage response = await _httpClient.GetAsync($"Addresses");
@@ -126,13 +172,79 @@ namespace Web.DepotEice.BLL.Services
             {
                 Code = response.StatusCode,
                 Message = await response.Content.ReadAsStringAsync(),
-                Data = await response.Content.ReadFromJsonAsync<IEnumerable<AddressModel>>(),
                 Success = response.IsSuccessStatusCode
             };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<AddressModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{eMsg}",
+                    nameof(GetAddressesAsync),
+                    ex.Message
+                );
+
+                result.Data = null;
+            }
 
             return result;
         }
 
+        /// <summary>
+        /// Get a user's addresses by sending a GET request to the API. Requires admin privileges
+        /// </summary>
+        /// <param name="userId">The id of the user</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="AddressModel"/>.
+        /// The list of addresses. Null if the request failed
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<IEnumerable<AddressModel>>> GetAddressesAsync(string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            HttpResponseMessage response = await _httpClient.GetAsync($"Users/{userId}/Addresses");
+
+            ResultModel<IEnumerable<AddressModel>> result = new ResultModel<IEnumerable<AddressModel>>()
+            {
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Success = response.IsSuccessStatusCode
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<AddressModel>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    "{fn}: an exception was thrown while converting result to json.\n{eMsg}",
+                    nameof(GetAddressesAsync),
+                    ex.Message
+                );
+
+                result.Data = null;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Set an address as primary by sending a POST request to the API with the address ID
+        /// </summary>
+        /// <param name="id">The id of the address to set as primary</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="AddressModel"/> which is the address data. Null if the
+        /// data is not found or if the request failed
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public async Task<ResultModel<AddressModel>> SetPrimaryAddressAsync(int id)
         {
             if (id <= 0)
@@ -163,6 +275,15 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
+        /// <summary>
+        /// Update an address by sending a PUT request to the API with the address data
+        /// </summary>
+        /// <param name="addressUpdate">The data of the address</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="AddressModel"/> which is the updated address data. Null if
+        /// data was not updated or if the request failed
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public async Task<ResultModel<AddressModel>> UpdateAddressAsync(AddressUpdateModel addressUpdate)
         {
             if (addressUpdate is null)

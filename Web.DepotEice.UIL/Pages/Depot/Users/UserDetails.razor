@@ -1,0 +1,535 @@
+﻿@using AutoMapper;
+@using Web.DepotEice.BLL.IServices;
+@using Web.DepotEice.BLL.Models;
+@using Web.DepotEice.UIL.Helpers;
+@using Web.DepotEice.UIL.Managers;
+
+@inject ILogger<UserDetails> Logger;
+@inject IMapper Mapper;
+@inject DialogService DialogService;
+@inject UserManager UserManager;
+@inject IUserService UserService;
+@inject IAddressService AddressService;
+@inject IRoleService RoleService;
+
+<Authorize>
+    <Authorized>
+        <EditForm Model="UserModel" OnValidSubmit="OnValidSubmitClick">
+            <DataAnnotationsValidator></DataAnnotationsValidator>
+
+            <div class="mb-3">
+                <div class="img-container">
+                    <div class="img-wrapper">
+                        <img class="img-full" src="@($"{Utils.API_BASE_URL}{UserModel.ProfilePictureUrl}")" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3 d-flex flex-lg-row justify-content-between">
+                <div class="me-1 col-lg">
+                    <label for="firstName" class="form-label">
+                        Prénom
+                    </label>
+                    <InputText @bind-Value="@UserModel.FirstName" id="firstName" class="form-control"
+                               aria-describedby="firstName" disabled />
+                    <ValidationMessage class="text-danger" For="(() => UserModel.FirstName)"></ValidationMessage>
+                </div>
+                <div class="ms-1 col-lg">
+                    <label for="lastName" class="form-label">
+                        Nom de famille
+                    </label>
+                    <InputText @bind-Value="@UserModel.LastName" id="lastName" class="form-control"
+                               aria-describedby="lastName" disabled />
+                    <ValidationMessage class="text-danger" For="(() => UserModel.LastName)"></ValidationMessage>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">
+                    Adresse email
+                </label>
+                <InputText @bind-Value="@UserModel.Email" id="emailAddress" class="form-control"
+                           aria-describedby="emailAddress" disabled />
+                <ValidationMessage class="text-danger" For="(() => UserModel.Email)"></ValidationMessage>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">
+                    Addresse email de l'école
+                </label>
+                <InputText @bind-Value="UserModel.SchoolEmail" id="schoolEmailAddress" class="form-control"
+                           aria-describedby="schoolEmailAddress" />
+                <ValidationMessage class="text-danger" For="(() => UserModel.SchoolEmail)"></ValidationMessage>
+            </div>
+
+            <div class="mb-3 d-flex flex-lg-row justify-content-between">
+                <div class="me-1 col-lg">
+                    <label for="gender" class="form-label">
+                        Genre
+                    </label>
+
+                    <div class="d-flex flex-row justify-content-between" style="">
+                        <InputRadioGroup @bind-Value="UserModel.Gender">
+                            <div class="">
+                                <InputRadio Value="@("Homme")" class="mx-1" /> Homme
+                            </div>
+
+                            <div class="">
+                                <InputRadio Value="@("Femme")" class="mx-1" /> Femme
+                            </div>
+
+                            <div class="">
+                                <InputRadio Value="@("Autre")" class="mx-1" /> Autre
+                            </div>
+                        </InputRadioGroup>
+                    </div>
+                </div>
+
+                <div class="ms-1 col-lg">
+                    <label for="birthDate" class="form-label">
+                        Date de naissance
+                    </label>
+                    <InputDate id="birthDate" class="form-control" aria-describedby="birthDate"
+                    @bind-Value="UserModel.BirthDate" />
+                    <ValidationMessage class="text-danger" For="(() => UserModel.BirthDate)"></ValidationMessage>
+                </div>
+            </div>
+
+            <div class="mb-3 d-flex flex-lg-row justify-content-between">
+                <div class="me-1 col-lg">
+                    <label for="mobileNumber" class="form-label">
+                        Mobile
+                    </label>
+                    <InputText @bind-Value="UserModel.MobileNumber" id="mobileNumber" class="form-control"
+                               aria-describedby="mobileNumber" />
+                    <ValidationMessage class="text-danger" For="(() => UserModel.MobileNumber)"></ValidationMessage>
+                </div>
+
+                <div class="ms-1 col-lg">
+                    <label for="phoneNumber" class="form-label">
+                        Téléphone
+                    </label>
+                    <InputText @bind-Value="UserModel.PhoneNumber" id="phoneNumber" class="form-control"
+                               aria-describedby="phoneNumber" />
+                    <ValidationMessage class="text-danger" For="(() => UserModel.PhoneNumber)"></ValidationMessage>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="created-at" class="form-label">
+                    Crée le :
+                </label>
+                <span id="created-at" class="form-control disabled">@UserModel.CreatedAt.ToString("F")</span>
+            </div>
+
+            <div class="mb-3">
+                <label for="modified-at" class="form-label">
+                    Modifié le :
+                </label>
+                @if (UserModel.UpdatedAt is not null)
+                {
+                    <span id="modified-at" class="form-control disabled">@UserModel.UpdatedAt?.ToString("F")</span>
+                }
+                else
+                {
+                    <span id="modified-at" class="form-control">Non modifié</span>
+                }
+            </div>
+
+            <div class="mb-3">
+                <label for="deleted-at" class="form-label">
+                    Supprimé le :
+                </label>
+                @if (UserModel.DeletedAt is not null)
+                {
+                    <span id="deleted-at" class="form-control disabled">@UserModel.DeletedAt?.ToString("F")</span>
+                }
+                else
+                {
+                    <span id="deleted-at" class="form-control disabled">Non supprimé</span>
+                }
+            </div>
+
+            <br />
+            <hr />
+
+            <div class="mb-3">
+                <InputSelect id="teacher" class="form-control" @bind-Value="SelectedRole">
+                    <option value=""></option>
+                    @foreach (var role in AvailableRoles)
+                    {
+                        <option value="@role.Id">@role.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <br />
+            <hr />
+
+            <div class="">
+                <h4 class="text-center my-3">Adresses</h4>
+
+                @if (Addresses is not null && Addresses.Count() > 0)
+                {
+                    int addressIndex = 0;
+
+                    <div class="">
+                    </div>
+
+                    @foreach (var address in Addresses)
+                    {
+                        <div class="">
+
+                            @if (address.IsPrimary)
+                            {
+                                <h5 class="my-3">Adresse principale</h5>
+                            }
+
+                            <div class="mb-3">
+                                <label for="@($"street-{addressIndex}")" class="form-label">
+                                    Rue
+                                </label>
+                                <InputText @bind-Value="address.Street" id="@($"street-{addressIndex}")" class="form-control"
+                                           aria-describedby="street" disabled />
+                                <ValidationMessage class="text-danger" For="(() => address.Street)"></ValidationMessage>
+                            </div>
+
+                            <div class="mb-3 d-flex flex-lg-row justify-content-between">
+                                <div class="me-1 col-lg">
+                                    <label for="@($"houseNumber-{addressIndex}")" class="form-label">
+                                        Numéro
+                                    </label>
+                                    <InputText @bind-Value="address.HouseNumber" id="@($"houseNumber-{addressIndex}")"
+                                               class="form-control" aria-describedby="houseNumber" disabled />
+                                    <ValidationMessage class="text-danger" For="(() => address.HouseNumber)"></ValidationMessage>
+                                </div>
+
+                                <div class="ms-1 col-lg">
+                                    <label for="@($"appartment-{addressIndex}")" class="form-label" aria-describedby="appartment">
+                                        Appartement <em>(opt.)</em>
+                                    </label>
+                                    <InputText @bind-Value="address.Appartment" id="@($"appartment-{addressIndex}")"
+                                               class="form-control" aria-describedby="appartment" disabled />
+                                    <ValidationMessage class="text-danger" For="(() => address.Appartment)"></ValidationMessage>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 d-flex flex-lg-row justify-content-between">
+                                <div class="me-1 col-lg-3">
+                                    <label for="@($"zipCode-{addressIndex}")" class="form-label">
+                                        Code postal
+                                    </label>
+                                    <InputText @bind-Value="address.Zipcode" id="@($"zipCode-{addressIndex}")"
+                                               class="form-control" aria-describedby="zipCode" disabled />
+                                    <ValidationMessage class="text-danger" For="(() => address.Zipcode)"></ValidationMessage>
+                                </div>
+
+                                <div class="ms-1 col-lg">
+                                    <label for="@($"city-{addressIndex}")" class="form-label">
+                                        Ville
+                                    </label>
+                                    <InputText @bind-Value="address.City" id="@($"city-{addressIndex}")" class="form-control"
+                                               aria-describedby="city" disabled />
+                                    <ValidationMessage class="text-danger" For="(() => address.City)"></ValidationMessage>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="@($"state-{addressIndex}")" class="form-label">
+                                    Etat / Province / Région <em>(opt.)</em>
+                                </label>
+                                <InputText @bind-Value="address.State" id="@($"state-{addressIndex}")" class="form-control"
+                                           aria-describedby="state" disabled />
+                                <ValidationMessage class="text-danger" For="(() => address.State)"></ValidationMessage>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="@($"country-{addressIndex}")" class="form-label">
+                                    Pays
+                                </label>
+                                <InputText @bind-Value="address.Country" id="@($"country-{addressIndex}")"
+                                           class="form-control" aria-describedby="country" disabled />
+                                <ValidationMessage class="text-danger" For="(() => address.Country)"></ValidationMessage>
+                            </div>
+                        </div>
+
+                        <hr />
+                    }
+                }
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-outline-primary mx-auto">
+                    Enregistrer
+                </button>
+                <button @onclick="OnCancelClick" type="button" class="btn btn-light mx-auto">
+                    Annuler
+                </button>
+            </div>
+        </EditForm>
+    </Authorized>
+    <Unauthorized>
+        <h3 class="text-center my-5">Accès refusé</h3>
+    </Unauthorized>
+</Authorize>
+
+<style>
+    .img-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-width: 25rem;
+        min-height: 25rem;
+        max-height: 25rem;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .wrapper {
+        position: relative;
+        display: inline-block;
+        -moz-border-radius: 50%;
+        -webkit-border-radius: 50%;
+        border-radius: 50%;
+        width: 25rem;
+        height: 25rem;
+        overflow: hidden;
+        border: 1px solid black;
+    }
+
+    .img-full {
+        position: absolute;
+        left: 0;
+        top: 0;
+        min-width: 100%;
+        min-height: 100%;
+        object-position: center center;
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// The user model
+    /// </summary>
+    [Parameter]
+    public UserModel UserModel { get; set; } = new();
+
+    /// <summary>
+    /// The preload service
+    /// </summary>
+    [Inject]
+    public PreloadService? PreloadService { get; set; }
+
+    /// <summary>
+    /// The list of user addresses
+    /// </summary>
+    public IEnumerable<AddressModel> Addresses { get; private set; } = new List<AddressModel>();
+
+    /// <summary>
+    /// List of available roles
+    /// </summary>
+    public IEnumerable<RoleModel> AvailableRoles { get; private set; } = new List<RoleModel>();
+
+    /// <summary>
+    /// The selected role id
+    /// </summary>
+    public string SelectedRole { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Initialize the component asynchronously
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAddressesAsync();
+
+        await LoadAvailableRolesAsync();
+
+        await GetUserRoleAsync();
+    }
+
+    /// <summary>
+    /// Get the user's role
+    /// </summary>
+    /// <returns></returns>
+    private async Task GetUserRoleAsync()
+    {
+        if (UserModel is null)
+        {
+            Logger.LogError("The parameter user is null");
+
+            return;
+        }
+
+        if (string.IsNullOrEmpty(UserModel.Id))
+        {
+            Logger.LogError("The id of the user is null or empty");
+
+            return;
+        }
+
+        ResultModel<IEnumerable<RoleModel>> result = await RoleService.GetRolesAsync(UserModel.Id);
+
+        if (!result.Success)
+        {
+            Logger.LogError("Request failed with status code {code}.\n{msg}", result.Code, result.Message);
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError("Request succeeded but no data returned.\n{msg}", result.Message);
+
+            return;
+        }
+
+        SelectedRole = result.Data.FirstOrDefault()?.Id ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Load all the available roles in the API
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadAvailableRolesAsync()
+    {
+        ResultModel<IEnumerable<RoleModel>> result = await RoleService.GetAvailableRolesAsync();
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "The request failed with status code {code} with message:\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "Request succeeded but returned no data.\n{msg}",
+                result.Message
+            );
+
+            return;
+        }
+
+        AvailableRoles = result.Data;
+    }
+
+    /// <summary>
+    /// Load all the user addresses
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadAddressesAsync()
+    {
+        ResultModel<IEnumerable<AddressModel>> result = await AddressService.GetAddressesAsync(UserModel.Id);
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "The request to get the user addresses failed with status code {code}\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            return;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "The request succeeded but the returned data is null.\n{msg}",
+                result.Message
+            );
+
+            return;
+        }
+
+        Addresses = result.Data.OrderBy(a => a.IsPrimary).ToList();
+    }
+
+    /// <summary>
+    /// Event handler triggered when the editform is submitted and is valid
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    private async Task OnValidSubmitClick(EditContext context)
+    {
+        bool userUpdateResult = await UpdateUserAsync();
+        bool roleUpdateResult = await UpdateUserRoleAsync();
+
+        DialogService.Close(userUpdateResult && roleUpdateResult);
+    }
+
+    /// <summary>
+    /// Update the user information
+    /// </summary>
+    /// <returns>
+    /// true If the update was successful. false Otherwise
+    ///</returns>
+    private async Task<bool> UpdateUserAsync()
+    {
+        ResultModel<UserModel> result = await UserService.UpdateUserAsync(UserModel.Id, UserModel);
+
+        if (!result.Success)
+        {
+            Logger.LogError(
+                "The request to update the user failed with status code {code}\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            return false;
+        }
+
+        if (result.Data is null)
+        {
+            Logger.LogError(
+                "The request succeeded but the returned data is null.\n{msg}",
+                result.Message
+            );
+
+            return false;
+        }
+
+        UserModel = result.Data;
+
+        return result.Success;
+    }
+
+    /// <summary>
+    /// Update the user's role
+    /// </summary>
+    /// <returns></returns>
+    private async Task<bool> UpdateUserRoleAsync()
+    {
+        ResultModel<bool> result = await UserService.UpdateRoleAsync(UserModel.Id, SelectedRole);
+
+        if (!result.Success || !result.Data)
+        {
+            Logger.LogError(
+                "The request to update the user role failed with status code {code}\n{msg}",
+                result.Code,
+                result.Message
+            );
+
+            return false;
+        }
+
+        return result.Success;
+    }
+
+    /// <summary>
+    /// Event handler triggered when the cancel button is clicked
+    /// </summary>
+    /// <param name="args"></param>
+    private void OnCancelClick(MouseEventArgs args)
+    {
+        DialogService.Close(true);
+    }
+}

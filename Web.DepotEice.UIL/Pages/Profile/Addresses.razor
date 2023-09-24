@@ -335,12 +335,16 @@
 
             if (address.Id != 0)
             {
-                ResultModel<AddressModel> deleteResult = await AddressService.DeleteAddressAsync(address.Id);
+                ResultModel<bool> deleteResult = await AddressService.DeleteAddressAsync(address.Id);
 
-                if (!deleteResult.Success)
+                if (!deleteResult.Success || !deleteResult.Success)
                 {
-                    ShowMessage(ToastType.Danger, "Suppression", $"La suprression de l'adresse a échouée avec le " +
-                        $"message suivant :\n{deleteResult.Message}", false);
+                    ShowMessage(
+                        ToastType.Danger,
+                        "Suppression",
+                        $"La suprression de l'adresse a échouée avec le message suivant :\n{deleteResult.Message}",
+                        false
+                    );
                 }
                 else
                 {

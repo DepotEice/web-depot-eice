@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Components.Forms;
+﻿namespace Web.DepotEice.BLL.Models;
 
-namespace Web.DepotEice.BLL.Models;
-
+/// <summary>
+/// User update model.
+/// </summary>
 public class UserUpdateModel
 {
     /// <summary>
@@ -19,8 +20,19 @@ public class UserUpdateModel
     /// </summary>
     public string LastName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// User's mobile phone number
+    /// </summary>
     public string MobileNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// User's phone number
+    /// </summary>
     public string PhoneNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// User's gender
+    /// </summary>
     public string Gender { get; set; } = string.Empty;
 
     /// <summary>

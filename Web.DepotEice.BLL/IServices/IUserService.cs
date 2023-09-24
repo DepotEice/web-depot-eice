@@ -90,5 +90,28 @@ namespace Web.DepotEice.BLL.IServices
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="UserModel"/>
         /// </returns>
         Task<ResultModel<IEnumerable<UserModel>>> GetStudentsAsync();
+
+        /// <summary>
+        /// Update the user by sending a PUT request to the API and by providing the user ID and the user data
+        /// </summary>
+        /// <param name="userId">The id of the user</param>
+        /// <param name="userForm">The user form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/> which is the updated user data. Null if
+        /// data update failed or if the request failed
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<UserModel>> UpdateUserAsync(string userId, UserModel userForm);
+
+        /// <summary>
+        /// Update the user role by sending a PUT request to the API
+        /// </summary>
+        /// <param name="userId">The id of the user</param>
+        /// <param name="roleId">The id of the role to assign</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/> which is true if the role was updated, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Task<ResultModel<bool>> UpdateRoleAsync(string userId, string roleId);
     }
 }

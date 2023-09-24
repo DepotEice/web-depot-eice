@@ -305,6 +305,54 @@ namespace Web.DepotEice.BLL.Services
         }
 
         /// <summary>
+        /// Update the user by sending a PUT request to the API and by providing the user ID and the user data
+        /// </summary>
+        /// <param name="userId">The id of the user</param>
+        /// <param name="userForm">The user form</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="UserModel"/> which is the updated user data. Null if
+        /// data update failed or if the request failed
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<UserModel>> UpdateUserAsync(string userId, UserModel userForm)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            if (userForm is null)
+            {
+                throw new ArgumentNullException(nameof(userForm));
+            }
+
+            HttpResponseMessage responseMessage = await _httpClient.PutAsJsonAsync($"Users?id={userId}", userForm);
+
+            ResultModel<UserModel> result = new ResultModel<UserModel>()
+            {
+                Code = responseMessage.StatusCode,
+                Success = responseMessage.IsSuccessStatusCode,
+                Message = await responseMessage.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await responseMessage.Content.ReadFromJsonAsync<UserModel>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    "{fn}: An exception was thrown when trying to read from json.\n{eMsg}\n{eStr}",
+                    nameof(UpdateUserAsync),
+                    e.Message,
+                    e.StackTrace
+                );
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Delete the user by sending a DELETE request to the API
         /// </summary>
         /// <param name="userId">(Optional) The id of the user to delete</param>
@@ -395,6 +443,40 @@ namespace Web.DepotEice.BLL.Services
                     e.Message
                 );
             }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Update the user role by sending a PUT request to the API
+        /// </summary>
+        /// <param name="userId">The id of the user</param>
+        /// <param name="roleId">The id of the role to assign</param>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="bool"/> which is true if the role was updated, false otherwise
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<ResultModel<bool>> UpdateRoleAsync(string userId, string roleId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            if (string.IsNullOrEmpty(roleId))
+            {
+                throw new ArgumentNullException(nameof(roleId));
+            }
+
+            HttpResponseMessage response = await _httpClient.PutAsync($"Users/{userId}/role/{roleId}", null);
+
+            ResultModel<bool> result = new()
+            {
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync(),
+                Success = response.IsSuccessStatusCode,
+                Data = response.IsSuccessStatusCode
+            };
 
             return result;
         }

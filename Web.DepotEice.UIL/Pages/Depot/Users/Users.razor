@@ -1,4 +1,5 @@
 ﻿@page "/depot/users"
+
 @using Web.DepotEice.BLL.IServices;
 @using Web.DepotEice.BLL.Models;
 @using Web.DepotEice.UIL.Managers;
@@ -7,6 +8,7 @@
 @inject UserManager UserManager;
 @inject IUserService UserService;
 @inject ILogger<Users> Logger;
+@inject DialogService DialogService;
 
 <Authorize Role="@UserManager.DIRECTION_ROLE">
     <Authorized>
@@ -244,6 +246,54 @@
 
             return;
         }
+
+        UserModel? user = UsersList.SingleOrDefault(u => u.Id.Equals(userId));
+
+        if (user is null)
+        {
+            Logger.LogError("There is no user in the list with the selected id \"{id}\"", userId);
+
+            ShowMessage(
+                ToastType.Danger,
+                "Échec",
+                "Impossible de sélectionner l'utilisatuer dans la liste. Il n'existe pas",
+                false
+            );
+
+            return;
+        }
+
+        string title = user.DeletedAt is null ? $"{user.FirstName} {user.LastName}" : "Utilisateur supprimé";
+
+        Dictionary<string, object> parameters = new Dictionary<string, object>
+        {
+            { "UserModel", user }
+        };
+
+        bool result = await DialogService.OpenAsync<UserDetails>(title, parameters);
+
+        if (!result)
+        {
+            Logger.LogError("The modification of the user \"{id}\" failed.", userId);
+
+            ShowMessage(
+                ToastType.Danger,
+                "Échec de la modification",
+                $"La modification de l'utilisateur {title} a échoué",
+                false
+            );
+
+            return;
+        }
+
+        Logger.LogInformation("Modification succeeded");
+
+        ShowMessage(
+            ToastType.Success,
+            $"Modification de {user.FirstName} {user.LastName}",
+            $"La modification des informations de {user.FirstName} {user.LastName} est réussie",
+            true
+        );
     }
 
     /// <summary>

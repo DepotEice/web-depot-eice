@@ -20,5 +20,14 @@ namespace Web.DepotEice.BLL.IServices
         /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{RoleModel}"/>
         /// </returns>
         Task<ResultModel<IEnumerable<RoleModel>>> GetRolesAsync(string? userId = null);
+
+        /// <summary>
+        /// Get all the available roles by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="RoleModel"/>.
+        /// The list of available roles in the API
+        /// </returns>
+        Task<ResultModel<IEnumerable<RoleModel>>> GetAvailableRolesAsync();
     }
 }

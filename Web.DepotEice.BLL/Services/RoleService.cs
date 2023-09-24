@@ -82,6 +82,40 @@ namespace Web.DepotEice.BLL.Services
             return result;
         }
 
+        /// <summary>
+        /// Get all the available roles by sending a GET request to the API
+        /// </summary>
+        /// <returns>
+        /// <see cref="ResultModel{T}"/> where T is <see cref="IEnumerable{T}"/> where T is <see cref="RoleModel"/>.
+        /// The list of available roles in the API
+        /// </returns>
+        public async Task<ResultModel<IEnumerable<RoleModel>>> GetAvailableRolesAsync()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync("Roles");
+
+            ResultModel<IEnumerable<RoleModel>> result = new()
+            {
+                Success = response.IsSuccessStatusCode,
+                Code = response.StatusCode,
+                Message = await response.Content.ReadAsStringAsync()
+            };
+
+            try
+            {
+                result.Data = await response.Content.ReadFromJsonAsync<IEnumerable<RoleModel>>();
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation(
+                    "{fn}: An exception was thrown, cannot read the result as json.\n{eMsg}",
+                    nameof(GetRolesAsync),
+                    e.Message
+                );
+            }
+
+            return result;
+        }
+
         public async Task<bool> UserHasRoleAsync(string role)
         {
             if (string.IsNullOrEmpty(role))

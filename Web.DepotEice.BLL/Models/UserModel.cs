@@ -26,7 +26,7 @@ namespace Web.DepotEice.BLL.Models
         /// <summary>
         /// User school email address defined by the school
         /// </summary>
-        public string? SchoolEmail { get; set; }
+        public string? SchoolEmail { get; set; } = string.Empty;
 
         /// <summary>
         /// Email confirmation verification
@@ -46,7 +46,7 @@ namespace Web.DepotEice.BLL.Models
         /// <summary>
         /// User gender
         /// </summary>
-        public string Gender { get; set; } = string.Empty;
+        public string? Gender { get; set; } = string.Empty;
 
         /// <summary>
         /// User birth date
